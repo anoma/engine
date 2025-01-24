@@ -96,7 +96,6 @@ defmodule Engine do
     quote do
       # Define type for this message
       @type unquote(name)() :: unquote(Macro.escape(type_payload))
-      # TODO: I hope this is really registring the right type def.
 
       # Check if message tag already exists
       tname = unquote(name)
