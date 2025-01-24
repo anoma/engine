@@ -67,8 +67,17 @@ defmodule Engine do
         (guard(state, msg, config, result) -> effect(state, env, msg))
   """
 
-  defmacro __using__(_opts) do
+  defmacro __using__(opts) do
+
     quote do
+      # strict mode
+      Module.register_attribute(__MODULE__, :strict, persist: true)
+      @strict Keyword.get(unquote(opts), :strict, false)
+
+      # debug mode
+      Module.register_attribute(__MODULE__, :debug, persist: true)
+      @debug Keyword.get(unquote(opts), :debug, false)
+
       # A message tag is a unique identifier for a message type
       Module.register_attribute(__MODULE__, :message_tags, accumulate: false, persist: false)
       # The message type consists of a tag and may have a payload
@@ -110,8 +119,19 @@ defmodule Engine do
     end
   end
 
+  defmacro defconfig(val) do
+    quote do
+      # convert val to a dictionary
+      @configuration unquote(val)
+      if @debug do
+        IO.puts("** #{inspect(@configuration)}")
+      end
+    end
+  end
+
   defmacro __before_compile__(_env) do
     quote do
+      # Message interface related functions -------------------------------
       def message_types, do: @message_types
       def message_tags, do: @message_tags
 
@@ -121,9 +141,25 @@ defmodule Engine do
         > defmsg(:tick, %{count: :integer})
         > defmsg(:stop)
         """
-
         raise CompileError, description: msg
       end
+
+      # Configuration related functions -----------------------------------
+      if Enum.empty?(@configuration) or :name not in @configuration do
+        random_name = :crypto.strong_rand_bytes(10) |> Base.encode16(case: :lower)
+        msg = """
+        Missing custom name for engine, using random name: #{random_name}
+        Set it in the configuration:
+        > defconfig(name: "Ticker")
+        """
+        @configuration [name: random_name]
+        IO.puts("strict mode: #{@strict}")
+        if @strict do
+          raise CompileError, description: msg
+        end
+      else
+      end
+      # Environment related functions --------------------------------------
     end
   end
 end
