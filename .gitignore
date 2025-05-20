@@ -28,3 +28,4 @@ _build/
 
 # For Erlang:
 .eunit/
+notes/
