@@ -10,7 +10,7 @@ defmodule EngineSystem.System.EngineInstanceRegistry do
   """
 
   alias EngineSystem.Engine.EngineProcess
-  alias EngineSystem.Types.{EngineInstanceInfo, OperationResult}
+  alias EngineSystem.Types.OperationResult
 
   @registry_name EngineSystem.Registry
 

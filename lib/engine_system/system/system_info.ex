@@ -8,7 +8,7 @@ defmodule EngineSystem.System.SystemInfo do
   - Managing system metadata
   """
 
-  alias EngineSystem.Types.{OperationResult, SystemInfo}
+  alias EngineSystem.Types.SystemInfo
 
   @type system_version :: String.t()
   @type timestamp :: integer()
@@ -39,7 +39,7 @@ defmodule EngineSystem.System.SystemInfo do
   ## Parameters
 
   - `state` - The current system state
-  - `engine_type_count` - Number of registered engine types
+  - `_engine_type_count` - Number of registered engine types (unused for now)
   - `engine_instance_count` - Number of active engine instances
 
   ## Returns
@@ -48,7 +48,7 @@ defmodule EngineSystem.System.SystemInfo do
   """
   @spec get_system_info(state(), non_neg_integer(), non_neg_integer()) ::
           {:ok, SystemInfo.t()}
-  def get_system_info(state, engine_type_count, engine_instance_count) do
+  def get_system_info(state, _engine_type_count, engine_instance_count) do
     started_at_datetime = DateTime.from_unix!(state.system_started_at, :millisecond)
 
     system_info = %SystemInfo{
@@ -97,26 +97,6 @@ defmodule EngineSystem.System.SystemInfo do
 
   # Private helper functions
 
-  @spec get_memory_usage() :: %{
-          total: non_neg_integer(),
-          processes: non_neg_integer(),
-          system: non_neg_integer(),
-          atom: non_neg_integer(),
-          binary: non_neg_integer(),
-          code: non_neg_integer(),
-          ets: non_neg_integer()
-        }
-  defp get_memory_usage do
-    memory_info = :erlang.memory()
-
-    %{
-      total: Keyword.get(memory_info, :total, 0),
-      processes: Keyword.get(memory_info, :processes, 0),
-      system: Keyword.get(memory_info, :system, 0),
-      atom: Keyword.get(memory_info, :atom, 0),
-      binary: Keyword.get(memory_info, :binary, 0),
-      code: Keyword.get(memory_info, :code, 0),
-      ets: Keyword.get(memory_info, :ets, 0)
-    }
-  end
+  # Note: get_memory_usage function removed as it was unused
+  # Can be re-added when needed for system monitoring features
 end

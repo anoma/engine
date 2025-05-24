@@ -9,7 +9,7 @@ defmodule EngineSystem.System.EngineTypeRegistry do
   """
 
   alias EngineSystem.Engine.Compilation.Types.EngineSpec
-  alias EngineSystem.Types.{EngineTypeInfo, OperationResult}
+  alias EngineSystem.Types.EngineTypeInfo
 
   @type engine_type_entry :: %{
           module: module(),
