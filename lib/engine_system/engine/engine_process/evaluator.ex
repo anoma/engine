@@ -25,15 +25,8 @@ defmodule EngineSystem.Engine.EngineProcess.Evaluator do
     # Create bindings for payload params
     payload_bindings = build_bindings_from_payload(action.payload_bindings_ast, payload)
 
-    # Create bindings for context
-    context_bindings = %{
-      config: config,
-      env: environment,
-      # Will be filled in when executing the action
-      sender: nil,
-      # This is needed because the guard might use 'e' directly
-      e: environment
-    }
+    # Create bindings for context using the context_bindings_ast from the action
+    context_bindings = build_context_bindings(action.context_bindings_ast, config, environment, nil)
 
     # Combine all bindings
     all_bindings = Map.merge(payload_bindings, context_bindings)
@@ -68,15 +61,8 @@ defmodule EngineSystem.Engine.EngineProcess.Evaluator do
     # Create bindings for payload params
     payload_bindings = build_bindings_from_payload(action.payload_bindings_ast, payload)
 
-    # Create bindings for context
-    context_bindings = %{
-      config: config,
-      env: environment,
-      sender: sender_address,
-      # Add direct bindings for variables used in the action
-      # This is needed because the action uses 'e' directly
-      e: environment
-    }
+    # Create bindings for context using the context_bindings_ast from the action
+    context_bindings = build_context_bindings(action.context_bindings_ast, config, environment, sender_address)
 
     # Combine all bindings
     all_bindings = Map.merge(payload_bindings, context_bindings)
@@ -141,6 +127,45 @@ defmodule EngineSystem.Engine.EngineProcess.Evaluator do
       _ ->
         # Fallback for unknown binding formats
         %{}
+    end
+  end
+
+  @doc """
+  I build context bindings from the context bindings AST and actual values.
+  """
+  @spec build_context_bindings(any(), Types.config(), Types.environment(), any()) :: %{atom() => any()}
+  def build_context_bindings(context_bindings_ast, config, environment, sender) do
+    # The context_bindings_ast is a map AST that looks like:
+    # %{config: config_var, env: env_var, sender: sender_var}
+    # We need to evaluate this and map the variables to their actual values
+
+    case context_bindings_ast do
+      {:%{}, _meta, pairs} when is_list(pairs) ->
+        # Extract variable mappings from the AST
+        pairs
+        |> Enum.reduce(%{}, fn {key, var_ast}, acc ->
+          case {key, var_ast} do
+            {:config, {var_name, _meta, _context}} when is_atom(var_name) ->
+              Map.put(acc, var_name, config)
+            {:env, {var_name, _meta, _context}} when is_atom(var_name) ->
+              Map.put(acc, var_name, environment)
+            {:sender, {var_name, _meta, _context}} when is_atom(var_name) ->
+              Map.put(acc, var_name, sender)
+            _ ->
+              acc
+          end
+        end)
+
+      _ ->
+        # Fallback to default variable names if AST is malformed
+        %{
+          config: config,
+          env: environment,
+          sender: sender,
+          # Common aliases that might be used
+          c: config,
+          e: environment
+        }
     end
   end
 end
