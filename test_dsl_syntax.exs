@@ -20,9 +20,9 @@ defmodule TestDSLSyntax do
     end
 
     behaviour do
-      guarded_action :hello, [name], env: e do
-        [{:send, sender, {:greeting, "Hello #{name}!"}}]
-      end
+      guarded_action :hello, [name], env: e, do: [
+        {:send, sender, {:greeting, "Hello #{name}!"}}
+      ]
     end
   end
 end

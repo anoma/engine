@@ -135,20 +135,20 @@ end
   "1.0.0"
 )
 
-IO.puts("✅ Key-Value Store engine type registered")
+IO.puts("Key-Value Store engine type registered")
 
 # Create an engine instance using the NEW processing engine architecture
 config = %{read_only: false}
 
 case EngineSystem.System.Services.create_engine_instance({"KeyValueStore", "1.0.0"}, config) do
   %EngineSystem.Types.OperationResult{status: :ok, value: kv_address} ->
-    IO.puts("✅ Key-Value Store engine created at address: #{inspect(kv_address)}")
+    IO.puts("Key-Value Store engine created at address: #{inspect(kv_address)}")
     
     # Store the address for later use
     Process.put(:kv_address, kv_address)
     
   error ->
-    IO.puts("❌ Failed to create engine: #{inspect(error)}")
+    IO.puts("Failed to create engine: #{inspect(error)}")
 end
 
 kv_address = Process.get(:kv_address)
@@ -165,7 +165,7 @@ kv_address = Process.get(:kv_address)
 
 # When we send a message to the processing engine,
 # it should be automatically routed to its mailbox engine
-IO.puts("📨 Testing m-Send rule: Sending messages to processing engine...")
+IO.puts("Testing m-Send rule: Sending messages to processing engine...")
 
 # Send PUT messages - these will be routed to the mailbox automatically
 result1 = EngineSystem.System.Services.send_message(kv_address, {:put, "name", "Alice"})
@@ -186,7 +186,7 @@ Process.sleep(100)
 ```elixir
 kv_address = Process.get(:kv_address)
 
-IO.puts("📥 Testing m-Enqueue and m-Dequeue rules...")
+IO.puts("Testing m-Enqueue and m-Dequeue rules...")
 
 # Send GET messages to test retrieval
 get_result1 = EngineSystem.System.Services.send_message(kv_address, {:get, "name"})
@@ -212,10 +212,10 @@ Now let's test different mailbox delivery policies:
 
 ```elixir
 # Create engines with different mailbox policies
-IO.puts("🏭 Testing different mailbox delivery policies...")
+IO.puts("Testing different mailbox delivery policies...")
 
 # FIFO (default) - already tested above
-IO.puts("✅ FIFO policy tested with main engine")
+IO.puts("FIFO policy tested with main engine")
 
 # Priority-based policy engine
 case EngineSystem.Engine.ProcessingEngine.start_link(
@@ -225,7 +225,7 @@ case EngineSystem.Engine.ProcessingEngine.start_link(
   :priority  # Priority-based mailbox
 ) do
   {:ok, {priority_pid, _mailbox_pid}} ->
-    IO.puts("✅ Priority-based mailbox engine started")
+    IO.puts("Priority-based mailbox engine started")
     
     # Get the address
     case EngineSystem.Engine.ProcessingEngine.get_info(priority_pid) do
@@ -235,11 +235,11 @@ case EngineSystem.Engine.ProcessingEngine.start_link(
         IO.puts("   Address: #{inspect(priority_address)}")
         
       error ->
-        IO.puts("❌ Failed to get priority engine info: #{inspect(error)}")
+        IO.puts("Failed to get priority engine info: #{inspect(error)}")
     end
     
   error ->
-    IO.puts("❌ Failed to create priority engine: #{inspect(error)}")
+    IO.puts("Failed to create priority engine: #{inspect(error)}")
 end
 
 # Key-based policy engine  
@@ -250,7 +250,7 @@ case EngineSystem.Engine.ProcessingEngine.start_link(
   :key_based  # Key-based mailbox
 ) do
   {:ok, {key_pid, _mailbox_pid}} ->
-    IO.puts("✅ Key-based mailbox engine started")
+    IO.puts("Key-based mailbox engine started")
     
     # Get the address
     case EngineSystem.Engine.ProcessingEngine.get_info(key_pid) do
@@ -260,11 +260,11 @@ case EngineSystem.Engine.ProcessingEngine.start_link(
         IO.puts("   Address: #{inspect(key_address)}")
         
       error ->
-        IO.puts("❌ Failed to get key-based engine info: #{inspect(error)}")
+        IO.puts("Failed to get key-based engine info: #{inspect(error)}")
     end
     
   error ->
-    IO.puts("❌ Failed to create key-based engine: #{inspect(error)}")
+    IO.puts("Failed to create key-based engine: #{inspect(error)}")
 end
 ```
 
@@ -274,7 +274,7 @@ end
 # Check router statistics to see the message routing in action
 {:ok, final_stats} = EngineSystem.MessagePassing.Router.get_stats()
 
-IO.puts("📊 Final Router Statistics:")
+IO.puts("Final Router Statistics:")
 IO.puts("  - Registered mailboxes: #{final_stats.registered_mailboxes}")
 IO.puts("  - Processing engines: #{final_stats.processing_engines}")
 IO.puts("  - Total messages routed: #{final_stats.total_messages_routed}")
@@ -284,10 +284,10 @@ kv_address = Process.get(:kv_address)
 
 case EngineSystem.MessagePassing.Router.get_mailbox_address(kv_address) do
   {:ok, mailbox_address} ->
-    IO.puts("📮 Main KV Engine Mailbox: #{inspect(mailbox_address)}")
+    IO.puts("Main KV Engine Mailbox: #{inspect(mailbox_address)}")
     
   error ->
-    IO.puts("❌ Failed to get mailbox address: #{inspect(error)}")
+    IO.puts("Failed to get mailbox address: #{inspect(error)}")
 end
 ```
 
@@ -295,37 +295,37 @@ end
 
 ```elixir
 # Test that the formal properties hold
-IO.puts("🔍 Testing formal properties of the system...")
+IO.puts("Testing formal properties of the system...")
 
 # Property 1: Messages are never lost (all engines have mailboxes)
 engines = EngineSystem.System.Services.list_engine_instances()
 case engines do
   %{status: :ok, value: engine_list} ->
-    IO.puts("✅ Property 1: #{length(engine_list)} engines in system")
+    IO.puts("Property 1: #{length(engine_list)} engines in system")
     
     Enum.each(engine_list, fn engine_info ->
       IO.puts("   - Engine #{inspect(engine_info.address)}: mode #{engine_info.operational_mode}")
     end)
     
   error ->
-    IO.puts("❌ Failed to list engines: #{inspect(error)}")
+    IO.puts("Failed to list engines: #{inspect(error)}")
 end
 
 # Property 2: Decoupling - processing engines don't receive messages directly
-IO.puts("✅ Property 2: Processing engines only receive via mailboxes (proven by architecture)")
+IO.puts("Property 2: Processing engines only receive via mailboxes (proven by architecture)")
 
 # Property 3: Backpressure - mailboxes can implement flow control
-IO.puts("✅ Property 3: Mailboxes provide backpressure via GenStage demand")
+IO.puts("Property 3: Mailboxes provide backpressure via GenStage demand")
 
 # Property 4: Custom policies - different delivery strategies work
-IO.puts("✅ Property 4: Custom mailbox policies demonstrated (FIFO, priority, key-based)")
+IO.puts("Property 4: Custom mailbox policies demonstrated (FIFO, priority, key-based)")
 ```
 
 ## Conclusion
 
 This notebook demonstrates the **complete formal message passing mechanism** from the Engine Model paper:
 
-### ✅ Key Achievements
+### Key Achievements
 
 1. **m-Send Rule**: Messages to processing engines are automatically routed to mailbox engines
 2. **m-Enqueue Rule**: Mailbox engines store incoming messages using custom policies  
@@ -333,7 +333,7 @@ This notebook demonstrates the **complete formal message passing mechanism** fro
 4. **Mailbox-as-Actors**: Mailboxes are first-class actors with custom behaviors
 5. **GenStage Integration**: Producer-Consumer pattern implements formal rules perfectly
 
-### 🏗️ Architecture Benefits
+### Architecture Benefits
 
 - **Decoupling**: Processing logic separated from message management
 - **Backpressure**: Natural flow control through GenStage demand
@@ -341,18 +341,18 @@ This notebook demonstrates the **complete formal message passing mechanism** fro
 - **Scalability**: Mailboxes can batch, prioritize, or filter messages
 - **Fault Tolerance**: Mailboxes survive processing engine failures
 
-### 📚 Paper Alignment
+### Paper Alignment
 
 This implementation follows the formal operational semantics exactly:
-- **Definition 5.4 (m-Send)**: ✅ Implemented in Router
-- **Definition 5.5 (m-Enqueue)**: ✅ Implemented in MailboxEngine  
-- **Definition 5.6 (m-Dequeue)**: ✅ Implemented in ProcessingEngine
-- **Section 3.8 (Mailbox Functionality)**: ✅ Full implementation
+- **Definition 5.4 (m-Send)**: Implemented in Router
+- **Definition 5.5 (m-Enqueue)**: Implemented in MailboxEngine  
+- **Definition 5.6 (m-Dequeue)**: Implemented in ProcessingEngine
+- **Section 3.8 (Mailbox Functionality)**: Full implementation
 
 The system now truly implements the paper's vision of **mailboxes as intelligent actors** that can prioritize, batch, filter, and optimize message delivery according to application needs.
 
 ```elixir
-IO.puts("🎉 Formal message passing mechanism implementation complete!")
-IO.puts("📖 Paper: 'ART Mailboxes Actors' - mailbox-as-actors architecture")
-IO.puts("⚙️  Implementation: GenStage-based Producer-Consumer with formal routing")
+IO.puts("Formal message passing mechanism implementation complete!")
+IO.puts("Paper: 'ART Mailboxes Actors' - mailbox-as-actors architecture")
+IO.puts("Implementation: GenStage-based Producer-Consumer with formal routing")
 ``` 
