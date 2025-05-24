@@ -191,17 +191,17 @@ defmodule EngineSystem.Engine.DSL do
       def __engine_spec__, do: @engine_system_spec
       def __engine_definition_module__, do: @engine_system_definition_module
 
-      @after_compile {EngineSystem.Engine.DSL, :__register_engine__,
-                      [
-                        @engine_system_type_name,
-                        @engine_system_type_version,
-                        @engine_system_spec,
-                        @engine_system_definition_module
-                      ]}
+      EngineSystem.Engine.DSL.__register_engine__(
+        __ENV__,
+        @engine_system_type_name,
+        @engine_system_type_version,
+        @engine_system_spec,
+        @engine_system_definition_module
+      )
     end
   end
 
-  def __register_engine__(env, [type_name, type_version, spec, definition_module]) do
+  def __register_engine__(env, type_name, type_version, spec, definition_module) do
     module = env.module
 
     require Logger
@@ -252,7 +252,7 @@ defmodule EngineSystem.Engine.DSL do
 
     quote do
       Module.put_attribute(__MODULE__, :engine_dsl_config_spec, %{
-        initial_value_ast: unquote(config_ast),
+        initial_value_ast: unquote(Macro.escape(config_ast)),
         module: unquote(module_opt)
       })
     end
@@ -287,7 +287,7 @@ defmodule EngineSystem.Engine.DSL do
     quote do
       Module.put_attribute(__MODULE__, :engine_dsl_env_spec, %{
         module: unquote(module_opt),
-        initial_value_ast: unquote(env_ast)
+        initial_value_ast: unquote(Macro.escape(env_ast))
       })
     end
   end
@@ -308,7 +308,6 @@ defmodule EngineSystem.Engine.DSL do
   """
   defmacro messages(do: messages_block) do
     quote do
-      Module.put_attribute(__MODULE__, :engine_dsl_messages, [])
       unquote(messages_block)
     end
   end
@@ -344,8 +343,7 @@ defmodule EngineSystem.Engine.DSL do
         payload_struct_module: unquote(payload_struct_module)
       }
 
-      current_messages = Module.get_attribute(__MODULE__, :engine_dsl_messages) || []
-      Module.put_attribute(__MODULE__, :engine_dsl_messages, [message_spec | current_messages])
+      Module.put_attribute(__MODULE__, :engine_dsl_messages, message_spec)
     end
   end
 
@@ -372,7 +370,6 @@ defmodule EngineSystem.Engine.DSL do
   """
   defmacro behaviour(do: behaviour_block) do
     quote do
-      Module.put_attribute(__MODULE__, :engine_dsl_guarded_actions, [])
       unquote(behaviour_block)
     end
   end
@@ -435,11 +432,7 @@ defmodule EngineSystem.Engine.DSL do
         action_ast: unquote(Macro.escape(action_qast))
       }
 
-      current_actions = Module.get_attribute(__MODULE__, :engine_dsl_guarded_actions) || []
-
-      Module.put_attribute(__MODULE__, :engine_dsl_guarded_actions, [
-        guarded_action_spec | current_actions
-      ])
+      Module.put_attribute(__MODULE__, :engine_dsl_guarded_actions, guarded_action_spec)
     end
   end
 end

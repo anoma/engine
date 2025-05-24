@@ -8,8 +8,8 @@ defmodule EngineSystem.Engine.EngineProcess.StateManager do
   - Coordinating status changes
   """
 
-  alias EngineSystem.Types.{MessageEnvelope, EngineInstanceInfo}
   alias EngineSystem.Engine.EngineProcess.Utils
+  alias EngineSystem.Types.{EngineInstanceInfo, MessageEnvelope}
 
   @type engine_address :: {:engine, node(), pos_integer()} | {:sender, pid()}
   @type config :: map()
@@ -50,7 +50,7 @@ defmodule EngineSystem.Engine.EngineProcess.StateManager do
   """
   @spec transition_to_ready(any(), (MessageEnvelope.t() -> boolean()) | nil) :: any()
   def transition_to_ready(state, filter_fun \\ nil) do
-    filter = filter_fun || (&EngineSystem.Types.EngineStatus.default_filter/0)
+    filter = filter_fun || (&EngineSystem.Types.EngineStatus.default_filter/1)
 
     %{
       state

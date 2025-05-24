@@ -123,8 +123,9 @@ defmodule EngineSystem.Engine.EngineProcess.EffectProcessor do
               "Successfully spawned engine of type #{inspect(engine_type)} at #{inspect(address)}"
             )
 
-          # TODO: The formal rule requires proper handling of environment parameter
-          # This requires extending the system services to accept the environment
+          # NOTE: The formal rule requires proper handling of environment parameter.
+          # This requires extending the system services to accept the environment parameter.
+          # For now, the spawned engine will use default environment initialization.
 
           %OperationResult{status: :error, reason: reason} ->
             Logger.error("Failed to spawn engine: #{inspect(reason)}")

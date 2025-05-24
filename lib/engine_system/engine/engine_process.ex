@@ -25,22 +25,20 @@ defmodule EngineSystem.Engine.EngineProcess do
   use GenServer
   require Logger
 
-  alias EngineSystem.Types.{
-    MessageEnvelope,
-    OperationResult,
-    EngineStatus,
-    EngineMode
-  }
-
-  alias EngineSystem.Engine.Compilation.Types.{
-    EngineSpec
-  }
+  alias EngineSystem.Engine.Compilation.Types.EngineSpec
 
   alias EngineSystem.Engine.EngineProcess.{
-    Utils,
-    StateManager,
     MessageProcessor,
-    Types
+    StateManager,
+    Types,
+    Utils
+  }
+
+  alias EngineSystem.Types.{
+    EngineMode,
+    EngineStatus,
+    MessageEnvelope,
+    OperationResult
   }
 
   # --- Types --- #
@@ -236,7 +234,7 @@ defmodule EngineSystem.Engine.EngineProcess do
           environment: Utils.initialize_environment(engine_spec.env_spec),
           creation_timestamp: current_time,
           last_status_change_timestamp: current_time,
-          status: {:ready, &EngineSystem.Types.EngineStatus.default_filter/0},
+          status: {:ready, &EngineSystem.Types.EngineStatus.default_filter/1},
           mailbox: [],
           pending_effects: [],
           # Set from config

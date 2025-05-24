@@ -129,18 +129,21 @@ defmodule EngineSystem do
   """
   @spec send_message_sync(any(), {atom(), any()}, pos_integer()) :: {:ok, any()} | {:error, any()}
   def send_message_sync(address, message, timeout \\ 5000) do
-    task = Task.async(fn ->
-      case send_message(address, message) do
-        {:ok, _message_id} ->
-          receive do
-            {:result, value} -> {:ok, value}
-            _ -> {:error, :unexpected_message}
-          after
-            timeout -> {:error, :timeout}
-          end
-        error -> error
-      end
-    end)
+    task =
+      Task.async(fn ->
+        case send_message(address, message) do
+          {:ok, _message_id} ->
+            receive do
+              {:result, value} -> {:ok, value}
+              _ -> {:error, :unexpected_message}
+            after
+              timeout -> {:error, :timeout}
+            end
+
+          error ->
+            error
+        end
+      end)
 
     case Task.yield(task, timeout + 100) || Task.shutdown(task) do
       {:ok, result} -> result

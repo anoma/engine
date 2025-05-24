@@ -10,9 +10,9 @@ defmodule EngineSystem.Engine.EngineProcess.MessageProcessor do
 
   require Logger
 
-  alias EngineSystem.Types.{MessageEnvelope, OperationResult}
   alias EngineSystem.Engine.Compilation.Types.GuardedActionSpec
-  alias EngineSystem.Engine.EngineProcess.{Evaluator, EffectProcessor}
+  alias EngineSystem.Engine.EngineProcess.{EffectProcessor, Evaluator}
+  alias EngineSystem.Types.{MessageEnvelope, OperationResult}
 
   @type engine_address :: {:engine, node(), pos_integer()} | {:sender, pid()}
   @type environment :: any()

@@ -15,11 +15,11 @@ defmodule EngineSystem.Engine.ProcessingEngine do
   use GenStage
   require Logger
 
-  alias EngineSystem.Types.{MessageEnvelope, OperationResult, EngineStatus}
   alias EngineSystem.Engine.Compilation.Types.EngineSpec
-  alias EngineSystem.Engine.EngineProcess.{Utils, MessageProcessor, EffectProcessor}
+  alias EngineSystem.Engine.EngineProcess.{EffectProcessor, MessageProcessor, Utils}
   alias EngineSystem.Mailbox.MailboxEngine
   alias EngineSystem.MessagePassing.Router
+  alias EngineSystem.Types.{EngineStatus, MessageEnvelope, OperationResult}
 
   # --- Types --- #
 
@@ -66,7 +66,7 @@ defmodule EngineSystem.Engine.ProcessingEngine do
       :environment,
       :mailbox_address,
       :mailbox_pid,
-      status: {:ready, &EngineSystem.Types.EngineStatus.default_filter/0},
+      status: {:ready, &EngineSystem.Types.EngineStatus.default_filter/1},
       creation_timestamp: 0,
       last_status_change_timestamp: 0,
       messages_processed: 0,
@@ -327,7 +327,7 @@ defmodule EngineSystem.Engine.ProcessingEngine do
     # Update status back to ready
     ready_state = %{
       updated_state
-      | status: {:ready, &EngineSystem.Types.EngineStatus.default_filter/0},
+      | status: {:ready, &EngineSystem.Types.EngineStatus.default_filter/1},
         current_message: nil,
         messages_processed: state.messages_processed + 1,
         last_status_change_timestamp: System.system_time(:millisecond)
