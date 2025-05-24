@@ -81,7 +81,7 @@ defmodule EngineSystem.Mailbox.MessageStore do
 
   def insert(%__MODULE__{policy: {module, opts}} = store, message) do
     # Delegate to custom policy module
-    new_messages = apply(module, :insert, [store.messages, message, opts])
+    new_messages = module.insert(store.messages, message, opts)
     %{store | messages: new_messages, size: store.size + 1}
   end
 
@@ -134,7 +134,7 @@ defmodule EngineSystem.Mailbox.MessageStore do
 
   def extract(%__MODULE__{policy: {module, opts}} = store, count) do
     # Delegate to custom policy module
-    {messages, new_messages} = apply(module, :extract, [store.messages, count, opts])
+    {messages, new_messages} = module.extract(store.messages, count, opts)
     new_store = %{store | messages: new_messages, size: store.size - length(messages)}
     {messages, new_store}
   end

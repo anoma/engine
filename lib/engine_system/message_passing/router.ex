@@ -12,9 +12,9 @@ defmodule EngineSystem.MessagePassing.Router do
   use GenServer
   require Logger
 
-  alias EngineSystem.Types.{MessageEnvelope, OperationResult}
-  alias EngineSystem.Mailbox.MailboxEngine
   alias EngineSystem.Engine.EngineProcess
+  alias EngineSystem.Mailbox.MailboxEngine
+  alias EngineSystem.Types.{MessageEnvelope, OperationResult}
 
   # --- Types --- #
 
@@ -313,17 +313,36 @@ defmodule EngineSystem.MessagePassing.Router do
 
   @spec deliver_to_processing_engine(engine_address(), engine_address(), tuple(), State.t()) ::
           {:ok, String.t(), State.t()} | {:error, any(), State.t()}
-  defp deliver_to_processing_engine(sender_address, target_address, message, state) do
+  defp deliver_to_processing_engine(_sender_address, target_address, message, state) do
     # Fallback: send directly to processing engine (old behavior)
     Logger.warning("Router: No mailbox found for #{inspect(target_address)}, sending directly")
 
-    case EngineSystem.System.Services.send_message(target_address, message) do
-      %OperationResult{status: :ok, value: message_id} ->
-        new_state = %{state | total_messages_routed: state.total_messages_routed + 1}
-        {:ok, message_id, new_state}
+    # Look up the engine process PID from the registry
+    case :ets.lookup(EngineSystem.Registry, target_address) do
+      [{_address, pid}] when is_pid(pid) ->
+        # Extract message tag and payload from the message tuple
+        {message_tag, payload} = case message do
+          {tag} -> {tag, nil}
+          {tag, p} -> {tag, p}
+          {tag, p1, p2} -> {tag, {p1, p2}}
+          {tag, p1, p2, p3} -> {tag, {p1, p2, p3}}
+          tuple when is_tuple(tuple) ->
+            [tag | args] = Tuple.to_list(tuple)
+            {tag, List.to_tuple(args)}
+        end
 
-      %OperationResult{status: :error, reason: reason} ->
-        {:error, reason, state}
+        # Send directly to the engine process
+        case EngineProcess.send_message(pid, message_tag, payload) do
+          %OperationResult{status: :ok, value: message_id} ->
+            new_state = %{state | total_messages_routed: state.total_messages_routed + 1}
+            {:ok, message_id, new_state}
+
+          %OperationResult{status: :error, reason: reason} ->
+            {:error, reason, state}
+        end
+
+      [] ->
+        {:error, :engine_not_found, state}
     end
   end
 
