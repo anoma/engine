@@ -30,7 +30,7 @@ defmodule EngineSystem.Unit.EngineTest do
         address: {:engine, node(), 123},
         engine_name: "TestEngine",
         engine_spec: %{type_version: "1.0"},
-        status: {:ready, &EngineSystem.Types.EngineStatus.default_filter/0},
+        status: {:ready, &EngineSystem.Types.EngineStatus.default_filter/1},
         creation_timestamp: 1_234_567_890,
         last_status_change_timestamp: 1_234_567_890,
         operational_mode: :process,

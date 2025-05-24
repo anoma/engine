@@ -159,7 +159,7 @@ defmodule EngineSystem.DSL.CompilationTest do
       defmodule TestEngineRegistration do
         use EngineSystem.Engine.DSL
 
-        defengine TestRegistrationEngine, version: "1.0" do
+        defengine TestRegistrationEngine, version: "1.0", do: (
           config do
             %{test: true}
           end
@@ -169,15 +169,15 @@ defmodule EngineSystem.DSL.CompilationTest do
           end
 
           messages do
-            message :ping, params: []
+            message(:ping, params: [])
           end
 
           behaviour do
-            guarded_action :ping, [], env: e do
-              [{:send, sender, {:pong}}]
-            end
+            guarded_action :ping, [], env: e, do: [
+              {:send, sender, {:pong}}
+            ]
           end
-        end
+        )
       end
 
       # Verify the engine was compiled and has the expected methods

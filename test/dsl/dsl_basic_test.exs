@@ -6,7 +6,7 @@ defmodule EngineSystem.DSL.BasicTest do
     defmodule SimpleDSLTestEngine do
       use EngineSystem.Engine.DSL
 
-      defengine SimpleTestEngine, version: "1.0" do
+      defengine SimpleTestEngine, version: "1.0", do: (
         config do
           %{test: true}
         end
@@ -16,15 +16,15 @@ defmodule EngineSystem.DSL.BasicTest do
         end
 
         messages do
-          message :hello, params: [:name]
+          message(:hello, params: [:name])
         end
 
         behaviour do
-          guarded_action :hello, [name], env: e do
-            [{:send, sender, {:greeting, "Hello #{name}!"}}]
-          end
+          guarded_action :hello, [name], env: e, do: [
+            {:send, sender, {:greeting, "Hello #{name}!"}}
+          ]
         end
-      end
+      )
     end
 
     # Verify the engine spec was created correctly
@@ -43,12 +43,13 @@ defmodule EngineSystem.DSL.BasicTest do
         # Check if the DSL macros are available by trying to use them
         try do
           quote do
-            defengine TestMacroEngine, version: "1.0" do
+            defengine TestMacroEngine, version: "1.0", do: (
               config do
                 %{test: true}
               end
-            end
+            )
           end
+
           true
         rescue
           _ -> false
@@ -63,7 +64,7 @@ defmodule EngineSystem.DSL.BasicTest do
     defmodule TestDirectImportEngine do
       import EngineSystem.Engine.DSL
 
-      defengine TestEngine, version: "1.0" do
+      defengine TestEngine, version: "1.0", do: (
         config do
           %{test: true}
         end
@@ -73,15 +74,15 @@ defmodule EngineSystem.DSL.BasicTest do
         end
 
         messages do
-          message :test, params: [:msg]
+          message(:test, params: [:msg])
         end
 
         behaviour do
-          guarded_action :test, [msg], env: e do
-            [{:send, sender, {:ok, msg}}]
-          end
+          guarded_action :test, [msg], env: e, do: [
+            {:send, sender, {:ok, msg}}
+          ]
         end
-      end
+      )
     end
 
     spec = TestDirectImportEngine.__engine_spec__()
@@ -93,7 +94,7 @@ defmodule EngineSystem.DSL.BasicTest do
     defmodule TestCorrectedSyntaxEngine do
       import EngineSystem.Engine.DSL
 
-      defengine(TestEngine, version: "1.0") do
+      defengine(TestEngine, version: "1.0", do: (
         config do
           %{test: true}
         end
@@ -103,15 +104,15 @@ defmodule EngineSystem.DSL.BasicTest do
         end
 
         messages do
-          message :test, params: [:msg]
+          message(:test, params: [:msg])
         end
 
         behaviour do
-          guarded_action :test, [msg], env: e do
-            [{:send, sender, {:ok, msg}}]
-          end
+          guarded_action :test, [msg], env: e, do: [
+            {:send, sender, {:ok, msg}}
+          ]
         end
-      end
+      ))
     end
 
     spec = TestCorrectedSyntaxEngine.__engine_spec__()

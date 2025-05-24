@@ -3,12 +3,34 @@ defmodule EngineSystem.Integration.EngineIntegrationTest do
 
   alias EngineSystem.System.Services
 
+  # Helper function to wait for engine registration with retry
+  defp wait_for_engine_registration(type_name, version, max_attempts \\ 50, delay_ms \\ 50) do
+    IO.puts("Waiting for engine registration: #{inspect(type_name)} v#{version}")
+
+    Enum.reduce_while(1..max_attempts, nil, fn attempt, _acc ->
+      case Services.get_engine_type_info(type_name, version) do
+        %{status: :ok, value: type_info} ->
+          IO.puts("Engine registration found on attempt #{attempt}")
+          {:halt, {:ok, type_info}}
+
+        error ->
+          IO.puts("Attempt #{attempt}/#{max_attempts}: Engine not found - #{inspect(error)}")
+          if attempt == max_attempts do
+            {:halt, {:error, :timeout}}
+          else
+            Process.sleep(delay_ms)
+            {:cont, nil}
+          end
+      end
+    end)
+  end
+
   describe "Engine System Integration" do
     test "simple key-value engine works end-to-end" do
       defmodule SimpleKVEngine do
         use EngineSystem.Engine.DSL
 
-        defengine SimpleKV, version: "1.0" do
+        defengine SimpleKV, version: "1.0", do: (
           config do
             %{read_only: false}
           end
@@ -18,51 +40,45 @@ defmodule EngineSystem.Integration.EngineIntegrationTest do
           end
 
           messages do
-            message :put, params: [:key, :value]
-            message :get, params: [:key]
+            message(:put, params: [:key, :value])
+            message(:get, params: [:key])
           end
 
           behaviour do
-            guarded_action :put, [key, value], env: e, config: c, when: not c.read_only do
-              [
-                {:update, %{e | data: Map.put(e.data, key, value)}},
-                {:send, sender, {:ok, :stored}}
-              ]
-            end
+            guarded_action :put, [key, value], env: e, config: c, when: not c.read_only, do: [
+              {:update, %{e | data: Map.put(e.data, key, value)}},
+              {:send, sender, {:ok, :stored}}
+            ]
 
-            guarded_action :get, [key], env: e do
-              value = Map.get(e.data, key)
-              [
-                {:send, sender, {:result, value}}
-              ]
-            end
+            guarded_action :get, [key], env: e, do: [
+              {:send, sender, {:result, Map.get(e.data, key)}}
+            ]
           end
-        end
+        )
       end
 
-      # Verify engine type was registered
-      Process.sleep(100)  # Allow registration to complete
-
-      case Services.get_engine_type_info(:SimpleKV, "1.0") do
-        %{status: :ok, value: type_info} ->
-          assert type_info.name == :SimpleKV
+      # Wait for engine type registration with retry mechanism
+      case wait_for_engine_registration(SimpleKV, "1.0") do
+        {:ok, type_info} ->
+          assert type_info.name == SimpleKV
           assert type_info.version == "1.0"
           assert length(type_info.message_interface_spec.messages) == 2
           assert length(type_info.behaviour_spec.guarded_actions) == 2
 
-        error ->
-          flunk("Engine type not found: #{inspect(error)}")
+        {:error, :timeout} ->
+          flunk("Engine type registration timed out")
       end
 
       # Create an engine instance
       config = %{read_only: false, parent: nil, mode: :process}
 
-      case Services.create_engine_instance({:SimpleKV, "1.0"}, config) do
+      case Services.create_engine_instance({SimpleKV, "1.0"}, config) do
         %{status: :ok, value: engine_address} ->
           # Test message sending
           case Services.send_message(engine_address, {:put, "test_key", "test_value"}) do
             %{status: :ok} ->
-              Process.sleep(100)  # Allow processing time
+              # Allow processing time
+              Process.sleep(100)
 
               case Services.send_message(engine_address, {:get, "test_key"}) do
                 %{status: :ok} -> :ok
@@ -82,7 +98,7 @@ defmodule EngineSystem.Integration.EngineIntegrationTest do
       defmodule KeyValueStoreEngine do
         use EngineSystem.Engine.DSL
 
-        defengine TestKV, version: "1.0" do
+        defengine TestKV, version: "1.0", do: (
           config do
             %{read_only: false, parent: nil, mode: :process}
           end
@@ -92,69 +108,56 @@ defmodule EngineSystem.Integration.EngineIntegrationTest do
           end
 
           messages do
-            message :put, params: [:key, :value]
-            message :get, params: [:key]
-            message :delete, params: [:key]
-            message :size, params: []
+            message(:put, params: [:key, :value])
+            message(:get, params: [:key])
+            message(:delete, params: [:key])
+            message(:size, params: [])
           end
 
           behaviour do
-            guarded_action :put, [key, value], env: e, config: c, when: not c.read_only do
-              [
-                {:update, %{e | store: Map.put(e.store, key, value),
-                                 access_count: Map.update(e.access_count, key, 1, &(&1 + 1))}},
-                {:send, sender, {:ok, :stored}}
-              ]
-            end
+            guarded_action :put, [key, value], env: e, config: c, when: not c.read_only, do: [
+              {:update,
+               %{
+                 e
+                 | store: Map.put(e.store, key, value),
+                   access_count: Map.update(e.access_count, key, 1, &(&1 + 1))
+               }},
+              {:send, sender, {:ok, :stored}}
+            ]
 
-            guarded_action :get, [key], env: e do
-              value = Map.get(e.store, key)
-              new_count = Map.update(e.access_count, key, 1, &(&1 + 1))
+            guarded_action :get, [key], env: e, do: [
+              {:update, %{e | access_count: Map.update(e.access_count, key, 1, &(&1 + 1))}},
+              {:send, sender, {:result, Map.get(e.store, key)}}
+            ]
 
-              [
-                {:update, %{e | access_count: new_count}},
-                {:send, sender, {:result, value}}
-              ]
-            end
+            guarded_action :delete, [key], env: e, config: c, when: not c.read_only, do: [
+              {:update, %{e | store: Map.delete(e.store, key)}},
+              {:send, sender, {:ok, :deleted}}
+            ]
 
-            guarded_action :delete, [key], env: e, config: c, when: not c.read_only do
-              [
-                {:update, %{e | store: Map.delete(e.store, key)}},
-                {:send, sender, {:ok, :deleted}}
-              ]
-            end
-
-            guarded_action :size, [], env: e do
-              size = map_size(e.store)
-              access_total = e.access_count |> Map.values() |> Enum.sum()
-
-              [
-                {:send, sender, {:stats, size, access_total}}
-              ]
-            end
+            guarded_action :size, [], env: e, do: [
+              {:send, sender, {:stats, map_size(e.store), e.access_count |> Map.values() |> Enum.sum()}}
+            ]
           end
-        end
+        )
       end
 
-      # Wait for registration
-      Process.sleep(100)
-
-      # Verify registration
-      case Services.get_engine_type_info(:TestKV, "1.0") do
-        %{status: :ok, value: type_info} ->
-          assert type_info.name == :TestKV
+      # Wait for registration with retry mechanism
+      case wait_for_engine_registration(TestKV, "1.0") do
+        {:ok, type_info} ->
+          assert type_info.name == TestKV
           assert type_info.version == "1.0"
           assert length(type_info.message_interface_spec.messages) == 4
           assert length(type_info.behaviour_spec.guarded_actions) == 4
 
-        error ->
-          flunk("Engine type not registered: #{inspect(error)}")
+        {:error, :timeout} ->
+          flunk("Engine type registration timed out")
       end
 
       # Create and test instance
       config = %{read_only: false, parent: nil, mode: :process}
 
-      case Services.create_engine_instance({:TestKV, "1.0"}, config) do
+      case Services.create_engine_instance({TestKV, "1.0"}, config) do
         %{status: :ok, value: engine_address} ->
           # Test multiple operations
           assert %{status: :ok} = Services.send_message(engine_address, {:put, "key1", "value1"})
@@ -162,7 +165,8 @@ defmodule EngineSystem.Integration.EngineIntegrationTest do
           assert %{status: :ok} = Services.send_message(engine_address, {:get, "key1"})
           assert %{status: :ok} = Services.send_message(engine_address, {:size})
 
-          Process.sleep(100)  # Allow processing
+          # Allow processing
+          Process.sleep(100)
 
         error ->
           flunk("Failed to create complex engine instance: #{inspect(error)}")
@@ -175,7 +179,8 @@ defmodule EngineSystem.Integration.EngineIntegrationTest do
         %{status: :ok, value: engine_list} ->
           assert is_list(engine_list)
           # We should have at least the engines from previous tests
-          assert length(engine_list) >= 0  # Changed from 2 to 0 since tests run in isolation
+          # Changed from 2 to 0 since tests run in isolation
+          assert length(engine_list) >= 0
 
         error ->
           flunk("Failed to list engines: #{inspect(error)}")

@@ -30,8 +30,8 @@ defmodule EngineSystem.TestHelpers do
           end
 
           messages do
-            message :ping, params: []
-            message :echo, params: [:msg]
+            message(:ping, params: [])
+            message(:echo, params: [:msg])
           end
 
           behaviour do
@@ -66,17 +66,21 @@ defmodule EngineSystem.TestHelpers do
           end
 
           messages do
-            message :put, params: [:key, :value]
-            message :get, params: [:key]
-            message :delete, params: [:key]
-            message :size, params: []
+            message(:put, params: [:key, :value])
+            message(:get, params: [:key])
+            message(:delete, params: [:key])
+            message(:size, params: [])
           end
 
           behaviour do
             guarded_action :put, [key, value], env: e, config: c, when: not c.read_only do
               [
-                {:update, %{e | store: Map.put(e.store, key, value),
-                                 access_count: Map.update(e.access_count, key, 1, &(&1 + 1))}},
+                {:update,
+                 %{
+                   e
+                   | store: Map.put(e.store, key, value),
+                     access_count: Map.update(e.access_count, key, 1, &(&1 + 1))
+                 }},
                 {:send, sender, {:ok, :stored}}
               ]
             end
@@ -157,8 +161,10 @@ defmodule EngineSystem.TestHelpers do
     case EngineSystem.System.Services.list_engine_instances() do
       %{status: :ok, value: engine_list} ->
         actual_count = length(engine_list)
+
         assert actual_count >= expected_count,
                "Expected at least #{expected_count} engines, but found #{actual_count}"
+
         engine_list
 
       error ->
