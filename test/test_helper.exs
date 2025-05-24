@@ -12,5 +12,5 @@ case Application.ensure_all_started(:engine_system) do
     IO.puts("Warning: Could not start EngineSystem application: #{inspect(reason)}")
 end
 
-# Make test helpers available globally
-import EngineSystem.TestHelpers
+# Note: TestHelpers import removed as it was unused
+# Can be re-added when test helper functions are needed
