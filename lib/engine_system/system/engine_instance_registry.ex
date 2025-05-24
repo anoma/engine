@@ -9,8 +9,8 @@ defmodule EngineSystem.System.EngineInstanceRegistry do
   - Listing all active engine instances
   """
 
-  alias EngineSystem.Types.{OperationResult, EngineInstanceInfo}
   alias EngineSystem.Engine.EngineProcess
+  alias EngineSystem.Types.{EngineInstanceInfo, OperationResult}
 
   @registry_name EngineSystem.Registry
 

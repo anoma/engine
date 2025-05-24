@@ -44,6 +44,7 @@ defmodule EngineSystem.System.Services do
 
   alias EngineSystem.Engine.Compilation.Types.EngineSpec
   alias EngineSystem.Engine.EngineProcess
+  alias EngineSystem.System.EngineInstanceRegistry
 
   @registry_name EngineSystem.Registry
 
@@ -270,13 +271,7 @@ defmodule EngineSystem.System.Services do
   """
   @spec get_engine_instance(engine_address()) :: OperationResult.t()
   def get_engine_instance(address) do
-    case :ets.lookup(@registry_name, address) do
-      [{^address, pid}] ->
-        EngineProcess.get_info(pid)
-
-      [] ->
-        OperationResult.error(:not_found)
-    end
+    EngineInstanceRegistry.get_engine_instance(address)
   end
 
   @doc """
@@ -288,22 +283,7 @@ defmodule EngineSystem.System.Services do
   """
   @spec list_engine_instances() :: OperationResult.t()
   def list_engine_instances do
-    # Get all keys from the ETS table
-    addresses = :ets.tab2list(@registry_name) |> Enum.map(fn {address, _pid} -> address end)
-
-    # Get info for each instance
-    instances =
-      Enum.reduce_while(addresses, [], fn address, acc ->
-        case get_engine_instance(address) do
-          %EngineSystem.Types.OperationResult{status: :ok, value: info} ->
-            {:cont, [info | acc]}
-
-          _ ->
-            {:cont, acc}
-        end
-      end)
-
-    OperationResult.ok(instances)
+    EngineInstanceRegistry.list_engine_instances()
   end
 
   @doc """
@@ -415,15 +395,35 @@ defmodule EngineSystem.System.Services do
     end
   end
 
-  def handle_call({:get_engine_type_info, type_name, type_version}, _from, state) do
+    def handle_call({:get_engine_type_info, type_name, type_version}, _from, state) do
     # Look up the engine type in the state
     key = {type_name, type_version}
 
+    IO.puts(
+      "Services: Received :get_engine_type_info for #{inspect(type_name)} v#{inspect(type_version)}. Current types: #{inspect(Map.keys(state.engine_types))}"
+    )
+
+    IO.puts("Services: Looking for key #{inspect(key)}")
+    IO.puts("Services: Available keys: #{inspect(Map.keys(state.engine_types))}")
+    IO.puts("Services: Key equality check: #{inspect(Enum.any?(Map.keys(state.engine_types), fn k -> k == key end))}")
+
+    # More detailed debugging
+    Enum.each(Map.keys(state.engine_types), fn {stored_name, stored_version} ->
+      {search_name, search_version} = key
+      IO.puts("Comparing stored: #{inspect(stored_name)} (#{inspect(:erlang.phash2(stored_name))}) vs search: #{inspect(search_name)} (#{inspect(:erlang.phash2(search_name))})")
+      IO.puts("Name equality: #{stored_name == search_name}, Version equality: #{stored_version == search_version}")
+      IO.puts("Stored atom info: #{inspect(stored_name)} is_atom: #{is_atom(stored_name)}")
+      IO.puts("Search atom info: #{inspect(search_name)} is_atom: #{is_atom(search_name)}")
+      IO.puts("Atom to_string comparison: '#{to_string(stored_name)}' vs '#{to_string(search_name)}'")
+    end)
+
     case Map.get(state.engine_types, key) do
       nil ->
+        IO.puts("Services: Type #{inspect(key)} not found in get_engine_type_info.")
         {:reply, OperationResult.error(:not_found), state}
 
       entry ->
+        IO.puts("Services: Type #{inspect(key)} found in get_engine_type_info.")
         {:reply, OperationResult.ok(entry.info), state}
     end
   end

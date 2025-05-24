@@ -8,8 +8,8 @@ defmodule EngineSystem.System.EngineTypeRegistry do
   - Listing all registered engine types
   """
 
-  alias EngineSystem.Types.{OperationResult, EngineTypeInfo}
   alias EngineSystem.Engine.Compilation.Types.EngineSpec
+  alias EngineSystem.Types.{EngineTypeInfo, OperationResult}
 
   @type engine_type_entry :: %{
           module: module(),

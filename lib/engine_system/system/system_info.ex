@@ -49,19 +49,14 @@ defmodule EngineSystem.System.SystemInfo do
   @spec get_system_info(state(), non_neg_integer(), non_neg_integer()) ::
           {:ok, SystemInfo.t()}
   def get_system_info(state, engine_type_count, engine_instance_count) do
-    current_time = System.system_time(:millisecond)
-    uptime_ms = current_time - state.system_started_at
+    started_at_datetime = DateTime.from_unix!(state.system_started_at, :millisecond)
 
     system_info = %SystemInfo{
+      system_version: state.system_version,
       library_version: state.system_version,
-      system_started_at: state.system_started_at,
-      uptime_milliseconds: uptime_ms,
-      registered_engine_types: engine_type_count,
-      active_engine_instances: engine_instance_count,
-      node_name: node(),
-      erlang_version: System.version(),
-      memory_usage: get_memory_usage(),
-      process_count: Process.list() |> length()
+      registered_engine_types_summary: %{},
+      running_instances_count: engine_instance_count,
+      started_at: started_at_datetime
     }
 
     {:ok, system_info}
