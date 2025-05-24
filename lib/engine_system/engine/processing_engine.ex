@@ -16,7 +16,7 @@ defmodule EngineSystem.Engine.ProcessingEngine do
   require Logger
 
   alias EngineSystem.Engine.Compilation.Types.EngineSpec
-  alias EngineSystem.Engine.EngineProcess.{EffectProcessor, MessageProcessor, Utils}
+  alias EngineSystem.Engine.EngineProcess.{MessageProcessor, Utils}
   alias EngineSystem.Mailbox.MailboxEngine
   alias EngineSystem.MessagePassing.Router
   alias EngineSystem.Types.{EngineStatus, MessageEnvelope, OperationResult}

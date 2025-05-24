@@ -120,7 +120,7 @@ defmodule EngineSystem.Engine.EngineProcess.EffectProcessor do
         case EngineSystem.System.Services.create_engine_instance({engine_type, "1.0"}, config) do
           %OperationResult{status: :ok, value: address} ->
             Logger.info(
-              "Successfully spawned engine of type #{inspect(engine_type)} at #{inspect(address)}"
+              "Successfully spawned engine of type #{inspect(engine_type)} at #{inspect(address)} with env #{inspect(env)}"
             )
 
           # NOTE: The formal rule requires proper handling of environment parameter.

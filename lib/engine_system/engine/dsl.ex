@@ -103,6 +103,7 @@ defmodule EngineSystem.Engine.DSL do
 
     options = Enum.into(options_list, %{})
     version = Map.get(options, :version, "0.0.0")
+
     _default_mode = Map.get(options, :mode, :process)
     _default_parent = Map.get(options, :parent, nil)
 

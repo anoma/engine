@@ -14,8 +14,8 @@ defmodule EngineSystem.Mailbox.MailboxEngine do
   use GenStage
   require Logger
 
-  alias EngineSystem.Types.{MessageEnvelope, OperationResult}
-  alias EngineSystem.Mailbox.{DeliveryPolicy, MessageStore}
+  alias EngineSystem.Types.MessageEnvelope
+  alias EngineSystem.Mailbox.MessageStore
 
   # --- Types --- #
 

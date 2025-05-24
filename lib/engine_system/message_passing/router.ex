@@ -348,7 +348,7 @@ defmodule EngineSystem.MessagePassing.Router do
 
   @spec create_message_envelope(engine_address(), engine_address(), tuple()) ::
           MessageEnvelope.t()
-  defp create_message_envelope(sender_address, target_address, message) do
+  defp create_message_envelope(sender_address, _target_address, message) do
     %MessageEnvelope{
       message_id: generate_message_id(),
       original_payload: message,
