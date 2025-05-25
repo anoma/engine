@@ -1,19 +1,22 @@
 defmodule EngineSystem.Application do
-  @moduledoc false
+  @moduledoc """
+  I implement the Application behaviour for the EngineSystem.
+
+  This module handles application-level configuration and lifecycle,
+  starting and stopping the main application supervisor.
+  """
+
   use Application
+
+  alias EngineSystem.Supervisor
 
   @impl true
   def start(_type, _args) do
-    children = [
-      # Start the message router for mailbox-processing engine communication
-      EngineSystem.MessagePassing.Router,
-      # Start the system services supervisor
-      EngineSystem.System.Services
-    ]
+    Supervisor.start_link([])
+  end
 
-    # See https://hexdocs.pm/elixir/Supervisor.html
-    # for other strategies and supported options
-    opts = [strategy: :one_for_one, name: EngineSystem.Supervisor]
-    Supervisor.start_link(children, opts)
+  @impl true
+  def stop(_state) do
+    :ok
   end
 end
