@@ -25,6 +25,14 @@ defmodule EngineSystem.Mailbox.DefaultMailboxEngine do
   5. Defines custom message handling policies
 
   This implements the m-Send, m-Enqueue, and m-Dequeue rules from the operational semantics.
+
+  ## Public API
+
+  ### Mailbox Management
+  - `start_link/1` - Start a mailbox engine for a processing engine
+  - `enqueue_message/2` - Enqueue a message for the processing engine
+  - `update_filter/2` - Update the message filter function
+  - `get_info/1` - Get information about the mailbox state
   """
 
   use GenStage
