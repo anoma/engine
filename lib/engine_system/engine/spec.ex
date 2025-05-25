@@ -20,6 +20,20 @@ defmodule EngineSystem.Engine.Spec do
   - `message_filter`: Message filter predicate (Def. 2.5)
 
   This represents the persistent EngineSpec from the formal model.
+
+  ## Public API
+
+  ### Spec Creation
+  - `new/2` - Create a new EngineSpec with sensible defaults
+  - `new/7` - Create a new EngineSpec with all parameters explicitly provided
+
+  ### Validation
+  - `validate_message/2` - Validate that a message conforms to this engine's interface
+
+  ### Configuration Access
+  - `default_config/1` - Get the default configuration for this engine type
+  - `default_environment/1` - Get the default environment for this engine type
+  - `get_message_filter/1` - Get the message filter function for this engine type
   """
 
   @type message_tag :: atom()
