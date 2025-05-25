@@ -20,6 +20,14 @@ defmodule EngineSystem.System.Spawner.Logger do
   - **Debug**: Detailed operational information (when enabled)
   - **Warn**: Non-fatal issues that should be monitored
 
+  ## Public API
+
+  - `log_successful_registration/5` - Log successful engine registration
+  - `log_registration_failure/6` - Log failed engine registration
+  - `log_spawn_failure/2` - Log engine spawn failure
+  - `log_validation_failure/3` - Log validation failure
+  - `log_spawner_stats/1` - Log spawner statistics
+
   ## Usage
 
       iex> alias EngineSystem.System.Spawner.Logger, as: SpawnerLogger

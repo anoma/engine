@@ -4,6 +4,13 @@ defmodule EngineSystem.System.Utilities do
 
   This module contains common functionality used across system modules
   to improve code organization and reduce duplication.
+
+  ## Public API
+
+  ### Address Management
+  - `generate_address/2` - Generate a unique engine address
+  - `validate_address/1` - Validate an engine address format
+  - `extract_ids/1` - Extract node and engine IDs from an address
   """
 
   alias EngineSystem.Engine.State

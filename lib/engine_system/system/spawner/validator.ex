@@ -13,6 +13,15 @@ defmodule EngineSystem.System.Spawner.Validator do
   - **Process Validation**: Ensures PIDs are valid and processes are alive
   - **Name Validation**: Validates optional instance names
 
+  ## Public API
+
+  - `validate_registration_inputs/4` - Validate all inputs for engine registration
+  - `validate_address/1` - Validate an engine address format
+  - `validate_spec/1` - Validate an engine specification
+  - `validate_engine_pid/1` - Validate an engine process PID
+  - `validate_mailbox_pid/1` - Validate a mailbox process PID
+  - `describe_error/1` - Get human readable description of validation error
+
   ## Usage
 
       iex> alias EngineSystem.System.Spawner.Validator
