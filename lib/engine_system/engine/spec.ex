@@ -1,26 +1,23 @@
 defmodule EngineSystem.Engine.Spec do
   @moduledoc """
-  Engine specification following Definition 2.15 from the formal paper.
-
-  This struct represents the static type information for an engine,
-  corresponding to the tuple ⟨MsgType_i, BehaviourType_i, o, c, s⟩ from
-  Definition 2.15 in "ART-Mailboxes-actors/main.tex".
+  I provide a struct that represents the static type information for an engine,
+  corresponding to the formal model.
 
   ## Paper References
 
-  - **Definition 2.15 (Engine)**: Engine type structure
-  - **Definition 2.3 (Message Interface)**: Message interface specification
-  - **Definition 2.6 (Engine Configuration)**: Configuration type specification
-  - **Definition 2.7 (Engine Environment)**: Environment type specification
-  - **Definition 2.14 (Engine Behaviour)**: Behaviour specification
+  - **Def. 2.15 (Engine)**: Engine type structure
+  - **Def. 2.3 (Message Interface)**: Message interface specification
+  - **Def. 2.6 (Engine Configuration)**: Configuration type specification
+  - **Def. 2.7 (Engine Environment)**: Environment type specification
+  - **Def. 2.14 (Engine Behaviour)**: Behaviour specification
 
   ## Components
 
   - `interface`: MsgType_i (message interface from §2.3)
   - `behaviour_rules`: BehaviourType_i (guarded actions from §2.14)
-  - `config_spec`: Configuration type specification (Definition 2.6)
-  - `env_spec`: Environment type specification (Definition 2.7)
-  - `message_filter`: Message filter predicate (Definition 2.5)
+  - `config_spec`: Configuration type specification (Def. 2.6)
+  - `env_spec`: Environment type specification (Def. 2.7)
+  - `message_filter`: Message filter predicate (Def. 2.5)
 
   This represents the persistent EngineSpec from the formal model.
   """
@@ -48,6 +45,35 @@ defmodule EngineSystem.Engine.Spec do
 
   use TypedStruct
 
+  # Default values
+  @default_config_spec %{
+    name: :default_config,
+    default: %{},
+    fields: []
+  }
+
+  @default_env_spec %{
+    name: :default_env,
+    default: %{},
+    fields: []
+  }
+
+  @default_interface [
+    {:init, []},
+    {:terminate, []},
+    {:ping, []},
+    {:pong, []}
+  ]
+
+  @default_behaviour_rules [
+    {:init, :noop},
+    {:terminate, :noop},
+    {:ping, :pong},
+    {:pong, :noop}
+  ]
+
+  @default_message_filter {:default_filter, []}
+
   typedstruct do
     @typedoc """
     I define the structure for an engine specification.
@@ -72,7 +98,43 @@ defmodule EngineSystem.Engine.Spec do
   end
 
   @doc """
-  I create a new EngineSpec with the given parameters.
+  I create a new EngineSpec with sensible defaults and only required name.
+
+  ## Parameters
+
+  - `name` - The engine type name
+  - `opts` - Optional keyword list with overrides:
+    - `:version` - Engine version (default: "1.0.0")
+    - `:interface` - Message interface (default: basic ping/pong interface)
+    - `:config_spec` - Configuration spec (default: empty config)
+    - `:env_spec` - Environment spec (default: empty environment)
+    - `:behaviour_rules` - Behaviour rules (default: basic ping/pong rules)
+    - `:message_filter` - Message filter (default: accept all)
+
+  ## Returns
+
+  A new EngineSpec struct with sensible defaults.
+
+  ## Examples
+
+      iex> EngineSystem.Engine.Spec.new(:my_engine)
+      %EngineSystem.Engine.Spec{name: :my_engine, version: "1.0.0", ...}
+  """
+  @spec new(atom(), keyword()) :: t()
+  def new(name, opts \\ []) do
+    %__MODULE__{
+      name: name,
+      version: Keyword.get(opts, :version, "1.0.0"),
+      interface: Keyword.get(opts, :interface, @default_interface),
+      config_spec: Keyword.get(opts, :config_spec, @default_config_spec),
+      env_spec: Keyword.get(opts, :env_spec, @default_env_spec),
+      behaviour_rules: Keyword.get(opts, :behaviour_rules, @default_behaviour_rules),
+      message_filter: Keyword.get(opts, :message_filter, @default_message_filter)
+    }
+  end
+
+  @doc """
+  I create a new EngineSpec with all parameters explicitly provided.
 
   ## Parameters
 
