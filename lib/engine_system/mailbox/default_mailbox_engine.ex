@@ -2,17 +2,17 @@ defmodule EngineSystem.Mailbox.DefaultMailboxEngine do
   @moduledoc """
   Mailbox engine implementing the mailbox-as-actors pattern from the formal paper.
 
-  This GenStage producer acts as a first-class actor following Definition 2.16
+  This GenStage producer acts as a first-class actor following Def. 2.16
   from "ART-Mailboxes-actors/main.tex". It implements the core innovation of
   promoting mailboxes to first-class processing engines.
 
   ## Paper References
 
-  - **Definition 2.16 (Mailbox Engine)**: Mailbox as first-class actor
+  - **Def. 2.16 (Mailbox Engine)**: Mailbox as first-class actor
   - **Section 2.6**: Mailbox Engines and mailbox-as-actors pattern
-  - **Definition 3.2 (m-Send)**: Message sending mechanism
-  - **Definition 3.3 (m-Enqueue)**: Message enqueuing in mailbox
-  - **Definition 3.4 (m-Dequeue)**: Message dequeuing from mailbox
+  - **Def. 3.2 (m-Send)**: Message sending mechanism
+  - **Def. 3.3 (m-Enqueue)**: Message enqueuing in mailbox
+  - **Def. 3.4 (m-Dequeue)**: Message dequeuing from mailbox
   - **Equation 2.17**: Message reception ⟨L_m, incoming(msg)⟩ → ⟨L_m ⊕ msg, ε⟩
   - **Equation 2.18**: Message delivery ⟨L_m, request()⟩ → ⟨L_m ⊖ msg, deliver(msg)⟩
 
