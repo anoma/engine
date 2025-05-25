@@ -4,6 +4,22 @@ defmodule EngineSystem.System.Services do
 
   This module implements system services like unique identifier generation
   and mailbox address lookup as specified in the formal model.
+
+  ## Public API
+
+  ### System Services
+  - `fresh_id/0` - Generate a unique identifier for engine instances, messages, etc.
+  - `mailbox_of_name/1` - Get the mailbox address for a given processing engine
+  - `send_message/2` - Send a message to an engine (convenience function)
+  - `get_system_info/0` - Get system-wide information and statistics
+
+  ### Node Management
+  - `create_node/1` - Create a new node in the system
+  - `current_node_id/0` - Get the current node ID
+
+  ### Validation and Cleanup
+  - `validate_message/2` - Validate that a message conforms to an engine's interface
+  - `clean_terminated_engines/0` - Clean up terminated engines from the system
   """
 
   alias EngineSystem.Engine.State
