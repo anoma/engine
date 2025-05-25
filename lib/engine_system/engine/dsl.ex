@@ -53,7 +53,7 @@ defmodule EngineSystem.Engine.DSL do
   @doc """
   I define an engine type using the DSL.
 
-  This macro processes the engine definition and creates a compiled EngineSpec
+  This macro processes the engine Def. and creates a compiled EngineSpec
   that gets registered with the system.
   """
   defmacro defengine(name_ast, do: block) do

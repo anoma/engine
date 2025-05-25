@@ -6,9 +6,9 @@ defmodule EngineSystem.Engine.State do
 
   ## Paper References
 
-  - **Definition 2.6 (Engine Configuration)**: Configuration tuple ⟨r, mode, c⟩
-  - **Definition 2.7 (Engine Environment)**: Environment tuple ⟨s, m⟩
-  - **Definition 2.5 (Engine Lifecycle)**: Status with ready/busy/terminated states
+  - **Def. 2.6 (Engine Configuration)**: Configuration tuple ⟨r, mode, c⟩
+  - **Def. 2.7 (Engine Environment)**: Environment tuple ⟨s, m⟩
+  - **Def. 2.5 (Engine Lifecycle)**: Status with ready/busy/terminated states
 
   These structures represent an engine's configuration, environment, and status
   as defined in the formal model, providing the runtime state management for
@@ -20,14 +20,14 @@ defmodule EngineSystem.Engine.State do
 
   defmodule Configuration do
     @moduledoc """
-    Engine configuration following Definition 2.6 from the formal paper.
+    Engine configuration following Def. 2.6 from the formal paper.
 
     Implements the configuration tuple ⟨r, mode, c⟩ where:
     - `parent`: r (Option(Address) - optional parent reference)
     - `mode`: operational mode (:process | :mail from Equation 2.5)
     - `engine_specific`: c (engine-specific configuration data)
 
-    **Paper Reference**: Definition 2.6, Equation (2.6)
+    **Paper Reference**: Def. 2.6, Equation (2.6)
     """
     use TypedStruct
 
@@ -87,13 +87,13 @@ defmodule EngineSystem.Engine.State do
 
   defmodule Environment do
     @moduledoc """
-    Engine environment following Definition 2.7 from the formal paper.
+    Engine environment following Def. 2.7 from the formal paper.
 
     Implements the environment tuple ⟨s, m⟩ where:
     - `local_state`: s (L - engine's local state)
     - `address_book`: m (Name → Address mapping including :self)
 
-    **Paper Reference**: Definition 2.7, Equation (2.7)
+    **Paper Reference**: Def. 2.7, Equation (2.7)
     """
     use TypedStruct
 
@@ -194,7 +194,7 @@ defmodule EngineSystem.Engine.State do
 
   defmodule Status do
     @moduledoc """
-    Engine status following Definition 2.5 from the formal paper.
+    Engine status following Def. 2.5 from the formal paper.
 
     Implements the engine lifecycle with states from Equation (2.5):
     - `ready(f)`: engine can accept messages (with filter predicate f: M → Bool)
@@ -204,7 +204,7 @@ defmodule EngineSystem.Engine.State do
     Corresponds to Figure 2 in the paper showing state transitions:
     ready(f) ⟷ busy(m) → terminated
 
-    **Paper Reference**: Definition 2.5, Equation (2.5), Figure 2
+    **Paper Reference**: Def. 2.5, Equation (2.5), Figure 2
     """
     @type message_filter :: function()
     @type message :: any()

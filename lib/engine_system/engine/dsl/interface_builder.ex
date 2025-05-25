@@ -2,7 +2,7 @@ defmodule EngineSystem.Engine.DSL.InterfaceBuilder do
   @moduledoc """
   I provide macros and functions for building engine message interfaces.
 
-  This module handles the interface definition part of the DSL, extracted
+  This module handles the interface Def. part of the DSL, extracted
   from the main DSL module for better separation of concerns.
   """
 
@@ -42,7 +42,7 @@ defmodule EngineSystem.Engine.DSL.InterfaceBuilder do
 
   ## Parameters
 
-  - `interface` - The interface definition to validate
+  - `interface` - The interface Def. to validate
 
   ## Returns
 

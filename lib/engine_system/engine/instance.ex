@@ -2,16 +2,16 @@ defmodule EngineSystem.Engine.Instance do
   @moduledoc """
   Processing engine implementing the s-Process rule from the formal paper.
 
-  This GenStage consumer processes messages following Definition 3.5 from
+  This GenStage consumer processes messages following Def. 3.5 from
   "ART-Mailboxes-actors/main.tex", executing guarded actions and effects.
 
   ## Paper References
 
-  - **Definition 3.5 (s-Process)**: Core message processing rule
-  - **Definition 2.15 (Engine)**: Engine structure and components
+  - **Def. 3.5 (s-Process)**: Core message processing rule
+  - **Def. 2.15 (Engine)**: Engine structure and components
   - **Section 3.3**: Behaviour evaluation rules (b-GuardedActionEval, b-GuardStrategy)
   - **Section 3.4**: Effect execution rules (e-Send, e-Update, etc.)
-  - **Definition 2.5**: Engine lifecycle (ready ⟷ busy → terminated)
+  - **Def. 2.5**: Engine lifecycle (ready ⟷ busy → terminated)
 
   ## Processing Flow
 
