@@ -7,6 +7,29 @@ defmodule EngineSystem.API do
   - Message sending between engines
   - Engine specification management
   - Instance and system queries
+
+  ## Public API
+
+  ### Engine Management
+  - `spawn_engine/4` - Spawn a new engine instance
+  - `terminate_engine/1` - Terminate an engine instance
+  - `send_message/3` - Send a message to an engine
+
+  ### Instance Management
+  - `list_instances/0` - List all running engine instances
+  - `lookup_instance/1` - Look up information about a running engine instance
+  - `lookup_address_by_name/1` - Look up an engine address by name
+
+  ### Engine Specifications
+  - `register_spec/1` - Register an engine specification
+  - `lookup_spec/2` - Look up an engine specification by name and version
+  - `list_specs/0` - List all registered engine specifications
+
+  ### System Operations
+  - `get_system_info/0` - Get system-wide information and statistics
+  - `fresh_id/0` - Generate a fresh unique ID
+  - `validate_message/2` - Validate that a message conforms to an engine's interface
+  - `clean_terminated_engines/0` - Clean up terminated engines from the system
   """
 
   alias EngineSystem.Engine.{Spec, State}
@@ -70,16 +93,17 @@ defmodule EngineSystem.API do
   """
   @spec send_message(State.address(), any(), State.address() | nil) :: :ok | {:error, any()}
   def send_message(target_address, message_payload, sender_address \\ nil) do
-    message = Message.new(sender_address, target_address, message_payload)
+    case Registry.lookup_instance(target_address) do
+      {:ok, %{mailbox_pid: mailbox_pid}} when not is_nil(mailbox_pid) ->
+        message = Message.new(sender_address, target_address, message_payload)
+        DefaultMailboxEngine.enqueue_message(mailbox_pid, message)
+        :ok
 
-    with {:ok, _mailbox_address} <- Services.mailbox_of_name(target_address),
-         {:ok, %{mailbox_pid: mailbox_pid}} when not is_nil(mailbox_pid) <-
-           Registry.lookup_instance(target_address) do
-      DefaultMailboxEngine.enqueue_message(mailbox_pid, message)
-      :ok
-    else
-      {:ok, %{mailbox_pid: nil}} -> {:error, :no_mailbox}
-      {:error, reason} -> {:error, reason}
+      {:ok, %{mailbox_pid: nil}} ->
+        {:error, :no_mailbox}
+
+      {:error, :not_found} ->
+        {:error, :engine_not_found}
     end
   end
 
