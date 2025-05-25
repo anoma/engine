@@ -13,6 +13,29 @@ defmodule EngineSystem.Engine.State do
   These structures represent an engine's configuration, environment, and status
   as defined in the formal model, providing the runtime state management for
   engine instances.
+
+  ## Public API
+
+  This module provides three main submodules with their own APIs:
+
+  ### Configuration (State.Configuration)
+  - `new/3` - Create a new engine configuration
+  - `process?/1` - Check if this is a processing engine configuration
+  - `mailbox?/1` - Check if this is a mailbox engine configuration
+
+  ### Environment (State.Environment)
+  - `new/2` - Create a new engine environment
+  - `add_address/3` - Add an address to the address book
+  - `lookup_address/2` - Look up an address by name
+  - `update_local_state/2` - Update the local state
+
+  ### Status (State.Status)
+  - `ready/1` - Create a ready status with message filter
+  - `busy/0` - Create a busy status
+  - `terminated/0` - Create a terminated status
+  - `ready?/1` - Check if status is ready
+  - `busy?/1` - Check if status is busy
+  - `terminated?/1` - Check if status is terminated
   """
 
   @type address :: {node_id :: non_neg_integer(), engine_id :: non_neg_integer()}
