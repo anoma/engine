@@ -24,7 +24,7 @@ defmodule EngineSystem do
   defdelegate send_message(target_address, message_payload, sender_address \\ nil), to: API
   defdelegate terminate_engine(address), to: API
 
-  # Specification management
+  # Specification management for transforming DSL-expressed engine
   defdelegate register_spec(spec), to: API
   defdelegate lookup_spec(name, version \\ nil), to: API
   defdelegate list_specs(), to: API

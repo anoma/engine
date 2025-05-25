@@ -6,6 +6,12 @@ defmodule EngineSystem.Lifecycle do
   - Starting and stopping the system
   - Application lifecycle management
   - System initialization and cleanup
+
+  ## Public API
+
+  - `start/0` - Start the EngineSystem application
+  - `stop/0` - Stop the EngineSystem application
+  - `reset/0` - Reset the EngineSystem application (stop then start)
   """
 
   @doc """
@@ -33,5 +39,22 @@ defmodule EngineSystem.Lifecycle do
   @spec stop() :: :ok
   def stop do
     Application.stop(:engine_system)
+  end
+
+  @doc """
+  I reset the EngineSystem application.
+
+  This stops the system and then starts it again, effectively restarting
+  all supervisors and services with a clean state.
+
+  ## Returns
+
+  - `{:ok, pid}` if the system reset successfully
+  - `{:error, reason}` if reset failed
+  """
+  @spec reset() :: {:ok, pid()} | {:error, any()}
+  def reset do
+    stop()
+    start()
   end
 end
