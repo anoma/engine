@@ -259,32 +259,40 @@ defmodule EngineSystem.System.Registry do
         _from,
         state
       ) do
+    # Check for address conflicts first
     case Map.get(state.instances, address) do
       nil ->
-        instance_info = %{
-          address: address,
-          spec_key: spec_key,
-          mailbox_pid: mailbox_pid,
-          engine_pid: engine_pid,
-          status: :running,
-          created_at: DateTime.utc_now()
-        }
+        # Check for name conflicts if a name is provided
+        case check_name_conflict(name, state.name_to_address) do
+          :ok ->
+            instance_info = %{
+              address: address,
+              spec_key: spec_key,
+              mailbox_pid: mailbox_pid,
+              engine_pid: engine_pid,
+              status: :running,
+              created_at: DateTime.utc_now()
+            }
 
-        new_instances = Map.put(state.instances, address, instance_info)
+            new_instances = Map.put(state.instances, address, instance_info)
 
-        new_name_to_address =
-          if name do
-            Map.put(state.name_to_address, name, address)
-          else
-            state.name_to_address
-          end
+            new_name_to_address =
+              if name do
+                Map.put(state.name_to_address, name, address)
+              else
+                state.name_to_address
+              end
 
-        new_state = %{state | instances: new_instances, name_to_address: new_name_to_address}
+            new_state = %{state | instances: new_instances, name_to_address: new_name_to_address}
 
-        {:reply, :ok, new_state}
+            {:reply, :ok, new_state}
+
+          {:error, reason} ->
+            {:reply, {:error, reason}, state}
+        end
 
       _existing ->
-        {:reply, {:error, :already_registered}, state}
+        {:reply, {:error, :address_already_registered}, state}
     end
   end
 
@@ -348,5 +356,16 @@ defmodule EngineSystem.System.Registry do
     id = state.next_id
     new_state = %{state | next_id: id + 1}
     {:reply, id, new_state}
+  end
+
+  # Check if a name is already in use
+  @spec check_name_conflict(atom() | nil, map()) :: :ok | {:error, atom()}
+  defp check_name_conflict(nil, _name_to_address), do: :ok
+
+  defp check_name_conflict(name, name_to_address) do
+    case Map.get(name_to_address, name) do
+      nil -> :ok
+      _existing_address -> {:error, :name_already_taken}
+    end
   end
 end
