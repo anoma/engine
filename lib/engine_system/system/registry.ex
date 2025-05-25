@@ -7,6 +7,27 @@ defmodule EngineSystem.System.Registry do
   mapping them by user-defined names or generated IDs.
 
   I provide functions for looking up engine specs, instance PIDs, and mailbox PIDs.
+
+  ## Public API
+
+  ### Engine Specifications
+
+  - `register_spec/1` - Register an engine specification
+  - `lookup_spec/2` - Look up an engine specification by name and version
+  - `list_specs/0` - List all registered engine specifications
+
+  ### Engine Instances
+
+  - `register_instance/5` - Register a running engine instance
+  - `lookup_instance/1` - Look up information about a running engine instance
+  - `lookup_address_by_name/1` - Look up an engine address by name
+  - `unregister_instance/1` - Unregister an engine instance
+  - `list_instances/0` - List all running engine instances
+
+  ### Utilities
+
+  - `fresh_id/0` - Generate a fresh unique ID
+  - `start_link/1` - Start the registry GenServer
   """
 
   use GenServer
