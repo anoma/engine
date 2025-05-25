@@ -45,6 +45,11 @@ deps:
 deps.update:
 	@echo "Updating dependencies..."
 	@mix deps.update --all 
+	
+# Check for outdated dependencies
+outdated:
+	@echo "Checking for outdated dependencies..."
+	@mix hex.outdated --all
 
 # Ensure notebooks directory exists
 ensure-notebooks-dir:
@@ -73,15 +78,18 @@ livebook-detached: install-livebook ensure-notebooks-dir
 livebook-home: install-livebook ensure-notebooks-dir
 	@echo "Starting Livebook with notebooks directory as home..."
 	@~/.mix/escripts/livebook server --home notebooks
-
 # Help target
 help:
 	@echo "Available targets:"
 	@echo "  deps              - Install dependencies"
+	@echo "  deps.update       - Update dependencies"
 	@echo "  compile           - Compile the project"
 	@echo "  test              - Run tests"
+	@echo "  check            - Run all checks (format, compile)"
+	@echo "  check.format     - Check code formatting"
+	@echo "  docs             - Generate documentation"
 	@echo "  install-livebook  - Install Livebook if not already installed"
 	@echo "  livebook          - Start Livebook"
 	@echo "  livebook-detached - Start Livebook in detached mode"
 	@echo "  livebook-home     - Start Livebook with notebooks directory as home"
-	@echo "  help              - Show this help" 
+	@echo "  help              - Show this help"
