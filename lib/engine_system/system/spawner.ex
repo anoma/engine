@@ -1,15 +1,23 @@
 defmodule EngineSystem.System.Spawner do
   @moduledoc """
-  I am responsible for creating new engine instances along with their dedicated mailboxes.
+  I am responsible for creating new engine instances along with their dedicated
+  mailboxes.
 
-  I implement the s-EngineSpawn operational rule from the formal model. The process
-  involves fetching the Engine.Spec, starting a Mailbox.DefaultMailboxEngine,
-  starting the Engine.Instance GenServer, and registering both with the System.Registry.
+  I implement the s-EngineSpawn operational rule from the formal model. The
+  process involves fetching the Engine.Spec, starting a
+  Mailbox.DefaultMailboxEngine, starting the Engine.Instance GenServer, and
+  registering both with the System.Registry.
+
+  ## Public API
+
+  - `spawn_engine/4` - Spawn a new engine instance with optional config,
+    environment and name
   """
 
   alias EngineSystem.Engine.{Instance, Spec, State}
   alias EngineSystem.Mailbox.DefaultMailboxEngine
   alias EngineSystem.System.{Registry, Services}
+  alias EngineSystem.System.Spawner.{Logger, Validator}
 
   @doc """
   I spawn a new engine instance of the given type.
@@ -47,39 +55,6 @@ defmodule EngineSystem.System.Spawner do
     end
   end
 
-  @doc """
-  I spawn a mailbox engine for an existing processing engine.
-
-  ## Parameters
-
-  - `processing_engine_address` - The address of the processing engine
-  - `spec` - The engine specification
-
-  ## Returns
-
-  - `{:ok, mailbox_address}` if the mailbox was spawned successfully
-  - `{:error, reason}` if spawning failed
-  """
-  @spec spawn_mailbox_for_engine(State.address(), Spec.t()) ::
-          {:ok, State.address()} | {:error, any()}
-  def spawn_mailbox_for_engine(processing_engine_address, spec) do
-    with {:ok, mailbox_address} <- generate_mailbox_address(processing_engine_address),
-         {:ok, mailbox_pid} <- start_mailbox_engine(spec, mailbox_address) do
-      # Update the processing engine's registry entry with the mailbox PID
-      case Registry.lookup_instance(processing_engine_address) do
-        {:ok, instance_info} ->
-          _updated_info = %{instance_info | mailbox_pid: mailbox_pid}
-          # In a full implementation, we'd update the registry entry
-          {:ok, mailbox_address}
-
-        {:error, reason} ->
-          # Clean up the mailbox if we can't find the processing engine
-          DynamicSupervisor.terminate_child(EngineSystem.Mailbox.DynamicSupervisor, mailbox_pid)
-          {:error, reason}
-      end
-    end
-  end
-
   ## Private Functions
 
   @spec get_engine_spec(module()) :: {:ok, Spec.t()} | {:error, any()}
@@ -98,14 +73,6 @@ defmodule EngineSystem.System.Spawner do
   defp generate_address do
     address = Services.generate_address()
     {:ok, address}
-  end
-
-  @spec generate_mailbox_address(State.address()) :: {:ok, State.address()}
-  defp generate_mailbox_address({node_id, engine_id}) do
-    # Generate a related but unique address for the mailbox
-    # Simple offset strategy
-    mailbox_id = engine_id + 1000
-    {:ok, {node_id, mailbox_id}}
   end
 
   @spec start_mailbox_engine(Spec.t(), State.address()) :: {:ok, pid()} | {:error, any()}
@@ -129,7 +96,7 @@ defmodule EngineSystem.System.Spawner do
   @spec start_processing_engine(Spec.t(), State.address(), pid(), any(), any()) ::
           {:ok, pid()} | {:error, any()}
   defp start_processing_engine(spec, address, mailbox_pid, config, environment) do
-    # Prepare the configuration
+    # Prepare the configuration, it would be simpler with dependent types :P
     final_config = config || Spec.default_config(spec)
     engine_config = State.Configuration.new(nil, :process, final_config)
 
@@ -162,8 +129,20 @@ defmodule EngineSystem.System.Spawner do
   @spec register_instance(State.address(), Spec.t(), pid(), pid(), atom() | nil) ::
           :ok | {:error, any()}
   defp register_instance(address, spec, engine_pid, mailbox_pid, name) do
-    spec_key = {spec.name, spec.version}
-    Registry.register_instance(address, spec_key, engine_pid, mailbox_pid, name)
+    # Validate inputs before registration
+    with :ok <- Validator.validate_registration_inputs(address, spec, engine_pid, mailbox_pid),
+         :ok <- Validator.validate_instance_name(name),
+         spec_key = {spec.name, spec.version},
+         :ok <- Registry.register_instance(address, spec_key, engine_pid, mailbox_pid, name) do
+      # Log successful registration with relevant details
+      Logger.log_successful_registration(address, spec, engine_pid, mailbox_pid, name)
+      :ok
+    else
+      {:error, reason} = error ->
+        # Log registration failure with context
+        Logger.log_registration_failure(address, spec, engine_pid, mailbox_pid, name, reason)
+        error
+    end
   end
 
   @doc """
