@@ -8,6 +8,13 @@ defmodule EngineSystem.Engine.Behaviour do
 
   This implements the logic of behaviourtype and b-rules (guard evaluation) from
   the formal model.
+
+  ## Public API
+
+  ### Behaviour Evaluation
+  - `evaluate/4` - Evaluate an engine's behaviour against an incoming message
+  - `find_matching_rule/4` - Find the first behaviour rule that matches the given message
+  - `execute_rule/4` - Execute a behaviour rule to produce effects
   """
 
   alias EngineSystem.Engine.{Effect, Spec, State}
