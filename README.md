@@ -1,5 +1,6 @@
-# Engines in Elixir
-A formal model implementation of engines in Elixir (work in progress).
+# Engines in Elixir [![CI](https://github.com/anoma/engine/actions/workflows/ci.yml/badge.svg)](https://github.com/anoma/engine/actions/workflows/ci.yml)
+
+A work-in-progress implementation of the Engine Model in Elixir.
 
 An engine is an actor-like entity that enables type-safe message passing and
 effectful actions through guarded actions. These actions can modify both the
