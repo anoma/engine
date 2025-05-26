@@ -108,11 +108,19 @@ mix compile
 
 # The Engine Model
 
-A complete implementation of the actor model with explicit mailbox-as-actors separation, based on the formal specifications described in the research paper. This system implements the core innovation of promoting mailboxes to first-class processing engines that receive messages but verify message writing using linked processing engines.
+A complete implementation of the actor model with explicit mailbox-as-actors
+separation, based on the formal specifications described in the research paper.
+This system implements the core innovation of promoting mailboxes to first-class
+processing engines that receive messages but verify message writing using linked
+processing engines.
 
-## Architecture Overview
+<details>
+<summary>Architecture Overview</summary>
 
-The EngineSystem implements a clean separation between processing engines and their mailboxes, following the formal model's operational semantics. Key architectural components include:
+The EngineSystem implements a clean separation between processing engines and
+their mailboxes, following the formal model's operational semantics described in
+the paper [CITE needed here].
+Key architectural components include:
 
 ### Core Components
 
@@ -142,12 +150,27 @@ The EngineSystem implements a clean separation between processing engines and th
 
 ### Mailbox-as-Actors Pattern
 
-The core innovation is the separation of mailbox from processing engine:
+The core innovation is promoting mailboxes to first-class actors:
 
-- **Mailboxes are processing engines** that receive messages but verify message writing using linked processing engines
-- **Message validation** against processing engine interfaces at the mailbox level
-- **Independent message filtering** and queueing policies
-- **Backpressure management** through GenStage demand/supply
+- **Mailboxes as first-class engines** that handle message reception and validation independently
+- **Message validation** through contract checking against processing engine interfaces
+- **Independent message filtering** and queueing policies per mailbox
+- **Backpressure management** via GenStage demand-driven message flow
+
+
+### OTP Supervision Tree
+
+```
+EngineSystem.Application
+├── EngineSystem.Supervisor
+    ├── EngineSystem.System.Registry (GenServer)
+    ├── EngineSystem.Engine.DynamicSupervisor
+    │   └── EngineSystem.Engine.Instance (GenStage Consumer)
+    └── EngineSystem.Mailbox.DynamicSupervisor
+        └── EngineSystem.Mailbox.DefaultMailboxEngine (GenStage Producer)
+```
+
+</details>
 
 ### DSL for Engine Definition
 
@@ -174,32 +197,18 @@ defengine MyKVStore do
     field :access_counts, default: %{}, type: :map
   end
 
+  # This informs the mailbox engine to deliver messages that pass this filter
+  # and discard messages that don't pass it (need to review this in the paper .
   message_filter fn _msg, _config, _env -> true end
 
   behaviour do
     on_message :get do
-      # Business logic here
+      # Business logic here... you have access to the engine's configuration, environment, and state
       {:ok, :noop}
     end
-
-    on_message :put do
-      # Business logic here
-      {:ok, :noop}
-    end
+    ...
   end
 end
-```
-
-### OTP Supervision Tree
-
-```
-EngineSystem.Application
-├── EngineSystem.Supervisor
-    ├── EngineSystem.System.Registry (GenServer)
-    ├── EngineSystem.Engine.DynamicSupervisor
-    │   └── EngineSystem.Engine.Instance (GenStage Consumer)
-    └── EngineSystem.Mailbox.DynamicSupervisor
-        └── EngineSystem.Mailbox.DefaultMailboxEngine (GenStage Producer)
 ```
 
 ## Usage
@@ -283,13 +292,13 @@ Each processing engine maintains three types of state:
 
 ### Message Flow
 
-1. External message sent to engine address
-2. System routes message to engine's mailbox
-3. Mailbox validates message against engine interface
-4. Message queued if valid, filtered based on engine status
+1. External message sent to engine address (or to a mailbox address directly).
+2. System routes message to engine's mailbox in case of a processing engine's address.
+3. Mailbox engines validate message against engine interface (contract checking)
+4. Message queued if valid, filtered based on engine status (message filter).
 5. Processing engine requests messages via GenStage demand
-6. Mailbox delivers messages based on filter and demand
-7. Processing engine executes behavior rules and effects
+6. Mailbox delivers messages based on filter and demand via GenStage producer
+7. Processing engine executes behaviour rules and effects
 
 ## File Structure
 
