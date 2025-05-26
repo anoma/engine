@@ -48,7 +48,7 @@ defmodule EngineSystem.Engine.Effects.MessageEffects do
   - `:ok` if the effect is valid
   - `{:error, reason}` if the effect is invalid
   """
-  @spec validate(any()) :: :ok | {:error, any()}
+  @spec validate(any()) :: :ok | {:error, :not_message_effect | {:invalid_address, any()}}
   def validate({:send, target_address, _message_payload}) do
     case target_address do
       {node_id, engine_id} when is_integer(node_id) and is_integer(engine_id) -> :ok

@@ -150,7 +150,7 @@ defmodule EngineSystem.Engine.Behaviour do
           State.Configuration.t(),
           State.Environment.t()
         ) ::
-          evaluation_result()
+          {:ok, [Effect.t()]}
   defp execute_action(_action_ast, :get, payload, sender, _configuration, environment) do
     # Example: GET operation might send a result back
     effects =

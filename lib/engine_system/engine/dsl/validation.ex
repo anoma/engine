@@ -122,7 +122,7 @@ defmodule EngineSystem.Engine.DSL.Validation do
   - `:ok` if valid
   - `{:error, reason}` if invalid
   """
-  @spec validate_message_filter(any()) :: :ok | {:error, any()}
+  @spec validate_message_filter(any()) :: :ok | {:error, :invalid_message_filter}
   def validate_message_filter({:default_filter, []}), do: :ok
   def validate_message_filter({:custom_filter, _filter_ast}), do: :ok
   def validate_message_filter(_), do: {:error, :invalid_message_filter}

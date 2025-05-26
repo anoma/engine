@@ -88,7 +88,7 @@ defmodule EngineSystem.System.Services do
   - `:ok` if the message was sent successfully
   - `{:error, reason}` if sending failed
   """
-  @spec send_message(State.address(), any()) :: :ok | {:error, any()}
+  @spec send_message(State.address(), any()) :: :ok | {:error, :not_found}
   def send_message(target_address, _message) do
     case mailbox_of_name(target_address) do
       {:ok, _mailbox_address} ->
@@ -115,7 +115,7 @@ defmodule EngineSystem.System.Services do
   - `{:ok, node_id}` if the node was created successfully
   - `{:error, reason}` if creation failed
   """
-  @spec create_node(map()) :: {:ok, non_neg_integer()} | {:error, any()}
+  @spec create_node(map()) :: {:ok, non_neg_integer()}
   def create_node(_node_plugins \\ %{}) do
     node_id = fresh_id()
 
@@ -134,7 +134,13 @@ defmodule EngineSystem.System.Services do
 
   A map containing system information.
   """
-  @spec get_system_info() :: map()
+  @spec get_system_info() :: %{
+          library_version: any(),
+          running_instances: non_neg_integer(),
+          system_uptime: integer(),
+          total_instances: non_neg_integer(),
+          total_specs: non_neg_integer()
+        }
   def get_system_info do
     instances = Registry.list_instances()
     specs = Registry.list_specs()
@@ -161,7 +167,8 @@ defmodule EngineSystem.System.Services do
   - `:ok` if the message is valid
   - `{:error, reason}` if the message is invalid
   """
-  @spec validate_message(State.address(), any()) :: :ok | {:error, any()}
+  @spec validate_message(State.address(), any()) ::
+          :ok | {:error, :engine_not_found | :spec_not_found | {:unknown_message_tag, any()}}
   def validate_message(engine_address, message) do
     case Registry.lookup_instance(engine_address) do
       {:ok, %{spec_key: spec_key}} ->
@@ -212,7 +219,7 @@ defmodule EngineSystem.System.Services do
 
   The current node ID.
   """
-  @spec current_node_id() :: non_neg_integer()
+  @spec current_node_id() :: 1
   def current_node_id do
     # In a distributed system, this would return the actual node ID
     # For now, we use a default value

@@ -151,7 +151,14 @@ defmodule EngineSystem.System.Utilities do
 
   A map with system statistics.
   """
-  @spec generate_system_stats(list(), list()) :: map()
+  @spec generate_system_stats([any()], [any()]) :: %{
+          instances_by_spec: map(),
+          running_instances: non_neg_integer(),
+          specs_by_version: map(),
+          system_uptime: non_neg_integer(),
+          total_instances: non_neg_integer(),
+          total_specs: non_neg_integer()
+        }
   def generate_system_stats(instances, specs) do
     %{
       total_instances: length(instances),

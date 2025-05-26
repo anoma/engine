@@ -29,16 +29,16 @@ defmodule Examples.Usage do
     {:ok, _} = EngineSystem.start()
 
     # Spawn a KV store with default configuration
-    {:ok, store_address} = EngineSystem.spawn_engine(KVStoreEngine)
+    {:ok, store_address} = EngineSystem.spawn_engine(Examples.KVStoreEngine)
     IO.puts("Spawned KV store at address: #{inspect(store_address)}")
 
     # Spawn a read-only KV store
     readonly_config = %{access_mode: :read_only, max_size: 5}
-    {:ok, readonly_address} = EngineSystem.spawn_engine(KVStoreEngine, readonly_config)
+    {:ok, readonly_address} = EngineSystem.spawn_engine(Examples.KVStoreEngine, readonly_config)
     IO.puts("Spawned read-only KV store at address: #{inspect(readonly_address)}")
 
     # Spawn a client engine to interact with the stores
-    {:ok, client_address} = EngineSystem.spawn_engine(KVStoreEngine)
+    {:ok, client_address} = EngineSystem.spawn_engine(Examples.KVStoreEngine)
     IO.puts("Spawned client at address: #{inspect(client_address)}")
 
     # Demonstrate basic operations
@@ -93,9 +93,13 @@ defmodule Examples.Usage do
     end
 
     # Spawn chat engines for different users
-    {:ok, alice_address} = EngineSystem.spawn_engine(PriorityChatEngine, nil, nil, :alice)
-    {:ok, bob_address} = EngineSystem.spawn_engine(PriorityChatEngine, nil, nil, :bob)
-    {:ok, charlie_address} = EngineSystem.spawn_engine(PriorityChatEngine, nil, nil, :charlie)
+    {:ok, alice_address} =
+      EngineSystem.spawn_engine(Examples.PriorityChatEngine, nil, nil, :alice)
+
+    {:ok, bob_address} = EngineSystem.spawn_engine(Examples.PriorityChatEngine, nil, nil, :bob)
+
+    {:ok, charlie_address} =
+      EngineSystem.spawn_engine(Examples.PriorityChatEngine, nil, nil, :charlie)
 
     IO.puts("Spawned chat engines:")
     IO.puts("  Alice: #{inspect(alice_address)}")
@@ -206,7 +210,7 @@ defmodule Examples.Usage do
       status: :available
     }
 
-    {:ok, custom_address} = EngineSystem.spawn_engine(PriorityChatEngine, custom_config)
+    {:ok, custom_address} = EngineSystem.spawn_engine(Examples.PriorityChatEngine, custom_config)
     IO.puts("Spawned custom chat engine: #{inspect(custom_address)}")
 
     # Test filter behavior in different states

@@ -157,7 +157,7 @@ defmodule EngineSystem.System.Spawner do
   - `:ok` if termination succeeded
   - `{:error, reason}` if termination failed
   """
-  @spec terminate_engine(State.address()) :: :ok | {:error, any()}
+  @spec terminate_engine(State.address()) :: :ok | {:error, :engine_not_found}
   def terminate_engine(address) do
     case Registry.lookup_instance(address) do
       {:ok, %{engine_pid: engine_pid, mailbox_pid: mailbox_pid}} ->
@@ -188,7 +188,12 @@ defmodule EngineSystem.System.Spawner do
 
   A map with spawning statistics and capabilities.
   """
-  @spec get_spawner_info() :: map()
+  @spec get_spawner_info() :: %{
+          active_engines: non_neg_integer(),
+          available_specs: non_neg_integer(),
+          engine_supervisor: EngineSystem.Engine.DynamicSupervisor,
+          mailbox_supervisor: EngineSystem.Mailbox.DynamicSupervisor
+        }
   def get_spawner_info do
     %{
       engine_supervisor: EngineSystem.Engine.DynamicSupervisor,

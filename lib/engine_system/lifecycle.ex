@@ -24,7 +24,7 @@ defmodule EngineSystem.Lifecycle do
   - `{:ok, pid}` if the system started successfully
   - `{:error, reason}` if startup failed
   """
-  @spec start() :: {:ok, pid()} | {:error, any()}
+  @spec start() :: {:ok, [atom()]} | {:error, any()}
   def start do
     Application.ensure_all_started(:engine_system)
   end
@@ -52,7 +52,7 @@ defmodule EngineSystem.Lifecycle do
   - `{:ok, pid}` if the system reset successfully
   - `{:error, reason}` if reset failed
   """
-  @spec reset() :: {:ok, pid()} | {:error, any()}
+  @spec reset() :: {:ok, [atom()]} | {:error, any()}
   def reset do
     stop()
     start()

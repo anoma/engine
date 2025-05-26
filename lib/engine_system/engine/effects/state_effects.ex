@@ -24,7 +24,7 @@ defmodule EngineSystem.Engine.Effects.StateEffects do
   - `{:error, reason}` if execution failed
   """
   @spec execute_update_environment(State.Environment.t(), Instance.t()) ::
-          {:ok, Instance.t()} | {:error, any()}
+          {:ok, Instance.t()}
   def execute_update_environment(new_environment, engine_state) do
     updated_state = %{engine_state | environment: new_environment}
     {:ok, updated_state}
@@ -91,7 +91,8 @@ defmodule EngineSystem.Engine.Effects.StateEffects do
   - `:ok` if the effect is valid
   - `{:error, reason}` if the effect is invalid
   """
-  @spec validate(any()) :: :ok | {:error, any()}
+  @spec validate(any()) ::
+          :ok | {:error, :invalid_environment | :invalid_filter_function | :not_state_effect}
   def validate({:update_environment, %State.Environment{}}), do: :ok
   def validate({:update_environment, _}), do: {:error, :invalid_environment}
   def validate({:mfilter, filter}) when is_function(filter, 3), do: :ok

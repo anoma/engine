@@ -119,7 +119,7 @@ defmodule EngineSystem.API do
   - `:ok` if termination succeeded
   - `{:error, reason}` if termination failed
   """
-  @spec terminate_engine(State.address()) :: :ok | {:error, any()}
+  @spec terminate_engine(State.address()) :: :ok | {:error, :engine_not_found}
   def terminate_engine(address) do
     Spawner.terminate_engine(address)
   end
@@ -228,7 +228,13 @@ defmodule EngineSystem.API do
 
   A map containing system information.
   """
-  @spec get_system_info() :: map()
+  @spec get_system_info() :: %{
+          library_version: any(),
+          running_instances: non_neg_integer(),
+          system_uptime: integer(),
+          total_instances: non_neg_integer(),
+          total_specs: non_neg_integer()
+        }
   def get_system_info do
     Services.get_system_info()
   end
@@ -258,7 +264,12 @@ defmodule EngineSystem.API do
   - `:ok` if the message is valid
   - `{:error, reason}` if the message is invalid
   """
-  @spec validate_message(State.address(), any()) :: :ok | {:error, any()}
+  @spec validate_message(State.address(), any()) ::
+          :ok
+          | {:error,
+             :engine_not_found
+             | :spec_not_found
+             | {:unknown_message_tag, any()}}
   def validate_message(engine_address, message) do
     Services.validate_message(engine_address, message)
   end

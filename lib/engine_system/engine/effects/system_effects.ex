@@ -63,7 +63,7 @@ defmodule EngineSystem.Engine.Effects.SystemEffects do
   - `:ok` if the effect is valid
   - `{:error, reason}` if the effect is invalid
   """
-  @spec validate(any()) :: :ok | {:error, any()}
+  @spec validate(any()) :: :ok | {:error, :invalid_engine_module | :not_system_effect}
   def validate(:noop), do: :ok
 
   def validate({:spawn, engine_module, _config, _environment}) when is_atom(engine_module) do

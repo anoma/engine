@@ -248,7 +248,7 @@ defmodule EngineSystem.Engine.State do
 
     A ready status tuple.
     """
-    @spec ready(message_filter()) :: t()
+    @spec ready(message_filter()) :: {:ready, message_filter()}
     def ready(filter) do
       {:ready, filter}
     end
@@ -264,7 +264,7 @@ defmodule EngineSystem.Engine.State do
 
     A busy status tuple.
     """
-    @spec busy(message()) :: t()
+    @spec busy(message()) :: {:busy, message()}
     def busy(message) do
       {:busy, message}
     end
@@ -276,7 +276,7 @@ defmodule EngineSystem.Engine.State do
 
     A terminated status atom.
     """
-    @spec terminated() :: t()
+    @spec terminated() :: :terminated
     def terminated do
       :terminated
     end
