@@ -105,41 +105,8 @@ mix deps.get
 mix compile
 ```
 
-## Compilation Mode
 
-When defining engines using the DSL, the system attempts to register them during
-compilation. If the EngineSystem services are not running (which is normal
-during compilation), you'll see warnings instead of errors.
-
-To explicitly indicate you're in exploration/compilation mode and see more
-informative messages, you can set the `ENGINE_COMPILATION_MODE` environment
-variable:
-
-```shell
-ENGINE_COMPILATION_MODE=true mix compile
-```
-
-This will provide clearer context about why engine registration is being skipped
-during compilation.
-
-### Behavior
-
-- **During compilation** (services not running): Emits warnings but continues
-  compilation successfully
-- **During runtime** (services running): Registers engines normally with the
-  system
-- **With `ENGINE_COMPILATION_MODE=true`**: Shows explicit compilation-time
-  warnings with stack traces
-- **Without the flag**: Shows general warnings about services not being
-  available
-
-This ensures that:
-- Compilation never fails due to missing services
-- Engine definitions are always compiled successfully
-- Registration works properly when the system is running
-- Clear feedback is provided about what's happening
-
-# EngineSystem
+# The Engine Model
 
 A complete implementation of the actor model with explicit mailbox-as-actors separation, based on the formal specifications described in the research paper. This system implements the core innovation of promoting mailboxes to first-class processing engines that receive messages but verify message writing using linked processing engines.
 
