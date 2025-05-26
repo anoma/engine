@@ -11,7 +11,7 @@ defmodule Examples.Usage do
   """
 
   alias EngineSystem
-  alias Examples.{KVStoreEngine, PriorityChatEngine}
+  alias Examples.{KVStoreEngine, PriorityChatEngine, TickerEngine}
 
   @doc """
   Demonstrates the KV Store Engine functionality.
@@ -291,6 +291,106 @@ defmodule Examples.Usage do
   end
 
   @doc """
+  Demonstrates the Ticker Engine functionality.
+
+  Shows:
+  - Basic tick operations
+  - Count setting with value constraints
+  - Counter state management
+  - Configuration limits (max/min values)
+  """
+  def demo_ticker do
+    IO.puts("\n=== Ticker Engine Demo ===")
+
+    # Start the system if not already started
+    case EngineSystem.start() do
+      {:ok, _} -> :ok
+      {:error, {:already_started, _}} -> :ok
+    end
+
+    # Spawn a ticker with default configuration
+    {:ok, ticker_address} = EngineSystem.spawn_engine(Examples.TickerEngine)
+    IO.puts("Spawned ticker at address: #{inspect(ticker_address)}")
+
+    # Spawn a ticker with custom configuration
+    custom_config = %{max_value: 10, min_value: -5, auto_reset: true}
+    {:ok, custom_ticker_address} = EngineSystem.spawn_engine(Examples.TickerEngine, custom_config)
+    IO.puts("Spawned custom ticker at address: #{inspect(custom_ticker_address)}")
+
+    # Spawn a client engine to interact with the tickers
+    {:ok, client_address} = EngineSystem.spawn_engine(Examples.TickerEngine)
+    IO.puts("Spawned client at address: #{inspect(client_address)}")
+
+    # Demonstrate basic operations
+    IO.puts("\n--- Basic Tick Operations ---")
+
+    # Get initial count
+    :ok = EngineSystem.send_message(ticker_address, :get_count, client_address)
+
+    # Perform some ticks
+    :ok = EngineSystem.send_message(ticker_address, :tick, client_address)
+    :ok = EngineSystem.send_message(ticker_address, :tick, client_address)
+    :ok = EngineSystem.send_message(ticker_address, :tick, client_address)
+
+    # Get count after ticks
+    :ok = EngineSystem.send_message(ticker_address, :get_count, client_address)
+
+    # Demonstrate count setting
+    IO.puts("\n--- Count Setting Operations ---")
+
+    # Set count to specific value
+    :ok = EngineSystem.send_message(ticker_address, {:count, 42}, client_address)
+    :ok = EngineSystem.send_message(ticker_address, :get_count, client_address)
+
+    # Set count to another value
+    :ok = EngineSystem.send_message(ticker_address, {:count, 100}, client_address)
+    :ok = EngineSystem.send_message(ticker_address, :get_count, client_address)
+
+    # Demonstrate reset operation
+    IO.puts("\n--- Reset Operations ---")
+    :ok = EngineSystem.send_message(ticker_address, :reset, client_address)
+    :ok = EngineSystem.send_message(ticker_address, :get_count, client_address)
+
+    # Demonstrate custom ticker with limits
+    IO.puts("\n--- Custom Ticker with Limits ---")
+
+    # Get initial count
+    :ok = EngineSystem.send_message(custom_ticker_address, :get_count, client_address)
+
+    # Tick up to the limit
+    for _i <- 1..12 do
+      :ok = EngineSystem.send_message(custom_ticker_address, :tick, client_address)
+    end
+
+    # Should auto-reset after exceeding max_value (10)
+    :ok = EngineSystem.send_message(custom_ticker_address, :get_count, client_address)
+
+    # Test setting values outside limits
+    IO.puts("\n--- Testing Value Constraints ---")
+
+    # Try to set value above max (should be clamped to 10)
+    :ok = EngineSystem.send_message(custom_ticker_address, {:count, 50}, client_address)
+    :ok = EngineSystem.send_message(custom_ticker_address, :get_count, client_address)
+
+    # Try to set value below min (should be clamped to -5)
+    :ok = EngineSystem.send_message(custom_ticker_address, {:count, -20}, client_address)
+    :ok = EngineSystem.send_message(custom_ticker_address, :get_count, client_address)
+
+    # Test invalid value
+    IO.puts("\n--- Testing Invalid Operations ---")
+    :ok = EngineSystem.send_message(ticker_address, {:count, "invalid"}, client_address)
+
+    # Give time for messages to process
+    Process.sleep(1000)
+
+    # Get system info
+    info = EngineSystem.get_system_info()
+    IO.puts("\nSystem info: #{inspect(info)}")
+
+    :ok
+  end
+
+  @doc """
   Runs all demos in sequence.
   """
   def run_all_demos do
@@ -299,6 +399,7 @@ defmodule Examples.Usage do
 
     demo_kv_store()
     demo_priority_chat()
+    demo_ticker()
     demo_mailbox_customization()
 
     IO.puts(("\n" <> "=") |> String.duplicate(50))
@@ -320,18 +421,22 @@ defmodule Examples.Usage do
     # Spawn engines
     {:ok, kv_address} = EngineSystem.spawn_engine(KVStoreEngine, nil, nil, :kv_store)
     {:ok, chat_address} = EngineSystem.spawn_engine(PriorityChatEngine, nil, nil, :chat_engine)
+    {:ok, ticker_address} = EngineSystem.spawn_engine(TickerEngine, nil, nil, :ticker)
 
     IO.puts("Engines spawned:")
     IO.puts("  KV Store: #{inspect(kv_address)} (name: :kv_store)")
     IO.puts("  Chat Engine: #{inspect(chat_address)} (name: :chat_engine)")
+    IO.puts("  Ticker: #{inspect(ticker_address)} (name: :ticker)")
 
     IO.puts("\nYou can now interact with the engines using:")
     IO.puts("  EngineSystem.send_message(address, message)")
     IO.puts("  EngineSystem.lookup_address_by_name(:kv_store)")
     IO.puts("  EngineSystem.lookup_address_by_name(:chat_engine)")
+    IO.puts("  EngineSystem.lookup_address_by_name(:ticker)")
     IO.puts("\nExample messages:")
     IO.puts("  KV Store: {:put, :key, \"value\"}, {:get, :key}, {:delete, :key}")
     IO.puts("  Chat: {:join_room, :general, :user1}, {:set_status, :busy}")
+    IO.puts("  Ticker: :tick, {:count, 42}, :get_count, :reset")
 
     IO.puts("\nPress Enter to continue or 'q' to quit...")
 
