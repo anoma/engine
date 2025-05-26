@@ -10,7 +10,8 @@ Among other things, this library implements the Engine Model with a
 [DSL](#dsl-for-engine-definition) and runtime system. The DSL lets you easily
 define engines that follow the formal specification, including configuration,
 state, message handling, and behaviours. The runtime system manages engine
-lifecycles, message passing, monitoring, and introspection. See an initial [flow diagram](operational-semantics-flow.md) of the operational semantics.
+lifecycles, message passing, monitoring, and introspection. See an initial [flow
+diagram](operational-semantics-flow.md) of the operational semantics.
 
 <!-- Details: cite the two papers here -->
 
@@ -21,7 +22,8 @@ lifecycles, message passing, monitoring, and introspection. See an initial [flow
 
 - [x] Formal model-adherent implementation of the engine model
 - [x] DSL for defining engines with configuration, environment, messages, and
-  behavior
+  behaviour. Our first DSL implementation was implemented here:
+  https://github.com/anoma/engine/commit/716344f81ab9c45f71b62c64d57a1ce60f32c939
 - [x] Runtime system for managing engine lifecycles
 - [x] Message passing between engines
 - [x] Engine instance creation and management
