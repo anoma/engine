@@ -2,15 +2,15 @@
 
 A work-in-progress implementation of the Engine Model in Elixir.
 
-An engine is an actor-like entity that enables type-safe message passing and
+An *engine* is an actor-like entity that enables type-safe message passing and
 effectful actions through guarded actions. These actions can modify both the
 engine's state and its environment.
 
-This library implements the Engine Model with a metaprogramming DSL and runtime
-system. The DSL lets you define engines that follow the formal specification,
-including configuration, state, message handling, and behaviours. The runtime
-system manages engine lifecycles, message passing, monitoring, and
-introspection.
+Among other things, this library implements the Engine Model with a
+[DSL](#dsl-for-engine-definition) and runtime system. The DSL lets you easily
+define engines that follow the formal specification, including configuration,
+state, message handling, and behaviours. The runtime system manages engine
+lifecycles, message passing, monitoring, and introspection. See an initial [flow diagram](operational-semantics-flow.md) of the operational semantics.
 
 <!-- Details: cite the two papers here -->
 
