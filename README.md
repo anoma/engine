@@ -300,94 +300,46 @@ Each processing engine maintains three types of state:
 6. Mailbox delivers messages based on filter and demand via GenStage producer
 7. Processing engine executes behaviour rules and effects
 
-## File Structure
 
-```
-lib/
-├── engine_system.ex                    # Main facade API
-├── engine_system/
-│   ├── application.ex                  # OTP Application
-│   ├── supervisor.ex                   # Main supervisor
-│   ├── engine/
-│   │   ├── dsl.ex                     # DSL macros
-│   │   ├── spec.ex                    # Engine specifications
-│   │   ├── state.ex                   # State structs
-│   │   ├── instance.ex                # Processing engine GenStage
-│   │   ├── behaviour.ex               # Message processing logic
-│   │   └── effect.ex                  # Effect execution
-│   ├── mailbox/
-│   │   ├── message.ex                 # Message struct
-│   │   └── default_mailbox_engine.ex  # Mailbox GenStage
-│   └── system/
-│       ├── registry.ex                # System registry
-│       ├── services.ex                # System services
-│       └── spawner.ex                 # Engine spawning logic
-└── examples/
-    └── kv_store_engine.ex             # Example engine
-```
-
-## Testing
-
-Run the test suite:
-
-```bash
-mix test
-```
-
-The tests demonstrate:
-- System startup/shutdown
-- Engine specification registration and lookup
-- Engine instance spawning and management
-- System information and statistics
-- Engine termination and cleanup
 
 ## Development Status
 
 This implementation provides a solid foundation for the actor model with mailbox-as-actors separation. Key features implemented:
 
-✅ **Core Architecture**
+**Core Architecture**
 - OTP supervision tree
 - GenStage-based message flow
 - System registry and services
 
-✅ **DSL and Specifications**
+**DSL and Specifications**
 - Compile-time engine specification generation
 - Interface, configuration, and environment definitions
 - Automatic spec registration
 
-✅ **Mailbox-as-Actors**
+**Mailbox-as-Actors**
 - First-class mailbox engines
 - Message validation and filtering
 - Demand-driven message delivery
 
-✅ **Processing Engines**
+**Processing Engines**
 - GenStage consumers for business logic
 - State management (configuration, environment, status)
 - Behavior rule execution framework
 
-✅ **System Management**
+**System Management**
 - Engine spawning and termination
 - Address-based routing
 - System information and statistics
 
-### Future Enhancements
-
-- **Message Routing**: Enhanced routing for distributed systems
-- **Persistence**: State persistence and recovery mechanisms
-- **Monitoring**: Advanced monitoring and observability
-- **Performance**: Optimizations for high-throughput scenarios
-- **Security**: Authentication and authorization mechanisms
-
 ## Contributing
 
-This implementation follows Elixir and OTP best practices. When contributing:
+This implementation follows Elixir and OTP best practices.
+When contributing:
 
-1. Maintain the formal model compliance
+1. Maintain the formal model compliance, read the paper to give you a better
+   understanding of the model.
 2. Follow the existing code organization
-3. Add comprehensive tests for new features
-4. Update documentation for API changes
-
-## License
-
-[Add your license information here]
+3. Add comprehensive tests for new features, they can live in separate files.
+4. Update documentation for API changes, we use ExDoc and anoma/anoma coding
+   standards.
 
