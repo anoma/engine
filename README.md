@@ -19,36 +19,36 @@ lifecycles, message passing, monitoring, and introspection. See an initial [flow
 
 ### Core Features
 
-- [ ] Formal model-adherent implementation of the engine model
-- [ ] DSL for defining engines with configuration, environment, messages, and
+- [x] Formal model-adherent implementation of the engine model
+- [x] DSL for defining engines with configuration, environment, messages, and
   behavior
-- [ ] Runtime system for managing engine lifecycles
-- [ ] Message passing between engines
-- [ ] Engine instance creation and management
-- [ ] Versioning support for all engine types
+- [x] Runtime system for managing engine lifecycles
+- [x] Message passing between engines
+- [x] Engine instance creation and management
+- [x] Versioning support for all engine types
 
 ### System Capabilities
 
-- [ ] Asynchronous, non-blocking message passing system
-- [ ] Engine status and health monitoring
-- [ ] Engine type introspection
+- [x] Asynchronous, non-blocking message passing system
+- [x] Engine status and health monitoring
+- [x] Engine type introspection
 - [ ] Runtime-swappable mailbox types
-- [ ] Engine type registration and lifecycle management
-- [ ] Message interface lookup and validation
+- [x] Engine type registration and lifecycle management
+- [x] Message interface lookup and validation
 
 #### Core Requirements
 
-- [ ] Engine type registration with system
-- [ ] Engine lifecycle management (start/stop)
+- [x] Engine type registration with system
+- [x] Engine lifecycle management (start/stop)
 - [ ] Message passing and effect handling
-- [ ] Engine instance creation
-- [ ] Status and health monitoring
+- [x] Engine instance creation
+- [x] Status and health monitoring
 - [ ] Location mobility for instances
 
 #### Message Handling
 
-- [ ] System registry for message interfaces
-- [ ] Message validation against interfaces
+- [x] System registry for message interfaces
+- [x] Message validation against interfaces
 - [x] Engine type documentation and introspection
 - [x] Custom mailbox type definitions
 - [x] Runtime mailbox type swapping
