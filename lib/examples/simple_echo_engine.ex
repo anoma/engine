@@ -169,7 +169,8 @@ defengine Examples.SimpleEchoEngine do
         # Add stats response if we have a sender
         final_effects =
           if msg_sender_address do
-            effects ++ [{:send, msg_sender_address, {:stats_response, message_count + 1, echo_count}}]
+            effects ++
+              [{:send, msg_sender_address, {:stats_response, message_count + 1, echo_count}}]
           else
             effects
           end

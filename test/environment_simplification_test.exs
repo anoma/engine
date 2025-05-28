@@ -12,6 +12,7 @@ defmodule EngineSystem.EnvironmentSimplificationTest do
         default: %{counter: 0},
         fields: [{:counter, [default: 0, type: :integer]}]
       }
+
       assert EnvironmentBuilder.validate_env_spec(valid_spec) == :ok
 
       # Invalid environment spec - missing name
@@ -19,15 +20,19 @@ defmodule EngineSystem.EnvironmentSimplificationTest do
         default: %{counter: 0},
         fields: []
       }
+
       assert EnvironmentBuilder.validate_env_spec(invalid_spec) == {:error, :invalid_env_spec}
 
       # Invalid field definition
       invalid_fields = %{
         name: :test_env,
         default: %{},
-        fields: [{"not_atom", []}]  # field name should be atom
+        # field name should be atom
+        fields: [{"not_atom", []}]
       }
-      assert EnvironmentBuilder.validate_env_spec(invalid_fields) == {:error, :invalid_field_definition}
+
+      assert EnvironmentBuilder.validate_env_spec(invalid_fields) ==
+               {:error, :invalid_field_definition}
     end
 
     test "generate_fields_from_map function works correctly" do
@@ -65,31 +70,31 @@ defmodule EngineSystem.EnvironmentSimplificationTest do
 
       # Test individual type inference
       assert EnvironmentBuilder.generate_fields_from_map(%{bool_val: true}) ==
-        [bool_val: [default: true, type: :boolean]]
+               [bool_val: [default: true, type: :boolean]]
 
       assert EnvironmentBuilder.generate_fields_from_map(%{bool_val: false}) ==
-        [bool_val: [default: false, type: :boolean]]
+               [bool_val: [default: false, type: :boolean]]
 
       assert EnvironmentBuilder.generate_fields_from_map(%{int_val: 42}) ==
-        [int_val: [default: 42, type: :integer]]
+               [int_val: [default: 42, type: :integer]]
 
       assert EnvironmentBuilder.generate_fields_from_map(%{float_val: 3.14}) ==
-        [float_val: [default: 3.14, type: :float]]
+               [float_val: [default: 3.14, type: :float]]
 
       assert EnvironmentBuilder.generate_fields_from_map(%{string_val: "hello"}) ==
-        [string_val: [default: "hello", type: :string]]
+               [string_val: [default: "hello", type: :string]]
 
       assert EnvironmentBuilder.generate_fields_from_map(%{atom_val: :test}) ==
-        [atom_val: [default: :test, type: :atom]]
+               [atom_val: [default: :test, type: :atom]]
 
       assert EnvironmentBuilder.generate_fields_from_map(%{list_val: [1, 2, 3]}) ==
-        [list_val: [default: [1, 2, 3], type: :list]]
+               [list_val: [default: [1, 2, 3], type: :list]]
 
       assert EnvironmentBuilder.generate_fields_from_map(%{map_val: %{key: "value"}}) ==
-        [map_val: [default: %{key: "value"}, type: :map]]
+               [map_val: [default: %{key: "value"}, type: :map]]
 
       assert EnvironmentBuilder.generate_fields_from_map(%{nil_val: nil}) ==
-        [nil_val: [default: nil, type: :any]]
+               [nil_val: [default: nil, type: :any]]
     end
 
     test "simple counter engine uses simplified environment syntax correctly" do
@@ -102,7 +107,8 @@ defmodule EngineSystem.EnvironmentSimplificationTest do
 
       # Check environment spec uses simplified syntax
       env_spec = spec.env_spec
-      assert env_spec.name == :environment  # Generic name from simplified syntax
+      # Generic name from simplified syntax
+      assert env_spec.name == :environment
 
       # Verify the default environment values
       expected_defaults = %{
@@ -113,6 +119,7 @@ defmodule EngineSystem.EnvironmentSimplificationTest do
         history: [],
         metadata: %{}
       }
+
       assert env_spec.default == expected_defaults
 
       # Verify auto-generated field definitions with correct type inference
@@ -158,7 +165,8 @@ defmodule EngineSystem.EnvironmentSimplificationTest do
 
       # Check that old verbose syntax still works
       env_spec = spec.env_spec
-      assert env_spec.name == :kv_env  # Named environment from old syntax
+      # Named environment from old syntax
+      assert env_spec.name == :kv_env
       assert env_spec.default == %{store: %{}, access_counts: %{}}
 
       # Verify field definitions exist

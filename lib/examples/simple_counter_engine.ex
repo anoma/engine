@@ -75,12 +75,18 @@ defengine Examples.SimpleCounterEngine do
   # New simplified environment syntax - automatically infers types!
   environment do
     %{
-      counter: 0,           # inferred as :integer
-      increment_by: 1,      # inferred as :integer
-      max_count: 100,       # inferred as :integer
-      enabled: true,        # inferred as :boolean
-      history: [],          # inferred as :list
-      metadata: %{}         # inferred as :map
+      # inferred as :integer
+      counter: 0,
+      # inferred as :integer
+      increment_by: 1,
+      # inferred as :integer
+      max_count: 100,
+      # inferred as :boolean
+      enabled: true,
+      # inferred as :list
+      history: [],
+      # inferred as :map
+      metadata: %{}
     }
   end
 
@@ -104,13 +110,14 @@ defengine Examples.SimpleCounterEngine do
           final_counter = min(new_counter, max_count)
 
           # Update history
-          new_history = [final_counter | Enum.take(history, 9)]  # Keep last 10 values
+          # Keep last 10 values
+          new_history = [final_counter | Enum.take(history, 9)]
 
           # Update environment
           new_local_state = %{
-            env_data.local_state |
-            counter: final_counter,
-            history: new_history
+            env_data.local_state
+            | counter: final_counter,
+              history: new_history
           }
 
           new_env = %{env_data | local_state: new_local_state}
@@ -119,11 +126,12 @@ defengine Examples.SimpleCounterEngine do
           effects = [{:update_environment, new_env}]
 
           # Add acknowledgment if we have a sender
-          final_effects = if msg_sender_address do
-            effects ++ [{:send, msg_sender_address, :ack}]
-          else
-            effects
-          end
+          final_effects =
+            if msg_sender_address do
+              effects ++ [{:send, msg_sender_address, :ack}]
+            else
+              effects
+            end
 
           {:ok, final_effects}
         else
@@ -150,20 +158,21 @@ defengine Examples.SimpleCounterEngine do
           new_history = [new_counter | Enum.take(history, 9)]
 
           new_local_state = %{
-            env_data.local_state |
-            counter: new_counter,
-            history: new_history
+            env_data.local_state
+            | counter: new_counter,
+              history: new_history
           }
 
           new_env = %{env_data | local_state: new_local_state}
 
           effects = [{:update_environment, new_env}]
 
-          final_effects = if msg_sender_address do
-            effects ++ [{:send, msg_sender_address, :ack}]
-          else
-            effects
-          end
+          final_effects =
+            if msg_sender_address do
+              effects ++ [{:send, msg_sender_address, :ack}]
+            else
+              effects
+            end
 
           {:ok, final_effects}
         else
@@ -192,11 +201,12 @@ defengine Examples.SimpleCounterEngine do
     # Set specific value
     on_message :set_value do
       quote do
-        new_value = case msg_payload do
-          {value} when is_integer(value) -> value
-          %{value: value} when is_integer(value) -> value
-          _ -> nil
-        end
+        new_value =
+          case msg_payload do
+            {value} when is_integer(value) -> value
+            %{value: value} when is_integer(value) -> value
+            _ -> nil
+          end
 
         if new_value != nil do
           max_count = get_in(env_data.local_state, [:max_count]) || 100
@@ -208,19 +218,20 @@ defengine Examples.SimpleCounterEngine do
             new_history = [clamped_value | Enum.take(history, 9)]
 
             new_local_state = %{
-              env_data.local_state |
-              counter: clamped_value,
-              history: new_history
+              env_data.local_state
+              | counter: clamped_value,
+                history: new_history
             }
 
             new_env = %{env_data | local_state: new_local_state}
             effects = [{:update_environment, new_env}]
 
-            final_effects = if msg_sender_address do
-              effects ++ [{:send, msg_sender_address, :ack}]
-            else
-              effects
-            end
+            final_effects =
+              if msg_sender_address do
+                effects ++ [{:send, msg_sender_address, :ack}]
+              else
+                effects
+              end
 
             {:ok, final_effects}
           else
@@ -250,11 +261,12 @@ defengine Examples.SimpleCounterEngine do
           new_env = %{env_data | local_state: new_local_state}
           effects = [{:update_environment, new_env}]
 
-          final_effects = if msg_sender_address do
-            effects ++ [{:send, msg_sender_address, :ack}]
-          else
-            effects
-          end
+          final_effects =
+            if msg_sender_address do
+              effects ++ [{:send, msg_sender_address, :ack}]
+            else
+              effects
+            end
 
           {:ok, final_effects}
         else
@@ -274,11 +286,12 @@ defengine Examples.SimpleCounterEngine do
         new_env = %{env_data | local_state: new_local_state}
         effects = [{:update_environment, new_env}]
 
-        final_effects = if msg_sender_address do
-          effects ++ [{:send, msg_sender_address, :ack}]
-        else
-          effects
-        end
+        final_effects =
+          if msg_sender_address do
+            effects ++ [{:send, msg_sender_address, :ack}]
+          else
+            effects
+          end
 
         {:ok, final_effects}
       end
@@ -291,11 +304,12 @@ defengine Examples.SimpleCounterEngine do
         new_env = %{env_data | local_state: new_local_state}
         effects = [{:update_environment, new_env}]
 
-        final_effects = if msg_sender_address do
-          effects ++ [{:send, msg_sender_address, :ack}]
-        else
-          effects
-        end
+        final_effects =
+          if msg_sender_address do
+            effects ++ [{:send, msg_sender_address, :ack}]
+          else
+            effects
+          end
 
         {:ok, final_effects}
       end
@@ -304,27 +318,29 @@ defengine Examples.SimpleCounterEngine do
     # Configure counter parameters
     on_message :configure do
       quote do
-        {increment_by, max_count} = case msg_payload do
-          {inc, max} -> {inc, max}
-          %{increment_by: inc, max_count: max} -> {inc, max}
-          _ -> {nil, nil}
-        end
+        {increment_by, max_count} =
+          case msg_payload do
+            {inc, max} -> {inc, max}
+            %{increment_by: inc, max_count: max} -> {inc, max}
+            _ -> {nil, nil}
+          end
 
         if increment_by && max_count && increment_by > 0 && max_count > 0 do
           new_local_state = %{
-            env_data.local_state |
-            increment_by: increment_by,
-            max_count: max_count
+            env_data.local_state
+            | increment_by: increment_by,
+              max_count: max_count
           }
 
           new_env = %{env_data | local_state: new_local_state}
           effects = [{:update_environment, new_env}]
 
-          final_effects = if msg_sender_address do
-            effects ++ [{:send, msg_sender_address, :ack}]
-          else
-            effects
-          end
+          final_effects =
+            if msg_sender_address do
+              effects ++ [{:send, msg_sender_address, :ack}]
+            else
+              effects
+            end
 
           {:ok, final_effects}
         else

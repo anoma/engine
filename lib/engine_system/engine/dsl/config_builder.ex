@@ -139,7 +139,8 @@ defmodule EngineSystem.Engine.DSL.ConfigBuilder do
       spec_data = Module.get_attribute(__MODULE__, :engine_spec_data)
 
       config_spec = %{
-        name: :config,  # Use generic name since it's not provided
+        # Use generic name since it's not provided
+        name: :config,
         default: config_map,
         fields: fields
       }

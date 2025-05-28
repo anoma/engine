@@ -118,7 +118,11 @@ defengine Examples.StatelessCalculatorEngine do
               end
             else
               if msg_sender_address do
-                {:ok, [{:send, msg_sender_address, {:error, :overflow, "Result exceeds maximum allowed value"}}]}
+                {:ok,
+                 [
+                   {:send, msg_sender_address,
+                    {:error, :overflow, "Result exceeds maximum allowed value"}}
+                 ]}
               else
                 {:ok, [:noop]}
               end
@@ -126,7 +130,8 @@ defengine Examples.StatelessCalculatorEngine do
 
           _ ->
             if msg_sender_address do
-              {:ok, [{:send, msg_sender_address, {:error, :invalid_args, "Expected two numbers"}}]}
+              {:ok,
+               [{:send, msg_sender_address, {:error, :invalid_args, "Expected two numbers"}}]}
             else
               {:ok, [:noop]}
             end
@@ -147,14 +152,22 @@ defengine Examples.StatelessCalculatorEngine do
             cond do
               abs(result) > max_number ->
                 if msg_sender_address do
-                  {:ok, [{:send, msg_sender_address, {:error, :overflow, "Result exceeds maximum allowed value"}}]}
+                  {:ok,
+                   [
+                     {:send, msg_sender_address,
+                      {:error, :overflow, "Result exceeds maximum allowed value"}}
+                   ]}
                 else
                   {:ok, [:noop]}
                 end
 
               not allow_negative and result < 0 ->
                 if msg_sender_address do
-                  {:ok, [{:send, msg_sender_address, {:error, :negative_result, "Negative results not allowed"}}]}
+                  {:ok,
+                   [
+                     {:send, msg_sender_address,
+                      {:error, :negative_result, "Negative results not allowed"}}
+                   ]}
                 else
                   {:ok, [:noop]}
                 end
@@ -169,7 +182,8 @@ defengine Examples.StatelessCalculatorEngine do
 
           _ ->
             if msg_sender_address do
-              {:ok, [{:send, msg_sender_address, {:error, :invalid_args, "Expected two numbers"}}]}
+              {:ok,
+               [{:send, msg_sender_address, {:error, :invalid_args, "Expected two numbers"}}]}
             else
               {:ok, [:noop]}
             end
@@ -194,7 +208,11 @@ defengine Examples.StatelessCalculatorEngine do
               end
             else
               if msg_sender_address do
-                {:ok, [{:send, msg_sender_address, {:error, :overflow, "Result exceeds maximum allowed value"}}]}
+                {:ok,
+                 [
+                   {:send, msg_sender_address,
+                    {:error, :overflow, "Result exceeds maximum allowed value"}}
+                 ]}
               else
                 {:ok, [:noop]}
               end
@@ -202,7 +220,8 @@ defengine Examples.StatelessCalculatorEngine do
 
           _ ->
             if msg_sender_address do
-              {:ok, [{:send, msg_sender_address, {:error, :invalid_args, "Expected two numbers"}}]}
+              {:ok,
+               [{:send, msg_sender_address, {:error, :invalid_args, "Expected two numbers"}}]}
             else
               {:ok, [:noop]}
             end
@@ -217,7 +236,11 @@ defengine Examples.StatelessCalculatorEngine do
           {a, b} when is_number(a) and is_number(b) ->
             if b == 0 do
               if msg_sender_address do
-                {:ok, [{:send, msg_sender_address, {:error, :division_by_zero, "Cannot divide by zero"}}]}
+                {:ok,
+                 [
+                   {:send, msg_sender_address,
+                    {:error, :division_by_zero, "Cannot divide by zero"}}
+                 ]}
               else
                 {:ok, [:noop]}
               end
@@ -234,7 +257,8 @@ defengine Examples.StatelessCalculatorEngine do
 
           _ ->
             if msg_sender_address do
-              {:ok, [{:send, msg_sender_address, {:error, :invalid_args, "Expected two numbers"}}]}
+              {:ok,
+               [{:send, msg_sender_address, {:error, :invalid_args, "Expected two numbers"}}]}
             else
               {:ok, [:noop]}
             end
@@ -249,7 +273,11 @@ defengine Examples.StatelessCalculatorEngine do
           {n} when is_integer(n) and n >= 0 ->
             if n > 20 do
               if msg_sender_address do
-                {:ok, [{:send, msg_sender_address, {:error, :overflow, "Factorial too large (max n=20)"}}]}
+                {:ok,
+                 [
+                   {:send, msg_sender_address,
+                    {:error, :overflow, "Factorial too large (max n=20)"}}
+                 ]}
               else
                 {:ok, [:noop]}
               end
@@ -266,14 +294,22 @@ defengine Examples.StatelessCalculatorEngine do
 
           {n} when is_integer(n) ->
             if msg_sender_address do
-              {:ok, [{:send, msg_sender_address, {:error, :invalid_args, "Factorial requires non-negative integer"}}]}
+              {:ok,
+               [
+                 {:send, msg_sender_address,
+                  {:error, :invalid_args, "Factorial requires non-negative integer"}}
+               ]}
             else
               {:ok, [:noop]}
             end
 
           _ ->
             if msg_sender_address do
-              {:ok, [{:send, msg_sender_address, {:error, :invalid_args, "Expected non-negative integer"}}]}
+              {:ok,
+               [
+                 {:send, msg_sender_address,
+                  {:error, :invalid_args, "Expected non-negative integer"}}
+               ]}
             else
               {:ok, [:noop]}
             end
@@ -297,14 +333,22 @@ defengine Examples.StatelessCalculatorEngine do
 
           {n} when is_number(n) ->
             if msg_sender_address do
-              {:ok, [{:send, msg_sender_address, {:error, :invalid_args, "Square root requires non-negative number"}}]}
+              {:ok,
+               [
+                 {:send, msg_sender_address,
+                  {:error, :invalid_args, "Square root requires non-negative number"}}
+               ]}
             else
               {:ok, [:noop]}
             end
 
           _ ->
             if msg_sender_address do
-              {:ok, [{:send, msg_sender_address, {:error, :invalid_args, "Expected non-negative number"}}]}
+              {:ok,
+               [
+                 {:send, msg_sender_address,
+                  {:error, :invalid_args, "Expected non-negative number"}}
+               ]}
             else
               {:ok, [:noop]}
             end

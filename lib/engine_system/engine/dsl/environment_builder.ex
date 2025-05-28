@@ -109,7 +109,8 @@ defmodule EngineSystem.Engine.DSL.EnvironmentBuilder do
       spec_data = Module.get_attribute(__MODULE__, :engine_spec_data)
 
       env_spec = %{
-        name: :environment,  # Use generic name since it's not provided
+        # Use generic name since it's not provided
+        name: :environment,
         default: env_map,
         fields: fields
       }

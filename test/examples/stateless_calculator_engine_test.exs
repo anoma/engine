@@ -222,9 +222,11 @@ defmodule Examples.StatelessCalculatorEngineTest do
 
       # Verify they are different instances
       instances = EngineSystem.list_instances()
-      calc_instances = Enum.filter(instances, fn inst ->
-        inst.spec_key == {Examples.StatelessCalculatorEngine, "1.0.0"}
-      end)
+
+      calc_instances =
+        Enum.filter(instances, fn inst ->
+          inst.spec_key == {Examples.StatelessCalculatorEngine, "1.0.0"}
+        end)
 
       assert length(calc_instances) >= 2
     end

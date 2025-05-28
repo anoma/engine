@@ -102,7 +102,8 @@ defengine Examples.SimplifiedCalculatorEngine do
 
           _ ->
             if msg_sender_address do
-              {:ok, [{:send, msg_sender_address, {:error, :invalid_args, "Expected two numbers"}}]}
+              {:ok,
+               [{:send, msg_sender_address, {:error, :invalid_args, "Expected two numbers"}}]}
             else
               {:ok, [:noop]}
             end
@@ -116,7 +117,11 @@ defengine Examples.SimplifiedCalculatorEngine do
           {a, b} when is_number(a) and is_number(b) ->
             if b == 0 do
               if msg_sender_address do
-                {:ok, [{:send, msg_sender_address, {:error, :division_by_zero, "Cannot divide by zero"}}]}
+                {:ok,
+                 [
+                   {:send, msg_sender_address,
+                    {:error, :division_by_zero, "Cannot divide by zero"}}
+                 ]}
               else
                 {:ok, [:noop]}
               end
@@ -133,7 +138,8 @@ defengine Examples.SimplifiedCalculatorEngine do
 
           _ ->
             if msg_sender_address do
-              {:ok, [{:send, msg_sender_address, {:error, :invalid_args, "Expected two numbers"}}]}
+              {:ok,
+               [{:send, msg_sender_address, {:error, :invalid_args, "Expected two numbers"}}]}
             else
               {:ok, [:noop]}
             end

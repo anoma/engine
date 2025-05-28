@@ -51,12 +51,13 @@ defmodule EngineSystem.DSL.ConfigSimplificationTest do
 
     test "type inference handles edge cases correctly" do
       # Test boolean vs atom precedence
-      result = EngineSystem.Engine.DSL.ConfigBuilder.generate_fields_from_map(%{
-        bool_true: true,
-        bool_false: false,
-        atom_val: :some_atom,
-        nil_val: nil
-      })
+      result =
+        EngineSystem.Engine.DSL.ConfigBuilder.generate_fields_from_map(%{
+          bool_true: true,
+          bool_false: false,
+          atom_val: :some_atom,
+          nil_val: nil
+        })
 
       # Convert to map for easier testing since order isn't guaranteed
       result_map = Map.new(result)
@@ -106,7 +107,8 @@ defmodule EngineSystem.DSL.ConfigSimplificationTest do
 
       # Verify significant reduction (should be around 50% fewer lines)
       reduction_percentage = (old_line_count - new_line_count) / old_line_count * 100
-      assert reduction_percentage > 20  # At least 20% reduction (more realistic)
+      # At least 20% reduction (more realistic)
+      assert reduction_percentage > 20
     end
   end
 
