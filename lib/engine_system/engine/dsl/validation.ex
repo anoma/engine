@@ -9,7 +9,7 @@ defmodule EngineSystem.Engine.DSL.Validation do
   - Cross-component validation
   """
 
-  alias EngineSystem.Engine.DSL.{BehaviorBuilder, ConfigBuilder}
+  alias EngineSystem.Engine.DSL.{BehaviorBuilder, ConfigBuilder, EnvironmentBuilder}
 
   @doc """
   I validate a complete engine specification.
@@ -28,7 +28,7 @@ defmodule EngineSystem.Engine.DSL.Validation do
     with :ok <- validate_basic_fields(spec),
          :ok <- validate_interface(spec.interface),
          :ok <- ConfigBuilder.validate_config_spec(spec.config_spec),
-         :ok <- validate_env_spec(spec.env_spec),
+         :ok <- EnvironmentBuilder.validate_env_spec(spec.env_spec),
          :ok <- BehaviorBuilder.validate_behaviour_rules(spec.behaviour_rules),
          :ok <- validate_message_filter(spec.message_filter) do
       validate_cross_references(spec)
@@ -88,27 +88,6 @@ defmodule EngineSystem.Engine.DSL.Validation do
   defp validate_field_type(type) when is_atom(type), do: :ok
   defp validate_field_type({:option, inner_type}), do: validate_field_type(inner_type)
   defp validate_field_type(_), do: {:error, :invalid_field_type}
-
-  defp validate_env_spec(%{name: name, default: _default, fields: fields})
-       when is_atom(name) and is_list(fields) do
-    validate_env_fields(fields)
-  end
-
-  defp validate_env_spec(_), do: {:error, :invalid_env_spec}
-
-  defp validate_env_fields([]), do: :ok
-
-  defp validate_env_fields([{field_name, options} | rest]) when is_atom(field_name) do
-    case validate_env_field_options(options) do
-      :ok -> validate_env_fields(rest)
-      error -> error
-    end
-  end
-
-  defp validate_env_fields(_), do: {:error, :invalid_env_field_definition}
-
-  defp validate_env_field_options(options) when is_list(options), do: :ok
-  defp validate_env_field_options(_), do: {:error, :invalid_env_field_options}
 
   @doc """
   I validate a message filter specification.

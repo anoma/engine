@@ -78,7 +78,6 @@ defmodule EngineSystem.Engine.DSL do
         import EngineSystem.Engine.DSL,
           only: [
             version: 1,
-            environment: 2,
             message_filter: 1
           ]
 
@@ -95,6 +94,12 @@ defmodule EngineSystem.Engine.DSL do
             config: 1,
             field: 2,
             field: 1
+          ]
+
+        import EngineSystem.Engine.DSL.EnvironmentBuilder,
+          only: [
+            environment: 2,
+            environment: 1
           ]
 
         import EngineSystem.Engine.DSL.BehaviorBuilder,
@@ -117,47 +122,6 @@ defmodule EngineSystem.Engine.DSL do
       spec_data = Module.get_attribute(__MODULE__, :engine_spec_data)
       updated_spec = %{spec_data | version: unquote(version_string)}
       Module.put_attribute(__MODULE__, :engine_spec_data, updated_spec)
-    end
-  end
-
-  @doc """
-  I define the environment structure for the engine.
-  """
-  defmacro environment(env_args, do: block) do
-    quote do
-      Module.put_attribute(__MODULE__, :current_env_fields, [])
-      unquote(block)
-
-      spec_data = Module.get_attribute(__MODULE__, :engine_spec_data)
-      fields = Module.get_attribute(__MODULE__, :current_env_fields) |> Enum.reverse()
-
-      # Extract name and default from the keyword list
-      [{env_name, default_value}] = unquote(env_args)
-
-      env_spec = %{
-        name: env_name,
-        default: default_value,
-        fields: fields
-      }
-
-      updated_spec = %{spec_data | env_spec: env_spec}
-      Module.put_attribute(__MODULE__, :engine_spec_data, updated_spec)
-      Module.delete_attribute(__MODULE__, :current_env_fields)
-    end
-  end
-
-  @doc """
-  I define a field in the environment.
-  """
-  defmacro field(name, options \\ []) do
-    quote do
-      field_def = {unquote(name), unquote(options)}
-
-      # Add to current env fields if we're in env context
-      if Module.has_attribute?(__MODULE__, :current_env_fields) do
-        current_fields = Module.get_attribute(__MODULE__, :current_env_fields)
-        Module.put_attribute(__MODULE__, :current_env_fields, [field_def | current_fields])
-      end
     end
   end
 
