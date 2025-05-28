@@ -92,6 +92,7 @@ defmodule EngineSystem.Engine.DSL do
         import EngineSystem.Engine.DSL.ConfigBuilder,
           only: [
             config: 2,
+            config: 1,
             field: 2,
             field: 1
           ]

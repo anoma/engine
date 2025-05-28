@@ -114,4 +114,52 @@ defmodule EngineSystem.Engine.DSL.ConfigBuilder do
   end
 
   defp validate_field_options(_), do: {:error, :invalid_field_options}
+
+  @doc """
+  I generate field definitions from a configuration map by inferring types from values.
+
+  This function analyzes the map structure and creates field definitions automatically,
+  eliminating the need for explicit field declarations.
+  """
+  def generate_fields_from_map(config_map) when is_map(config_map) do
+    config_map
+    |> Enum.map(fn {key, value} ->
+      type = infer_type(value)
+      {key, [default: value, type: type]}
+    end)
+  end
+
+  def generate_fields_from_map(_), do: []
+
+  # Helper to infer Elixir types from values
+  defp infer_type(value) when is_boolean(value), do: :boolean  # Check boolean first!
+  defp infer_type(value) when is_atom(value) and value != nil, do: :atom
+  defp infer_type(value) when is_integer(value), do: :integer
+  defp infer_type(value) when is_float(value), do: :float
+  defp infer_type(value) when is_binary(value), do: :string
+  defp infer_type(value) when is_list(value), do: :list
+  defp infer_type(value) when is_map(value), do: :map
+  defp infer_type(_), do: :any
+
+  # Add new simplified config macro
+  defmacro config(do: config_map_ast) do
+    quote do
+      # Process the simplified config syntax
+      config_map = unquote(config_map_ast)
+
+      # Generate field definitions from the map automatically
+      fields = EngineSystem.Engine.DSL.ConfigBuilder.generate_fields_from_map(config_map)
+
+      spec_data = Module.get_attribute(__MODULE__, :engine_spec_data)
+
+      config_spec = %{
+        name: :config,  # Use generic name since it's not provided
+        default: config_map,
+        fields: fields
+      }
+
+      updated_spec = %{spec_data | config_spec: config_spec}
+      Module.put_attribute(__MODULE__, :engine_spec_data, updated_spec)
+    end
+  end
 end
