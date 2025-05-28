@@ -183,12 +183,24 @@ defmodule EngineSystem.Engine.DSL do
     # Get the spec data at compile time
     spec_data = Module.get_attribute(env.module, :engine_spec_data)
 
+    # Provide default config_spec if none was defined
+    final_config_spec =
+      if spec_data.config_spec == %{} do
+        %{
+          name: :default_config,
+          default: %{parent: nil, mode: :process},
+          fields: []
+        }
+      else
+        spec_data.config_spec
+      end
+
     # Create the final EngineSpec struct at compile time
     final_spec = %Spec{
       name: spec_data.name,
       version: spec_data.version,
       interface: spec_data.interface,
-      config_spec: spec_data.config_spec,
+      config_spec: final_config_spec,
       env_spec: spec_data.env_spec,
       behaviour_rules: spec_data.behaviour_rules,
       message_filter: spec_data.message_filter
