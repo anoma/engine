@@ -176,6 +176,65 @@ EngineSystem.Application
 
 ### DSL for Engine Definition
 
+A engine definition consists of:
+
+- Declaring the message interface and behaviour, which is mandatory (at the moment).
+- Declaring configuration, environment, and the message filter, which is optional,
+  but recommended.
+
+```elixir
+import EngineSystem.Engine.DSL
+
+defengine MyKVStore do
+  version "2.0.0"
+
+  interface do
+    message :get, key: :atom
+    message :put, key: :atom, value: :any
+    message :delete, key: :atom
+    message :result, value: {:option, :any}
+  end
+
+  config do
+    %{
+      access_mode: :read_write,
+      max_size: 1000,
+      timeout: 30.5,
+      retries_enabled: true
+    }
+  end
+
+  environment do
+    %{
+      store: %{},
+      access_counts: %{},
+      last_accessed: nil,
+      active_connections: 0
+    }
+  end
+
+  message_filter fn _msg, _config, _env -> true end
+
+  behaviour do
+    on_message :get do
+      # Business logic here...
+      {:send, sender, {:result, :ok}}
+      # you have more effects at hand:
+      # {:update_env, :store, %{key => value}}
+      # {:terminate} ... (read the docs for more effects)
+    end
+    ...
+  end
+end
+```
+
+
+
+- Support for built-in guards using `when` syntax is coming soon.
+
+<details>
+<summary>A more verbose DSL syntax</summary>
+
 ```elixir
 import EngineSystem.Engine.DSL
 
@@ -212,6 +271,8 @@ defengine MyKVStore do
   end
 end
 ```
+
+</details>
 
 ## Usage
 
