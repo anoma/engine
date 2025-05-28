@@ -195,13 +195,25 @@ defmodule EngineSystem.Engine.DSL do
         spec_data.config_spec
       end
 
+    # Provide default env_spec if none was defined (stateless engine)
+    final_env_spec =
+      if spec_data.env_spec == %{} do
+        %{
+          name: :stateless_env,
+          default: %{},
+          fields: []
+        }
+      else
+        spec_data.env_spec
+      end
+
     # Create the final EngineSpec struct at compile time
     final_spec = %Spec{
       name: spec_data.name,
       version: spec_data.version,
       interface: spec_data.interface,
       config_spec: final_config_spec,
-      env_spec: spec_data.env_spec,
+      env_spec: final_env_spec,
       behaviour_rules: spec_data.behaviour_rules,
       message_filter: spec_data.message_filter
     }
