@@ -8,6 +8,8 @@ defmodule EngineSystem.Engine.DSL.ConfigBuilder do
   - Default value handling
   """
 
+  alias EngineSystem.Engine.DSL.Utils
+
   @doc """
   I define the configuration structure for the engine.
 
@@ -121,25 +123,9 @@ defmodule EngineSystem.Engine.DSL.ConfigBuilder do
   This function analyzes the map structure and creates field definitions automatically,
   eliminating the need for explicit field declarations.
   """
-  def generate_fields_from_map(config_map) when is_map(config_map) do
-    config_map
-    |> Enum.map(fn {key, value} ->
-      type = infer_type(value)
-      {key, [default: value, type: type]}
-    end)
+  def generate_fields_from_map(config_map) do
+    Utils.generate_fields_from_map(config_map)
   end
-
-  def generate_fields_from_map(_), do: []
-
-  # Helper to infer Elixir types from values
-  defp infer_type(value) when is_boolean(value), do: :boolean  # Check boolean first!
-  defp infer_type(value) when is_atom(value) and value != nil, do: :atom
-  defp infer_type(value) when is_integer(value), do: :integer
-  defp infer_type(value) when is_float(value), do: :float
-  defp infer_type(value) when is_binary(value), do: :string
-  defp infer_type(value) when is_list(value), do: :list
-  defp infer_type(value) when is_map(value), do: :map
-  defp infer_type(_), do: :any
 
   # Add new simplified config macro
   defmacro config(do: config_map_ast) do
