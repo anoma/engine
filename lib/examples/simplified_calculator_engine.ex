@@ -2,57 +2,22 @@ import EngineSystem.Engine.DSL
 
 defengine Examples.SimplifiedCalculatorEngine do
   @moduledoc """
-  Simplified Calculator Engine demonstrating the new streamlined configuration syntax.
-
-  This engine shows how the configuration can be simplified by:
-
-  1. **Eliminating redundant default values** - Values are specified only once
-  2. **Removing unnecessary config names** - The DSL automatically handles naming
-  3. **Automatic type inference** - Types are inferred from the provided values
-  4. **Cleaner, more readable syntax** - Less boilerplate, more intention-revealing
-
-  ## Old Syntax (Redundant)
-
-  ```elixir
-  config calc_config: %{
-    max_number: 1_000_000,
-    decimal_precision: 10,
-    allow_negative: true
-  } do
-    field(:max_number, default: 1_000_000, type: :integer)      # Redundant!
-    field(:decimal_precision, default: 10, type: :integer)     # Redundant!
-    field(:allow_negative, default: true, type: :boolean)      # Redundant!
-  end
-  ```
-
-  ## New Syntax (Simplified)
-
-  ```elixir
-  config do
-    %{
-      max_number: 1_000_000,
-      decimal_precision: 10,
-      allow_negative: true
-    }
-  end
-  ```
-
-  The DSL automatically:
-  - Infers `:integer` type from `1_000_000` and `10`
-  - Infers `:boolean` type from `true`
-  - Sets default values from the map values
-  - Creates field definitions internally
-
-  ## Benefits
-
-  - **50% fewer lines of code** for configuration
-  - **Eliminates duplication** of values and types
-  - **Reduces errors** from mismatched defaults/fields
-  - **Cleaner, more maintainable** configuration definitions
+  A simplified calculator engine demonstrating the new simplified config syntax.
+  This engine performs basic arithmetic operations with automatic type inference.
   """
-  version("2.0.0")
 
-  # Simplified configuration syntax - no redundancy!
+  version("1.0.0")
+
+  interface do
+    message(:add, a: :float, b: :float)
+    message(:subtract, a: :float, b: :float)
+    message(:multiply, a: :float, b: :float)
+    message(:divide, a: :float, b: :float)
+    message(:result, value: :float)
+    message(:error, reason: :atom)
+  end
+
+  # Simplified config syntax - automatic type inference from the map
   config do
     %{
       max_number: 1_000_000,
@@ -62,87 +27,58 @@ defengine Examples.SimplifiedCalculatorEngine do
     }
   end
 
-  # Message interface - same as before
-  interface do
-    message(:add, a: :number, b: :number)
-    message(:subtract, a: :number, b: :number)
-    message(:multiply, a: :number, b: :number)
-    message(:divide, a: :number, b: :number)
-    message(:power, base: :number, exponent: :integer)
-    message(:result, value: :number)
-    message(:error, reason: :atom, details: :any)
+  # No environment needed for stateless calculator
+  env do
+    %{}
   end
 
-  # Accept all messages
   message_filter(fn _msg, _config, _env -> true end)
 
-  # Behavior implementation
   behaviour do
-    on_message :add do
-      quote do
-        case msg_payload do
-          {a, b} when is_number(a) and is_number(b) ->
-            # Configuration access is the same
-            max_number = get_in(config_data.local_state, [:max_number])
-            result = a + b
+    on_message :add, %{a: a, b: b}, config, _env, sender do
+      result = a + b
 
-            if abs(result) <= max_number do
-              if msg_sender_address do
-                {:ok, [{:send, msg_sender_address, {:result, result}}]}
-              else
-                {:ok, [:noop]}
-              end
-            else
-              if msg_sender_address do
-                {:ok, [{:send, msg_sender_address, {:error, :overflow, "Result too large"}}]}
-              else
-                {:ok, [:noop]}
-              end
-            end
-
-          _ ->
-            if msg_sender_address do
-              {:ok,
-               [{:send, msg_sender_address, {:error, :invalid_args, "Expected two numbers"}}]}
-            else
-              {:ok, [:noop]}
-            end
-        end
+      if abs(result) > config.max_number do
+        {:ok, [{:send, sender, {:error, :number_too_large}}]}
+      else
+        rounded = Float.round(result, config.decimal_precision)
+        {:ok, [{:send, sender, {:result, rounded}}]}
       end
     end
 
-    on_message :divide do
-      quote do
-        case msg_payload do
-          {a, b} when is_number(a) and is_number(b) ->
-            if b == 0 do
-              if msg_sender_address do
-                {:ok,
-                 [
-                   {:send, msg_sender_address,
-                    {:error, :division_by_zero, "Cannot divide by zero"}}
-                 ]}
-              else
-                {:ok, [:noop]}
-              end
-            else
-              precision = get_in(config_data.local_state, [:decimal_precision])
-              result = Float.round(a / b, precision)
+    on_message :subtract, %{a: a, b: b}, config, _env, sender do
+      result = a - b
 
-              if msg_sender_address do
-                {:ok, [{:send, msg_sender_address, {:result, result}}]}
-              else
-                {:ok, [:noop]}
-              end
-            end
+      if not config.allow_negative and result < 0 do
+        {:ok, [{:send, sender, {:error, :negative_not_allowed}}]}
+      else
+        rounded = Float.round(result, config.decimal_precision)
+        {:ok, [{:send, sender, {:result, rounded}}]}
+      end
+    end
 
-          _ ->
-            if msg_sender_address do
-              {:ok,
-               [{:send, msg_sender_address, {:error, :invalid_args, "Expected two numbers"}}]}
-            else
-              {:ok, [:noop]}
-            end
+    on_message :multiply, %{a: a, b: b}, config, _env, sender do
+      result = a * b
+
+      if abs(result) > config.max_number do
+        {:ok, [{:send, sender, {:error, :number_too_large}}]}
+      else
+        rounded = Float.round(result, config.decimal_precision)
+        {:ok, [{:send, sender, {:result, rounded}}]}
+      end
+    end
+
+    on_message :divide, %{a: a, b: b}, config, _env, sender do
+      if abs(b) < config.operator_precision do
+        {:ok, [{:send, sender, {:error, :division_by_zero}}]}
+      else
+        result = a / b
+
+        if abs(result) > config.max_number do
+          {:ok, [{:send, sender, {:error, :number_too_large}}]}
+        else
+          rounded = Float.round(result, config.decimal_precision)
+          {:ok, [{:send, sender, {:result, rounded}}]}
         end
       end
     end
