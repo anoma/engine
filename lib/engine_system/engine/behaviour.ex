@@ -151,6 +151,37 @@ defmodule EngineSystem.Engine.Behaviour do
           State.Environment.t()
         ) ::
           {:ok, [Effect.t()]}
+  defp execute_action(
+         {:function_handler, module, handler_name},
+         tag,
+         payload,
+         sender,
+         configuration,
+         environment
+       ) do
+    # Execute function-based handler with compile-time validation
+    # Create proper payload structure based on tag
+    msg_payload =
+      case payload do
+        # Simple atom message
+        nil -> tag
+        # Structured payload
+        _ -> payload
+      end
+
+    # Call the actual generated function with proper arguments
+    # The function expects: msg_payload, config, env, sender
+    apply(module, handler_name, [
+      msg_payload,
+      configuration.local_state,
+      environment.local_state,
+      sender
+    ])
+  rescue
+    error ->
+      {:error, {:function_handler_error, error}}
+  end
+
   defp execute_action(_action_ast, :get, payload, sender, _configuration, environment) do
     # Example: GET operation might send a result back
     effects =
