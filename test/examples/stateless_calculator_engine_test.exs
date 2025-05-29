@@ -33,7 +33,7 @@ defmodule Examples.StatelessCalculatorEngineTest do
       spec = StatelessCalculatorEngine.__engine_spec__()
 
       # Verify configuration is defined
-      assert spec.config_spec.name == :calc_config
+      assert spec.config_spec.name == :config
       assert spec.config_spec.default.max_number == 1_000_000
       assert spec.config_spec.default.decimal_precision == 10
       assert spec.config_spec.default.allow_negative == true
@@ -225,7 +225,7 @@ defmodule Examples.StatelessCalculatorEngineTest do
 
       calc_instances =
         Enum.filter(instances, fn inst ->
-          inst.spec_key == {Examples.StatelessCalculatorEngine, "1.0.0"}
+          inst.spec_key == {Examples.StatelessCalculatorEngine, "2.0.0"}
         end)
 
       assert length(calc_instances) >= 2

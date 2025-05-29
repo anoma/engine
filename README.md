@@ -176,11 +176,11 @@ EngineSystem.Application
 
 ### DSL for Engine Definition
 
-A engine definition consists of:
+The DSL now features **compile-time validation** and a clean, simplified syntax. Engine definitions consist of:
 
-- Declaring the message interface and behaviour, which is mandatory (at the moment).
-- Declaring configuration, environment, and the message filter, which is optional,
-  but recommended.
+- Declaring the message interface and behaviour (mandatory)
+- Declaring configuration and environment (optional but recommended)
+- Message filters for selective processing (optional)
 
 ```elixir
 import EngineSystem.Engine.DSL
@@ -204,7 +204,7 @@ defengine MyKVStore do
     }
   end
 
-  environment do
+  env do
     %{
       store: %{},
       access_counts: %{},
@@ -217,62 +217,75 @@ defengine MyKVStore do
 
   behaviour do
     on_message :get do
-      # Business logic here...
-      {:send, sender, {:result, :ok}}
-      # you have more effects at hand:
-      # {:update_env, :store, %{key => value}}
-      # {:terminate} ... (read the docs for more effects)
+      key = payload
+      value = Map.get(env.store, key, :not_found)
+      send(sender, {:result, value})
     end
-    ...
+
+    on_message :put do
+      {key, value} = payload
+      new_store = Map.put(env.store, key, value)
+      update_env(:store, new_store)
+      send(sender, {:ack})
+    end
+
+    on_message :delete do
+      key = payload
+      new_store = Map.delete(env.store, key)
+      update_env(:store, new_store)
+      send(sender, {:ack})
+    end
   end
 end
 ```
 
+#### Key DSL Features
 
+- **Compile-time validation**: All handler functions are validated at compile time
+- **Clean syntax**: No quote blocks or complex macros
+- **Type safety**: Message interfaces enforce structure
+- **Direct variable access**: `payload`, `sender`, `config`, `env` available in handlers
+- **Effect helpers**: `send/2`, `update_env/2`, `update_config/2`, `terminate/0`
 
-- Support for built-in guards using `when` syntax is coming soon.
+#### Simple Examples
 
-<details>
-<summary>A more verbose DSL syntax</summary>
-
+**Echo Engine:**
 ```elixir
-import EngineSystem.Engine.DSL
-
-defengine MyKVStore do
-  version "1.0.0"
-
+defengine SimpleEcho do
   interface do
-    message :get, key: :atom
-    message :put, key: :atom, value: :any
-    message :delete, key: :atom
-    message :result, value: {:option, :any}
+    message :echo, text: :string
   end
-
-  config kv_config: %{access_mode: :read_write, max_size: 1000} do
-    field :access_mode, default: :read_write, type: :atom
-    field :max_size, default: 1000, type: :integer
-  end
-
-  environment kv_env: %{store: %{}, access_counts: %{}} do
-    field :store, default: %{}, type: :map
-    field :access_counts, default: %{}, type: :map
-  end
-
-  # This informs the mailbox engine to deliver messages that pass this filter
-  # and discard messages that don't pass it (need to review this in the paper .
-  message_filter fn _msg, _config, _env -> true end
 
   behaviour do
-    on_message :get do
-      # Business logic here... you have access to the engine's configuration, environment, and state
-      {:ok, :noop}
+    on_message :echo do
+      send(sender, {:echo_reply, payload})
     end
-    ...
   end
 end
 ```
 
-</details>
+**Stateless Calculator:**
+```elixir
+defengine StatelessCalculator do
+  interface do
+    message :add, a: :number, b: :number
+    message :multiply, a: :number, b: :number
+    message :result, value: :number
+  end
+
+  behaviour do
+    on_message :add do
+      {a, b} = payload
+      send(sender, {:result, a + b})
+    end
+
+    on_message :multiply do
+      {a, b} = payload
+      send(sender, {:result, a * b})
+    end
+  end
+end
+```
 
 ## Usage
 
@@ -367,17 +380,19 @@ Each processing engine maintains three types of state:
 
 ## Development Status
 
-This implementation provides a solid foundation for the actor model with mailbox-as-actors separation. Key features implemented:
+This implementation provides a robust foundation for the actor model with mailbox-as-actors separation and **compile-time validated DSL**. Key features implemented:
+
+**DSL and Compile-time Validation**
+- **Compile-time function generation** for all message handlers
+- **Type-safe message interfaces** with validation
+- **Clean, quote-free syntax** for better IDE support
+- **Automatic spec registration** with validation
+- **Error detection at compile-time** rather than runtime
 
 **Core Architecture**
 - OTP supervision tree
 - GenStage-based message flow
 - System registry and services
-
-**DSL and Specifications**
-- Compile-time engine specification generation
-- Interface, configuration, and environment definitions
-- Automatic spec registration
 
 **Mailbox-as-Actors**
 - First-class mailbox engines
@@ -387,7 +402,7 @@ This implementation provides a solid foundation for the actor model with mailbox
 **Processing Engines**
 - GenStage consumers for business logic
 - State management (configuration, environment, status)
-- Behavior rule execution framework
+- **Generated behavior functions** with compile-time validation
 
 **System Management**
 - Engine spawning and termination

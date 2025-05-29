@@ -39,7 +39,7 @@ defmodule EngineSystem.DSL.ConfigSimplificationTest do
       spec = Examples.StatelessCalculatorEngine.__engine_spec__()
 
       # Verify old syntax still works
-      assert spec.config_spec.name == :calc_config
+      assert spec.config_spec.name == :config
       assert spec.config_spec.default.max_number == 1_000_000
       assert spec.config_spec.default.decimal_precision == 10
       assert spec.config_spec.default.allow_negative == true

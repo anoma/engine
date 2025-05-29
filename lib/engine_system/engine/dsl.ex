@@ -6,10 +6,19 @@ defmodule EngineSystem.Engine.DSL do
   users to define engines with their message interfaces, configurations,
   environments, and behaviors.
 
+  ## File Compilation
+
+  By default, engines do not generate compiled files. To enable file compilation:
+
+  1. Use the `:compile` option: `defengine MyEngine, compile: true do`
+  2. Set the global application configuration: `config :engine_system, compile_engines: true`
+
+  The `:compile` option takes precedence over the global configuration.
+
   ## Example Usage
 
   ```elixir
-  defengine KVStoreEngine do
+  defengine KVStoreEngine, compile: true do
     version "1.0.0"
 
     interface do
@@ -43,7 +52,17 @@ defmodule EngineSystem.Engine.DSL do
       end
     end
   end
+
+  ## Global Configuration
+
+  You can enable compilation for all engines by setting:
+
+  ```elixir
+  config :engine_system, compile_engines: true
   ```
+
+  Individual engines can still use the `:compile` option to enable compilation
+  regardless of the global setting.
   """
 
   alias EngineSystem.Engine.DSL.Validation
@@ -53,69 +72,45 @@ defmodule EngineSystem.Engine.DSL do
   @doc """
   I define an engine type using the DSL.
 
-  This macro processes the engine Def. and creates a compiled EngineSpec
+  This macro processes the engine definition and creates a compiled EngineSpec
   that gets registered with the system.
+
+  By default, no compiled files are generated. Use the `:compile` option
+  (`defengine MyEngine, compile: true do`) or set the global `:compile_engines`
+  application configuration to enable file compilation.
+
+  ## Options
+
+  - `:compile` - When `true`, enables compiled file generation for this engine
+
+  ## Examples
+
+  ```elixir
+  # Basic engine without compilation
+  defengine MyEngine do
+    version "1.0.0"
+    # ... rest of definition
+  end
+
+  # Engine with compilation enabled
+  defengine MyEngine, compile: true do
+    version "1.0.0"
+    # ... rest of definition
+  end
+  ```
   """
   defmacro defengine(name_ast, do: block) do
-    quote do
-      defmodule unquote(name_ast) do
-        @before_compile EngineSystem.Engine.DSL
+    defengine_impl(name_ast, [], block)
+  end
 
-        # Initialize spec accumulator
-        Module.register_attribute(__MODULE__, :engine_spec_data, accumulate: false)
-
-        Module.put_attribute(__MODULE__, :engine_spec_data, %{
-          name: unquote(name_ast),
-          version: "0.1.0",
-          interface: [],
-          config_spec: %{},
-          env_spec: %{},
-          behaviour_rules: [],
-          message_filter: {:default_filter, []}
-        })
-
-        # Import DSL macros
-        import EngineSystem.Engine.DSL,
-          only: [
-            version: 1,
-            message_filter: 1
-          ]
-
-        import EngineSystem.Engine.DSL.InterfaceBuilder,
-          only: [
-            interface: 1,
-            message: 2,
-            message: 1
-          ]
-
-        import EngineSystem.Engine.DSL.ConfigBuilder,
-          only: [
-            config: 2,
-            config: 1,
-            field: 2,
-            field: 1
-          ]
-
-        import EngineSystem.Engine.DSL.EnvironmentBuilder,
-          only: [
-            environment: 2,
-            environment: 1
-          ]
-
-        import EngineSystem.Engine.DSL.BehaviorBuilder,
-          only: [
-            behaviour: 1,
-            on_message: 2
-          ]
-
-        # Process the block
-        unquote(block)
-      end
-    end
+  defmacro defengine(name_ast, opts, do: block) do
+    defengine_impl(name_ast, opts, block)
   end
 
   @doc """
-  I set the version for the engine.
+  I set the version for the engine without enabling file compilation.
+
+  Use `defengine MyEngine, compile: true do` to enable file compilation if needed.
   """
   defmacro version(version_string) do
     quote do
@@ -147,6 +142,7 @@ defmodule EngineSystem.Engine.DSL do
   defmacro __before_compile__(env) do
     # Get the spec data at compile time
     spec_data = Module.get_attribute(env.module, :engine_spec_data)
+    generate_compiled = Module.get_attribute(env.module, :generate_compiled)
 
     # Provide default config_spec if none was defined
     final_config_spec =
@@ -207,15 +203,115 @@ defmodule EngineSystem.Engine.DSL do
 
       @after_compile __MODULE__
 
-      def __after_compile__(_env, _bytecode) do
+      def __after_compile__(env, _bytecode) do
         spec = __engine_spec__()
-        # Try to register the spec, but don't fail if the system isn't running
+
+        # Register spec (existing functionality)
         try do
           Registry.register_spec(spec)
         catch
           # System not running, that's fine
           :exit, _ -> :ok
         end
+
+        # Generate compiled engine file only if enabled
+        # Check both local flag and global application configuration
+        should_compile =
+          unquote(generate_compiled) or
+            Application.get_env(:engine_system, :compile_engines, false)
+
+        if should_compile do
+          source_file = env.file
+
+          try do
+            EngineSystem.Engine.Compiler.generate_compiled_engine(spec, source_file)
+          catch
+            # Compilation failed, log but don't fail the build
+            kind, reason ->
+              IO.warn(
+                "Failed to generate compiled engine for #{spec.name}: #{inspect({kind, reason})}"
+              )
+          end
+        end
+      end
+    end
+  end
+
+  # Common implementation for defengine with options
+  defp defengine_impl(name_ast, opts, block) do
+    enable_compilation = Keyword.get(opts, :compile, false)
+
+    quote do
+      defmodule unquote(name_ast) do
+        @before_compile EngineSystem.Engine.DSL
+
+        # Initialize spec accumulator
+        Module.register_attribute(__MODULE__, :engine_spec_data, accumulate: false)
+        # Track whether to generate compiled file (default: false)
+        Module.register_attribute(__MODULE__, :generate_compiled, accumulate: false)
+
+        Module.put_attribute(__MODULE__, :engine_spec_data, %{
+          name: unquote(name_ast),
+          version: "0.1.0",
+          interface: [],
+          config_spec: %{},
+          env_spec: %{},
+          behaviour_rules: [],
+          message_filter: {:default_filter, []}
+        })
+
+        Module.put_attribute(__MODULE__, :generate_compiled, unquote(enable_compilation))
+
+        # Import DSL macros
+        import EngineSystem.Engine.DSL,
+          only: [
+            version: 1,
+            message_filter: 1
+          ]
+
+        import EngineSystem.Engine.DSL.InterfaceBuilder,
+          only: [
+            interface: 1,
+            message: 2,
+            message: 1
+          ]
+
+        import EngineSystem.Engine.DSL.ConfigBuilder,
+          only: [
+            config: 2,
+            config: 1,
+            field: 2,
+            field: 1
+          ]
+
+        import EngineSystem.Engine.DSL.EnvironmentBuilder,
+          only: [
+            environment: 2,
+            environment: 1,
+            env: 2,
+            env: 1
+          ]
+
+        import EngineSystem.Engine.DSL.BehaviorBuilder,
+          only: [
+            behaviour: 1,
+            on_message: 2,
+            on_message: 3,
+            on_message: 6,
+            guard: 2,
+            guard: 3,
+            when_guard: 2,
+            with_guard: 2,
+            otherwise: 1,
+            start_message_pattern_collection: 2,
+            finalize_message_patterns: 1,
+            finalize_behavior_with_guards: 0,
+            compile_patterns_to_rules: 2,
+            merge_behavior_rules: 2
+          ]
+
+        # Process the block
+        unquote(block)
       end
     end
   end

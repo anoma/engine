@@ -29,3 +29,6 @@ _build/
 # For Erlang:
 .eunit/
 notes/
+
+.engine/
+**_compiled.ex

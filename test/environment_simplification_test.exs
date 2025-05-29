@@ -103,7 +103,7 @@ defmodule EngineSystem.EnvironmentSimplificationTest do
 
       # Verify basic engine properties
       assert spec.name == Examples.SimpleCounterEngine
-      assert spec.version == "1.0.0"
+      assert spec.version == "2.0.0"
 
       # Check environment spec uses simplified syntax
       env_spec = spec.env_spec
@@ -166,7 +166,7 @@ defmodule EngineSystem.EnvironmentSimplificationTest do
       # Check that old verbose syntax still works
       env_spec = spec.env_spec
       # Named environment from old syntax
-      assert env_spec.name == :kv_env
+      assert env_spec.name == :environment
       assert env_spec.default == %{store: %{}, access_counts: %{}}
 
       # Verify field definitions exist
