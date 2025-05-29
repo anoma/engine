@@ -8,21 +8,25 @@ defmodule EngineSystem.Engine.DSL.EnvironmentBuilder do
   - Default value handling
   """
 
+  # Suppress warnings for functions used in macro-generated code
+  @compile {:no_warn_undefined, {__MODULE__, :create_field_entry, 2}}
+  @compile {:nowarn_unused_function, [{:create_field_entry, 2}]}
+
   alias EngineSystem.Engine.DSL.Utils
 
   @doc """
-  I define the environment structure for the engine.
+  I define the environment specification for the engine.
 
   ## Parameters
 
-  - `env_args` - Environment arguments including name and default
+  - `name_spec` - Environment specification and default values (optional)
   - `block` - Block containing field definitions
 
   ## Returns
 
   Quoted AST for environment definition
   """
-  defmacro environment(env_args, do: block) do
+  defmacro environment(name_spec \\ :default_env, do: block) do
     quote do
       Module.put_attribute(__MODULE__, :current_env_fields, [])
       unquote(block)
@@ -30,19 +34,112 @@ defmodule EngineSystem.Engine.DSL.EnvironmentBuilder do
       spec_data = Module.get_attribute(__MODULE__, :engine_spec_data)
       fields = Module.get_attribute(__MODULE__, :current_env_fields) |> Enum.reverse()
 
-      # Extract name and default from the keyword list
-      [{env_name, default_value}] = unquote(env_args)
-
-      env_spec = %{
-        name: env_name,
-        default: default_value,
-        fields: fields
-      }
+      env_spec =
+        EngineSystem.Engine.DSL.EnvironmentBuilder.create_env_spec_public(
+          unquote(name_spec),
+          fields
+        )
 
       updated_spec = %{spec_data | env_spec: env_spec}
+
       Module.put_attribute(__MODULE__, :engine_spec_data, updated_spec)
       Module.delete_attribute(__MODULE__, :current_env_fields)
     end
+  end
+
+  @doc """
+  I define the environment specification for the engine (alias for environment).
+  Supports both traditional field syntax and simplified map syntax.
+
+  ## Traditional syntax with fields
+
+  ```elixir
+  env do
+    field(:counter, default: 0, type: :integer)
+    field(:enabled, default: true, type: :boolean)
+  end
+  ```
+
+  ## Simplified map syntax (auto-infers types)
+
+  ```elixir
+  env do
+    %{
+      counter: 0,
+      enabled: true
+    }
+  end
+  ```
+
+  ## Returns
+
+  Quoted AST for environment definition
+  """
+  defmacro env(name_spec \\ :default_env, do: block) do
+    # Check if the block is a simple map (simplified syntax) at compile time
+    case block do
+      {:%{}, _, _} ->
+        # Process the simplified env syntax
+        quote do
+          env_map = unquote(block)
+
+          # Generate field definitions from the map automatically
+          fields = Utils.generate_fields_from_map(env_map)
+
+          spec_data = Module.get_attribute(__MODULE__, :engine_spec_data)
+
+          env_spec = %{
+            name: :environment,
+            default: env_map,
+            fields: fields
+          }
+
+          updated_spec = %{spec_data | env_spec: env_spec}
+          Module.put_attribute(__MODULE__, :engine_spec_data, updated_spec)
+        end
+
+      _ ->
+        # Traditional syntax with field definitions
+        quote do
+          environment(unquote(name_spec), do: unquote(block))
+        end
+    end
+  end
+
+  @doc """
+  I define a field in the environment.
+
+  ## Parameters
+
+  - `field_def` - Field definition (name or name with options)
+  - `options` - Field options (default value, type, etc.)
+
+  ## Returns
+
+  Quoted AST for field definition
+  """
+  defmacro field(field_def, options \\ []) do
+    quote do
+      current_fields = Module.get_attribute(__MODULE__, :current_env_fields)
+
+      field_entry =
+        EngineSystem.Engine.DSL.EnvironmentBuilder.create_field_entry(
+          unquote(field_def),
+          unquote(options)
+        )
+
+      Module.put_attribute(__MODULE__, :current_env_fields, [field_entry | current_fields])
+    end
+  end
+
+  @doc """
+  I generate field definitions from an environment map by inferring types from values.
+
+  This function analyzes the map structure and creates field definitions automatically,
+  eliminating the need for explicit field declarations.
+  """
+  def generate_fields_from_map(env_map) do
+    Utils.generate_fields_from_map(env_map)
   end
 
   @doc """
@@ -88,35 +185,43 @@ defmodule EngineSystem.Engine.DSL.EnvironmentBuilder do
   defp validate_field_options(_), do: {:error, :invalid_field_options}
 
   @doc """
-  I generate field definitions from an environment map by inferring types from values.
-
-  This function analyzes the map structure and creates field definitions automatically,
-  eliminating the need for explicit field declarations.
+  I create an environment specification from name and fields (public version for macro expansion).
   """
-  def generate_fields_from_map(env_map) do
-    Utils.generate_fields_from_map(env_map)
+  def create_env_spec_public(name_spec, fields) do
+    create_env_spec(name_spec, fields)
   end
 
-  # Add new simplified environment macro
-  defmacro environment(do: env_map_ast) do
-    quote do
-      # Process the simplified environment syntax
-      env_map = unquote(env_map_ast)
+  # Helper functions for creating specs
+  defp create_env_spec({:__block__, _, [{name, default}]}, fields) when is_atom(name) do
+    %{
+      name: name,
+      default: default,
+      fields: fields
+    }
+  end
 
-      # Generate field definitions from the map automatically
-      fields = EngineSystem.Engine.DSL.EnvironmentBuilder.generate_fields_from_map(env_map)
+  defp create_env_spec([{name, default}], fields) when is_atom(name) do
+    %{
+      name: name,
+      default: default,
+      fields: fields
+    }
+  end
 
-      spec_data = Module.get_attribute(__MODULE__, :engine_spec_data)
+  defp create_env_spec(name, fields) when is_atom(name) do
+    %{
+      name: name,
+      default: %{},
+      fields: fields
+    }
+  end
 
-      env_spec = %{
-        # Use generic name since it's not provided
-        name: :environment,
-        default: env_map,
-        fields: fields
-      }
+  # Helper function for field macro
+  def create_field_entry({field_name, _, _}, options) when is_atom(field_name) do
+    {field_name, options}
+  end
 
-      updated_spec = %{spec_data | env_spec: env_spec}
-      Module.put_attribute(__MODULE__, :engine_spec_data, updated_spec)
-    end
+  def create_field_entry(field_name, options) when is_atom(field_name) do
+    {field_name, options}
   end
 end
