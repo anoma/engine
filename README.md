@@ -204,7 +204,7 @@ defengine MyKVStore do
     }
   end
 
-  environment do
+  env do
     %{
       store: %{},
       access_counts: %{},
