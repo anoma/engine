@@ -2,7 +2,6 @@ defmodule EngineSystem.System.SpawnerValidationTest do
   use ExUnit.Case, async: true
 
   alias EngineSystem.System.{Spawner, Registry}
-  alias EngineSystem.Engine.{Spec, State}
   alias Examples.KVStoreEngine
 
   setup do

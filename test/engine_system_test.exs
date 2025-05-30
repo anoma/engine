@@ -2,8 +2,6 @@ defmodule EngineSystemTest do
   use ExUnit.Case
   doctest EngineSystem
 
-  alias Examples.KVStoreEngine
-
   setup do
     # Start the application for testing
     {:ok, _} = Application.ensure_all_started(:engine_system)
