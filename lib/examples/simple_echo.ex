@@ -11,6 +11,17 @@ defengine Examples.SimpleEcho do
     message(:pong)
   end
 
+  config do
+    %{}
+  end
+
+  # Stateless - no environment state
+  env do
+    %{}
+  end
+
+  message_filter(fn _msg, _config, _env -> true end)
+
   behaviour do
     on_message :echo, msg_payload, _config, _env, sender do
       content = msg_payload[:content] || msg_payload
