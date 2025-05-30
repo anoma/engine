@@ -27,13 +27,6 @@ defengine Examples.SimplifiedCalculatorEngine do
     }
   end
 
-  # No environment needed for stateless calculator
-  env do
-    %{}
-  end
-
-  message_filter(fn _msg, _config, _env -> true end)
-
   behaviour do
     on_message :add, %{a: a, b: b}, config, _env, sender do
       result = a + b

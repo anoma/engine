@@ -13,9 +13,10 @@ defengine Examples.KVStoreEngine do
     message(:ack)
   end
 
-  config do
-    %{}
-  end
+  # Defining a config is optional.
+  # config do
+  #   %{}
+  # end
 
   env do
     %{store: %{}, access_counts: %{}}
