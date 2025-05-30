@@ -7,8 +7,13 @@ defmodule EngineSystem.API do
   - Message sending between engines
   - Engine specification management
   - Instance and system queries
+  - System lifecycle management
 
   ## Public API
+
+  ### System Lifecycle
+  - `start_system/0` - Start the EngineSystem application
+  - `stop_system/0` - Stop the EngineSystem application
 
   ### Engine Management
   - `spawn_engine/4` - Spawn a new engine instance
@@ -33,8 +38,34 @@ defmodule EngineSystem.API do
   """
 
   alias EngineSystem.Engine.{Spec, State}
+  alias EngineSystem.Lifecycle
   alias EngineSystem.Mailbox.{DefaultMailboxEngine, Message}
   alias EngineSystem.System.{Registry, Services, Spawner}
+
+  @doc """
+  I start the EngineSystem application.
+
+  ## Returns
+
+  - `{:ok, [app]}` if the system started successfully
+  - `{:error, reason}` if startup failed
+  """
+  @spec start_system() :: {:ok, [atom()]} | {:error, any()}
+  def start_system do
+    Lifecycle.start()
+  end
+
+  @doc """
+  I stop the EngineSystem application.
+
+  ## Returns
+
+  `:ok` when the system has been stopped.
+  """
+  @spec stop_system() :: :ok
+  def stop_system do
+    Lifecycle.stop()
+  end
 
   @doc """
   I spawn a new engine instance.
@@ -45,6 +76,8 @@ defmodule EngineSystem.API do
   - `config` - Initial configuration for the engine (optional)
   - `environment` - Initial environment/local state for the engine (optional)
   - `name` - Optional name for the instance
+  - `mailbox_engine_module` - Optional mailbox engine module (defaults to DefaultMailboxEngine)
+  - `mailbox_config` - Optional mailbox engine configuration
 
   ## Returns
 
@@ -53,7 +86,7 @@ defmodule EngineSystem.API do
 
   ## Examples
 
-      # Spawn an engine with default configuration
+      # Spawn an engine with default configuration and default mailbox
       {:ok, address} = EngineSystem.API.spawn_engine(MyKVEngine)
 
       # Spawn with custom configuration
@@ -62,11 +95,66 @@ defmodule EngineSystem.API do
 
       # Spawn with a name
       {:ok, address} = EngineSystem.API.spawn_engine(MyKVEngine, nil, nil, :my_kv_store)
+
+      # Spawn with custom mailbox engine
+      {:ok, address} = EngineSystem.API.spawn_engine(
+        MyKVEngine,
+        %{access_mode: :read_write},
+        nil,
+        :my_store,
+        KVPriorityMailboxEngine,
+        %{max_buffer_size: 2000}
+      )
   """
-  @spec spawn_engine(module(), any(), any(), atom() | nil) ::
+  @spec spawn_engine(module(), any(), any(), atom() | nil, module() | nil, any() | nil) ::
           {:ok, State.address()} | {:error, any()}
-  def spawn_engine(engine_module, config \\ nil, environment \\ nil, name \\ nil) do
-    Spawner.spawn_engine(engine_module, config, environment, name)
+  def spawn_engine(
+        engine_module,
+        config \\ nil,
+        environment \\ nil,
+        name \\ nil,
+        mailbox_engine_module \\ nil,
+        mailbox_config \\ nil
+      ) do
+    Spawner.spawn_engine(
+      engine_module,
+      config,
+      environment,
+      name,
+      mailbox_engine_module,
+      mailbox_config
+    )
+  end
+
+  @doc """
+  I spawn a new engine instance with explicit mailbox configuration.
+
+  This provides full control over both processing and mailbox engines.
+
+  ## Parameters
+
+  - `opts` - Keyword list with configuration options
+
+  ## Returns
+
+  - `{:ok, address}` if the engine was spawned successfully
+  - `{:error, reason}` if spawning failed
+
+  ## Examples
+
+      # Full specification
+      {:ok, address} = EngineSystem.API.spawn_engine_with_mailbox(
+        processing_engine: MyKVEngine,
+        processing_config: %{access_mode: :read_write},
+        processing_env: %{store: %{}},
+        mailbox_engine: KVPriorityMailboxEngine,
+        mailbox_config: %{max_buffer_size: 5000, batch_size: 20},
+        name: :enterprise_kv_store
+      )
+  """
+  @spec spawn_engine_with_mailbox(keyword()) :: {:ok, State.address()} | {:error, any()}
+  def spawn_engine_with_mailbox(opts) do
+    Spawner.spawn_engine_with_mailbox(opts)
   end
 
   @doc """
