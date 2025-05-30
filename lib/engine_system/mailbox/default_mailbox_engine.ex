@@ -38,6 +38,8 @@ defmodule EngineSystem.Mailbox.DefaultMailboxEngine do
   use GenStage
   use TypedStruct
 
+  @behaviour EngineSystem.Mailbox.Behaviour
+
   alias EngineSystem.Engine.{Spec, State}
   alias EngineSystem.Mailbox.Message
 
@@ -84,6 +86,7 @@ defmodule EngineSystem.Mailbox.DefaultMailboxEngine do
   GenStage start result.
   """
   @spec start_link(map()) :: GenServer.on_start()
+  @impl EngineSystem.Mailbox.Behaviour
   def start_link(mailbox_spec) do
     GenStage.start_link(__MODULE__, mailbox_spec)
   end
@@ -103,6 +106,7 @@ defmodule EngineSystem.Mailbox.DefaultMailboxEngine do
   `:ok` if the message was enqueued successfully.
   """
   @spec enqueue_message(pid(), Message.t()) :: :ok
+  @impl EngineSystem.Mailbox.Behaviour
   def enqueue_message(mailbox_pid, message) do
     GenStage.cast(mailbox_pid, {:enqueue_message, message})
   end
@@ -120,6 +124,7 @@ defmodule EngineSystem.Mailbox.DefaultMailboxEngine do
   `:ok` if the filter was updated successfully.
   """
   @spec update_filter(pid(), function()) :: :ok
+  @impl EngineSystem.Mailbox.Behaviour
   def update_filter(mailbox_pid, new_filter) do
     GenStage.call(mailbox_pid, {:update_filter, new_filter})
   end
@@ -136,6 +141,7 @@ defmodule EngineSystem.Mailbox.DefaultMailboxEngine do
   A map with mailbox information.
   """
   @spec get_info(pid()) :: map()
+  @impl EngineSystem.Mailbox.Behaviour
   def get_info(mailbox_pid) do
     GenStage.call(mailbox_pid, :get_info)
   end

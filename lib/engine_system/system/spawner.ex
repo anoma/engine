@@ -24,7 +24,7 @@ defmodule EngineSystem.System.Spawner do
 
   This implements the complete s-EngineSpawn process:
   1. Fetch the Engine.Spec for the requested processing engine type
-  2. Start an instance of Mailbox.DefaultMailboxEngine with the Engine.Spec
+  2. Start an instance of the specified Mailbox Engine (or DefaultMailboxEngine) with the Engine.Spec
   3. Start the Engine.Instance GenServer with its spec and mailbox PID
   4. Register both with the System.Registry
 
@@ -34,18 +34,28 @@ defmodule EngineSystem.System.Spawner do
   - `config` - Initial configuration for the engine (optional)
   - `environment` - Initial environment/local state for the engine (optional)
   - `name` - Optional name for the instance
+  - `mailbox_engine_module` - Optional mailbox engine module (defaults to DefaultMailboxEngine)
+  - `mailbox_config` - Optional mailbox engine configuration
 
   ## Returns
 
   - `{:ok, address}` if the engine was spawned successfully
   - `{:error, reason}` if spawning failed
   """
-  @spec spawn_engine(module(), any(), any(), atom() | nil) ::
+  @spec spawn_engine(module(), any(), any(), atom() | nil, module() | nil, any() | nil) ::
           {:ok, State.address()} | {:error, any()}
-  def spawn_engine(engine_module, config \\ nil, environment \\ nil, name \\ nil) do
+  def spawn_engine(
+        engine_module,
+        config \\ nil,
+        environment \\ nil,
+        name \\ nil,
+        mailbox_engine_module \\ nil,
+        mailbox_config \\ nil
+      ) do
     with {:ok, spec} <- get_engine_spec(engine_module),
          {:ok, address} <- generate_address(),
-         {:ok, mailbox_pid} <- start_mailbox_engine(spec, address),
+         {:ok, mailbox_pid} <-
+           start_mailbox_engine(spec, address, mailbox_engine_module, mailbox_config),
          {:ok, engine_pid} <-
            start_processing_engine(spec, address, mailbox_pid, config, environment),
          :ok <- register_instance(address, spec, engine_pid, mailbox_pid, name) do
@@ -53,6 +63,45 @@ defmodule EngineSystem.System.Spawner do
     else
       {:error, reason} -> {:error, reason}
     end
+  end
+
+  @doc """
+  I spawn a new engine instance with full mailbox configuration.
+
+  This provides explicit control over both processing and mailbox engines.
+
+  ## Parameters
+
+  - `opts` - Keyword list with:
+    - `:processing_engine` - Processing engine module
+    - `:processing_config` - Processing engine configuration
+    - `:processing_env` - Processing engine environment
+    - `:mailbox_engine` - Mailbox engine module
+    - `:mailbox_config` - Mailbox engine configuration
+    - `:name` - Optional instance name
+
+  ## Returns
+
+  - `{:ok, address}` if spawning succeeded
+  - `{:error, reason}` if spawning failed
+  """
+  @spec spawn_engine_with_mailbox(keyword()) :: {:ok, State.address()} | {:error, any()}
+  def spawn_engine_with_mailbox(opts) do
+    processing_engine = Keyword.fetch!(opts, :processing_engine)
+    processing_config = Keyword.get(opts, :processing_config)
+    processing_env = Keyword.get(opts, :processing_env)
+    mailbox_engine = Keyword.get(opts, :mailbox_engine)
+    mailbox_config = Keyword.get(opts, :mailbox_config)
+    name = Keyword.get(opts, :name)
+
+    spawn_engine(
+      processing_engine,
+      processing_config,
+      processing_env,
+      name,
+      mailbox_engine,
+      mailbox_config
+    )
   end
 
   ## Private Functions
@@ -75,18 +124,23 @@ defmodule EngineSystem.System.Spawner do
     {:ok, address}
   end
 
-  @spec start_mailbox_engine(Spec.t(), State.address()) :: {:ok, pid()} | {:error, any()}
-  defp start_mailbox_engine(spec, mailbox_address) do
+  @spec start_mailbox_engine(Spec.t(), State.address(), module() | nil, any() | nil) ::
+          {:ok, pid()} | {:error, any()}
+  defp start_mailbox_engine(spec, mailbox_address, mailbox_engine_module, mailbox_config) do
+    # Use specified mailbox engine or default
+    engine_module = mailbox_engine_module || DefaultMailboxEngine
+
     mailbox_spec = %{
       address: mailbox_address,
       processing_engine_spec: spec,
       message_interface: spec.interface,
-      message_filter: Spec.get_message_filter(spec)
+      message_filter: Spec.get_message_filter(spec),
+      mailbox_config: mailbox_config || %{}
     }
 
     case DynamicSupervisor.start_child(
            EngineSystem.Mailbox.DynamicSupervisor,
-           {DefaultMailboxEngine, mailbox_spec}
+           {engine_module, mailbox_spec}
          ) do
       {:ok, pid} -> {:ok, pid}
       {:error, reason} -> {:error, {:mailbox_start_failed, reason}}
