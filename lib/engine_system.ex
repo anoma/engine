@@ -7,22 +7,31 @@ defmodule EngineSystem do
 
   ## Public API
 
+  ### System Management
   - `start/0` - Start the EngineSystem application
   - `stop/0` - Stop the EngineSystem application
+  - `get_system_info/0` - Get system information
+  - `clean_terminated_engines/0` - Clean up terminated engines
+
+  ### Engine Lifecycle
   - `spawn_engine/1..6` - Spawn engine instances with optional custom mailbox engines
   - `spawn_engine_with_mailbox/1` - Spawn with explicit mailbox configuration
-  - `send_message/2..3` - Send messages between engines
   - `terminate_engine/1` - Terminate engine instances
+
+  ### Communication
+  - `send_message/2..3` - Send messages between engines
+  - `validate_message/2` - Validate messages against engine interface
+
+  ### Registry and Discovery
   - `register_spec/1` - Register engine specifications
   - `lookup_spec/1..2` - Look up engine specifications
-  - `list_instances/0` - List running instances
-  - `list_specs/0` - List registered specifications
-  - `lookup_instance/1` - Look up instance information
-  - `lookup_address_by_name/1` - Look up addresses by name
-  - `get_system_info/0` - Get system information
-  - `fresh_id/0` - Generate unique IDs
-  - `validate_message/2` - Validate messages
-  - `clean_terminated_engines/0` - Clean up terminated engines
+  - `list_instances/0` - List all running engine instances
+  - `list_specs/0` - List all registered engine specifications
+  - `lookup_instance/1` - Look up instance information by address
+  - `lookup_address_by_name/1` - Look up addresses by registered name
+
+  ### Utilities
+  - `fresh_id/0` - Generate unique IDs for system entities
   """
 
   # Delegate all functions to EngineSystem.API
