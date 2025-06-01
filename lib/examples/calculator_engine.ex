@@ -7,7 +7,8 @@ defengine Examples.CalculatorEngine do
   """
 
   version("1.0.0")
-  mode :process  # This is a processing engine
+  # This is a processing engine
+  mode(:process)
 
   interface do
     message(:add, a: :float, b: :float)

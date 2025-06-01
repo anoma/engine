@@ -181,7 +181,8 @@ defmodule EngineSystem.System.Spawner do
 
     mailbox_init_data = %{
       address: address,
-      engine_module: spec.name,  # The module that defined the engine
+      # The module that defined the engine
+      engine_module: spec.name,
       spec: spec,
       configuration: final_config,
       environment: final_environment

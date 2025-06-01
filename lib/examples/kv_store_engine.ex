@@ -4,7 +4,8 @@ defengine Examples.KVStoreEngine do
   @moduledoc "Simple key-value store engine."
 
   version("1.0.0")
-  mode :process  # This is a processing engine
+  # This is a processing engine
+  mode(:process)
 
   interface do
     message(:put, key: :atom, value: :any)

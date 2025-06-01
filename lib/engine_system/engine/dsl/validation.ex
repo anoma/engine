@@ -61,22 +61,22 @@ defmodule EngineSystem.Engine.DSL.Validation do
     validate_interface_messages(interface)
   end
 
-  def validate_interface(_interface), do:
-     {:error, :invalid_interface}
+  def validate_interface(_interface), do: {:error, :invalid_interface}
 
   defp validate_interface_messages([]), do: :ok
 
   defp validate_interface_messages([{tag, fields} | rest])
        when is_atom(tag) and is_list(fields) do
     case validate_message_fields(fields) do
-      :ok -> validate_interface_messages(rest)
+      :ok ->
+        validate_interface_messages(rest)
+
       error ->
         error
     end
   end
 
-  defp validate_interface_messages(_invalid), do:
-     {:error, :invalid_message_definition}
+  defp validate_interface_messages(_invalid), do: {:error, :invalid_message_definition}
 
   defp validate_message_fields([]), do: :ok
 
@@ -84,7 +84,9 @@ defmodule EngineSystem.Engine.DSL.Validation do
   defp validate_message_fields([{field_name, field_type} | rest])
        when is_atom(field_name) do
     case validate_field_type(field_type) do
-      :ok -> validate_message_fields(rest)
+      :ok ->
+        validate_message_fields(rest)
+
       error ->
         error
     end
@@ -96,11 +98,11 @@ defmodule EngineSystem.Engine.DSL.Validation do
     validate_message_fields(rest)
   end
 
-  defp validate_message_fields(_invalid), do:
-     {:error, :invalid_message_field}
+  defp validate_message_fields(_invalid), do: {:error, :invalid_message_field}
 
   defp validate_field_type(type) when is_atom(type), do: :ok
   defp validate_field_type({:option, inner_type}), do: validate_field_type(inner_type)
+
   defp validate_field_type(field_list) when is_list(field_list) do
     if Enum.all?(field_list, &is_atom/1) do
       :ok
@@ -108,8 +110,8 @@ defmodule EngineSystem.Engine.DSL.Validation do
       {:error, :invalid_field_type}
     end
   end
-  defp validate_field_type(_invalid_type), do:
-    {:error, :invalid_field_type}
+
+  defp validate_field_type(_invalid_type), do: {:error, :invalid_field_type}
 
   @doc """
   I validate a message filter specification.

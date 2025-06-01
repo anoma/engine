@@ -83,53 +83,55 @@ defmodule EngineSystem do
       import EngineSystem.Engine.DSL
 
       # Import utility functions from EngineSystem.Engine
-      import EngineSystem.Engine, only: [
-        validate_message_for_pe: 2,
-        extract_messages: 3,
-        apply_filter: 2,
-        extract_message_tag: 1,
-        validate_address: 1,
-        fresh_id: 0
-      ]
+      import EngineSystem.Engine,
+        only: [
+          validate_message_for_pe: 2,
+          extract_messages: 3,
+          apply_filter: 2,
+          extract_message_tag: 1,
+          validate_address: 1,
+          fresh_id: 0
+        ]
 
       # Import all API functions from the main EngineSystem module
-      import EngineSystem, only: [
-        # System Management
-        start: 0,
-        stop: 0,
-        get_system_info: 0,
-        clean_terminated_engines: 0,
+      import EngineSystem,
+        only: [
+          # System Management
+          start: 0,
+          stop: 0,
+          get_system_info: 0,
+          clean_terminated_engines: 0,
 
-        # Engine Lifecycle
-        spawn_engine: 1,
-        spawn_engine: 2,
-        spawn_engine: 3,
-        spawn_engine: 4,
-        spawn_engine: 5,
-        spawn_engine: 6,
-        spawn_engine_with_mailbox: 1,
-        terminate_engine: 1,
+          # Engine Lifecycle
+          spawn_engine: 1,
+          spawn_engine: 2,
+          spawn_engine: 3,
+          spawn_engine: 4,
+          spawn_engine: 5,
+          spawn_engine: 6,
+          spawn_engine_with_mailbox: 1,
+          terminate_engine: 1,
 
-        # Communication
-        send_message: 2,
-        send_message: 3,
-        validate_message: 2,
+          # Communication
+          send_message: 2,
+          send_message: 3,
+          validate_message: 2,
 
-        # Registry and Discovery
-        register_spec: 1,
-        lookup_spec: 1,
-        lookup_spec: 2,
-        list_instances: 0,
-        list_specs: 0,
-        lookup_instance: 1,
-        lookup_address_by_name: 1,
+          # Registry and Discovery
+          register_spec: 1,
+          lookup_spec: 1,
+          lookup_spec: 2,
+          list_instances: 0,
+          list_specs: 0,
+          lookup_instance: 1,
+          lookup_address_by_name: 1,
 
-        # Interface Utilities
-        has_message?: 3,
-        get_message_fields: 3,
-        get_message_tags: 2,
-        get_instance_message_tags: 1
-      ]
+          # Interface Utilities
+          has_message?: 3,
+          get_message_fields: 3,
+          get_message_tags: 2,
+          get_instance_message_tags: 1
+        ]
     end
   end
 

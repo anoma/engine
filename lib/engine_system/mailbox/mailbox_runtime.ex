@@ -137,6 +137,7 @@ defmodule EngineSystem.Mailbox.MailboxRuntime do
       configuration: state.configuration,
       spec: state.spec
     }
+
     {:reply, info, [], state}
   end
 
@@ -144,20 +145,18 @@ defmodule EngineSystem.Mailbox.MailboxRuntime do
 
   # Execute DSL-defined behaviour patterns
   defp execute_behaviour(message, state) do
-    try do
-      case Behaviour.evaluate(state.spec, message, state.configuration, state.environment) do
-        {:ok, effects} ->
-          case apply_effects_to_state(effects, state) do
-            {:ok, updated_state} -> {:ok, effects, updated_state}
-            {:error, reason} -> {:error, reason}
-          end
+    case Behaviour.evaluate(state.spec, message, state.configuration, state.environment) do
+      {:ok, effects} ->
+        case apply_effects_to_state(effects, state) do
+          {:ok, updated_state} -> {:ok, effects, updated_state}
+          {:error, reason} -> {:error, reason}
+        end
 
-        {:error, reason} ->
-          {:error, reason}
-      end
-    rescue
-      exception -> {:error, {:behaviour_error, exception}}
+      {:error, reason} ->
+        {:error, reason}
     end
+  rescue
+    exception -> {:error, {:behaviour_error, exception}}
   end
 
   # Apply effects to update mailbox state

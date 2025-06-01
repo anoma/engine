@@ -17,8 +17,8 @@ defmodule EngineSystem.Mailbox.DefaultMailboxEngine do
   use EngineSystem
 
   defengine DefaultMailbox do
-    version "1.0.0"
-    mode :mailbox
+    version("1.0.0")
+    mode(:mailbox)
 
     # Configuration for default mailbox behavior
     config do

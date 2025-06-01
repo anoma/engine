@@ -7,7 +7,8 @@ defengine Examples.SimpleCounterEngine do
   """
 
   version("2.0.0")
-  mode :process  # This is a processing engine
+  # This is a processing engine
+  mode(:process)
 
   interface do
     message(:increment)

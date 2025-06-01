@@ -27,8 +27,8 @@ defmodule SimpleExample do
 
   # Define a simple counter engine using the DSL
   defengine SimpleCounter do
-    version "1.0.0"
-    mode :process
+    version("1.0.0")
+    mode(:process)
 
     config do
       %{
@@ -57,20 +57,22 @@ defmodule SimpleExample do
         new_count = min(env.count + config.step, config.max_count)
         new_env = %{env | count: new_count, total_operations: env.total_operations + 1}
 
-        {:ok, [
-          {:update_environment, new_env},
-          {:send, sender, {:count_response, new_count}}
-        ]}
+        {:ok,
+         [
+           {:update_environment, new_env},
+           {:send, sender, {:count_response, new_count}}
+         ]}
       end
 
       on_message :decrement, _msg, config, env, sender do
         new_count = max(env.count - config.step, 0)
         new_env = %{env | count: new_count, total_operations: env.total_operations + 1}
 
-        {:ok, [
-          {:update_environment, new_env},
-          {:send, sender, {:count_response, new_count}}
-        ]}
+        {:ok,
+         [
+           {:update_environment, new_env},
+           {:send, sender, {:count_response, new_count}}
+         ]}
       end
 
       on_message :get_count, _msg, _config, env, sender do
@@ -80,10 +82,11 @@ defmodule SimpleExample do
       on_message :reset, _msg, _config, env, sender do
         new_env = %{env | count: 0, total_operations: env.total_operations + 1}
 
-        {:ok, [
-          {:update_environment, new_env},
-          {:send, sender, {:count_response, 0}}
-        ]}
+        {:ok,
+         [
+           {:update_environment, new_env},
+           {:send, sender, {:count_response, 0}}
+         ]}
       end
     end
   end

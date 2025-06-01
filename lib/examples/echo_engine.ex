@@ -4,7 +4,8 @@ defengine Examples.EchoEngine do
   @moduledoc "Simple echo engine that echoes back any message."
 
   version("1.0.0")
-  mode :process  # This is a processing engine
+  # This is a processing engine
+  mode(:process)
 
   interface do
     message(:echo, content: :any)

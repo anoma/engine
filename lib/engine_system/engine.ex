@@ -50,14 +50,15 @@ defmodule EngineSystem.Engine do
       import EngineSystem.Engine.DSL
 
       # Import utility functions
-      import EngineSystem.Engine, only: [
-        validate_message_for_pe: 2,
-        extract_messages: 3,
-        apply_filter: 2,
-        extract_message_tag: 1,
-        validate_address: 1,
-        fresh_id: 0
-      ]
+      import EngineSystem.Engine,
+        only: [
+          validate_message_for_pe: 2,
+          extract_messages: 3,
+          apply_filter: 2,
+          extract_message_tag: 1,
+          validate_address: 1,
+          fresh_id: 0
+        ]
     end
   end
 
@@ -242,15 +243,13 @@ defmodule EngineSystem.Engine do
   def apply_filter(nil, _message), do: true
 
   def apply_filter(filter, message) do
-    try do
-      # Filter functions expect (message, config, env)
-      # For simplicity, pass nils for config/env since filter
-      # typically only looks at message content
-      filter.(message, nil, nil)
-    rescue
-      # Default to accepting message if filter fails
-      _ -> true
-    end
+    # Filter functions expect (message, config, env)
+    # For simplicity, pass nils for config/env since filter
+    # typically only looks at message content
+    filter.(message, nil, nil)
+  rescue
+    # Default to accepting message if filter fails
+    _ -> true
   end
 
   # Private helper functions
