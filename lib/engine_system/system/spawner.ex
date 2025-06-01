@@ -15,7 +15,6 @@ defmodule EngineSystem.System.Spawner do
   """
 
   alias EngineSystem.Engine.{Instance, Spec, State}
-  alias EngineSystem.Mailbox.DefaultMailboxEngine
   alias EngineSystem.System.{Registry, Services}
   alias EngineSystem.System.Spawner.{Logger, Validator}
 
@@ -53,6 +52,7 @@ defmodule EngineSystem.System.Spawner do
         mailbox_config \\ nil
       ) do
     with {:ok, spec} <- get_engine_spec(engine_module),
+         :ok <- validate_mailbox_compatibility(spec, mailbox_engine_module),
          {:ok, address} <- generate_address(),
          {:ok, mailbox_pid} <-
            start_mailbox_engine(spec, address, mailbox_engine_module, mailbox_config),
@@ -127,29 +127,77 @@ defmodule EngineSystem.System.Spawner do
   @spec start_mailbox_engine(Spec.t(), State.address(), module() | nil, any() | nil) ::
           {:ok, pid()} | {:error, any()}
   defp start_mailbox_engine(spec, mailbox_address, mailbox_engine_module, mailbox_config) do
-    # Use specified mailbox engine or default
-    engine_module = mailbox_engine_module || DefaultMailboxEngine
+    # If the processing engine is itself a mailbox engine, we don't need a separate mailbox
+    if spec.mode == :mailbox do
+      # No separate mailbox needed - the engine itself will be the mailbox
+      {:ok, nil}
+    else
+      # Use specified mailbox engine or default
+      engine_module =
+        mailbox_engine_module ||
+          get_default_mailbox_module()
 
-    mailbox_spec = %{
-      address: mailbox_address,
-      processing_engine_spec: spec,
-      message_interface: spec.interface,
-      message_filter: Spec.get_message_filter(spec),
-      mailbox_config: mailbox_config || %{}
-    }
+      # Get the engine spec from the mailbox module
+      mailbox_spec = engine_module.__engine_spec__()
 
-    case DynamicSupervisor.start_child(
-           EngineSystem.Mailbox.DynamicSupervisor,
-           {engine_module, mailbox_spec}
-         ) do
-      {:ok, pid} -> {:ok, pid}
-      {:error, reason} -> {:error, {:mailbox_start_failed, reason}}
+      # Create mailbox initialization data
+      mailbox_init_data = %{
+        address: mailbox_address,
+        engine_module: engine_module,
+        spec: mailbox_spec,
+        configuration: mailbox_config || %{},
+        environment: %{}
+      }
+
+      # Start the mailbox using the core runtime implementation
+      case DynamicSupervisor.start_child(
+             EngineSystem.Engine.DynamicSupervisor,
+             {EngineSystem.Mailbox.MailboxRuntime, mailbox_init_data}
+           ) do
+        {:ok, pid} -> {:ok, pid}
+        {:error, reason} -> {:error, {:mailbox_start_failed, reason}}
+      end
     end
   end
 
-  @spec start_processing_engine(Spec.t(), State.address(), pid(), any(), any()) ::
+  @spec start_processing_engine(Spec.t(), State.address(), pid() | nil, any(), any()) ::
           {:ok, pid()} | {:error, any()}
   defp start_processing_engine(spec, address, mailbox_pid, config, environment) do
+    case spec.mode do
+      :mailbox ->
+        # For mailbox engines, start using the runtime implementation
+        start_mailbox_as_processing_engine(spec, address, config, environment)
+
+      :process ->
+        # For processing engines, start the regular instance
+        start_regular_processing_engine(spec, address, mailbox_pid, config, environment)
+    end
+  end
+
+  defp start_mailbox_as_processing_engine(spec, address, config, environment) do
+    # Prepare mailbox initialization data for the runtime
+    final_config = config || Spec.default_config(spec)
+    final_environment = environment || Spec.default_environment(spec)
+
+    mailbox_init_data = %{
+      address: address,
+      engine_module: spec.name,  # The module that defined the engine
+      spec: spec,
+      configuration: final_config,
+      environment: final_environment
+    }
+
+    # Start using the core MailboxRuntime implementation
+    case DynamicSupervisor.start_child(
+           EngineSystem.Engine.DynamicSupervisor,
+           {EngineSystem.Mailbox.MailboxRuntime, mailbox_init_data}
+         ) do
+      {:ok, pid} -> {:ok, pid}
+      {:error, reason} -> {:error, {:mailbox_engine_start_failed, reason}}
+    end
+  end
+
+  defp start_regular_processing_engine(spec, address, mailbox_pid, config, environment) do
     # Prepare the configuration, it would be simpler with dependent types :P
     final_config = config || Spec.default_config(spec)
     engine_config = State.Configuration.new(nil, :process, final_config)
@@ -178,6 +226,11 @@ defmodule EngineSystem.System.Spawner do
       {:ok, pid} -> {:ok, pid}
       {:error, reason} -> {:error, {:engine_start_failed, reason}}
     end
+  end
+
+  # Get the default mailbox module
+  defp get_default_mailbox_module do
+    EngineSystem.Mailbox.DefaultMailboxEngine.DefaultMailbox
   end
 
   @spec register_instance(State.address(), Spec.t(), pid(), pid(), atom() | nil) ::
@@ -255,5 +308,34 @@ defmodule EngineSystem.System.Spawner do
       active_engines: length(Registry.list_instances()),
       available_specs: length(Registry.list_specs())
     }
+  end
+
+  @spec validate_mailbox_compatibility(Spec.t(), module() | nil) :: :ok | {:error, any()}
+  defp validate_mailbox_compatibility(processing_spec, mailbox_engine_module) do
+    # Rule 1: Mailbox engines cannot have other mailboxes (prevent nesting)
+    if processing_spec.mode == :mailbox and not is_nil(mailbox_engine_module) do
+      {:error,
+       {:mailbox_nesting_not_allowed,
+        "Mailbox engines cannot have other mailboxes attached. This would create unnecessary complexity."}}
+    else
+      # Rule 2: Validate that if a custom mailbox is specified, it's actually a mailbox engine
+      if mailbox_engine_module != nil do
+        case get_engine_spec(mailbox_engine_module) do
+          {:ok, mailbox_spec} ->
+            if mailbox_spec.mode == :mailbox do
+              :ok
+            else
+              {:error,
+               {:invalid_mailbox_engine,
+                "#{mailbox_engine_module} is not a mailbox engine (mode: #{mailbox_spec.mode})"}}
+            end
+
+          {:error, reason} ->
+            {:error, {:invalid_mailbox_module, reason}}
+        end
+      else
+        :ok
+      end
+    end
   end
 end
