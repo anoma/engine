@@ -8,7 +8,7 @@ defmodule EngineSystem.Engine.Effects.MessageEffects do
   """
 
   alias EngineSystem.Engine.{Instance, State}
-  alias EngineSystem.Mailbox.Message
+  alias EngineSystem.System.Message
   alias EngineSystem.System.Services
 
   @doc """

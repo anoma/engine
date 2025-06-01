@@ -31,7 +31,7 @@ defmodule EngineSystem.Engine.Instance do
   use TypedStruct
 
   alias EngineSystem.Engine.{Behaviour, Effect, Spec, State}
-  alias EngineSystem.Mailbox.Message
+  alias EngineSystem.System.Message
 
   typedstruct do
     @typedoc """
