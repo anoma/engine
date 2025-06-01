@@ -7,6 +7,8 @@ defmodule EngineSystem.Engine.DSL.Validation do
   - Interface validation
   - Message filter validation
   - Cross-component validation
+
+  For interface utility functions, use `EngineSystem.Engine.Spec` or `EngineSystem.API`.
   """
 
   alias EngineSystem.Engine.DSL.{BehaviorBuilder, ConfigBuilder, EnvironmentBuilder}
@@ -59,7 +61,8 @@ defmodule EngineSystem.Engine.DSL.Validation do
     validate_interface_messages(interface)
   end
 
-  def validate_interface(_), do: {:error, :invalid_interface}
+  def validate_interface(_interface), do:
+     {:error, :invalid_interface}
 
   defp validate_interface_messages([]), do: :ok
 
@@ -67,27 +70,46 @@ defmodule EngineSystem.Engine.DSL.Validation do
        when is_atom(tag) and is_list(fields) do
     case validate_message_fields(fields) do
       :ok -> validate_interface_messages(rest)
-      error -> error
+      error ->
+        error
     end
   end
 
-  defp validate_interface_messages(_), do: {:error, :invalid_message_definition}
+  defp validate_interface_messages(_invalid), do:
+     {:error, :invalid_message_definition}
 
   defp validate_message_fields([]), do: :ok
 
+  # Handle keyword list format: [key: :atom, value: :string]
   defp validate_message_fields([{field_name, field_type} | rest])
        when is_atom(field_name) do
     case validate_field_type(field_type) do
       :ok -> validate_message_fields(rest)
-      error -> error
+      error ->
+        error
     end
   end
 
-  defp validate_message_fields(_), do: {:error, :invalid_message_field}
+  # Handle simple atom list format: [:key, :value]
+  defp validate_message_fields([field_name | rest])
+       when is_atom(field_name) do
+    validate_message_fields(rest)
+  end
+
+  defp validate_message_fields(_invalid), do:
+     {:error, :invalid_message_field}
 
   defp validate_field_type(type) when is_atom(type), do: :ok
   defp validate_field_type({:option, inner_type}), do: validate_field_type(inner_type)
-  defp validate_field_type(_), do: {:error, :invalid_field_type}
+  defp validate_field_type(field_list) when is_list(field_list) do
+    if Enum.all?(field_list, &is_atom/1) do
+      :ok
+    else
+      {:error, :invalid_field_type}
+    end
+  end
+  defp validate_field_type(_invalid_type), do:
+    {:error, :invalid_field_type}
 
   @doc """
   I validate a message filter specification.
@@ -116,44 +138,6 @@ defmodule EngineSystem.Engine.DSL.Validation do
     case undefined_handlers do
       [] -> :ok
       tags -> {:error, {:undefined_message_handlers, tags}}
-    end
-  end
-
-  @doc """
-  I check if an interface contains a specific message tag.
-
-  ## Parameters
-
-  - `tag` - Message tag to check
-  - `interface` - Interface specification
-
-  ## Returns
-
-  `true` if tag exists, `false` otherwise
-  """
-  @spec has_message?(atom(), list()) :: boolean()
-  def has_message?(tag, interface) do
-    Enum.any?(interface, fn {msg_tag, _fields} -> msg_tag == tag end)
-  end
-
-  @doc """
-  I get the field specification for a message tag.
-
-  ## Parameters
-
-  - `tag` - Message tag to find
-  - `interface` - Interface specification
-
-  ## Returns
-
-  - `{:ok, fields}` if found
-  - `{:error, :not_found}` if not found
-  """
-  @spec get_message_fields(atom(), list()) :: {:ok, list()} | {:error, :not_found}
-  def get_message_fields(tag, interface) do
-    case Enum.find(interface, fn {msg_tag, _fields} -> msg_tag == tag end) do
-      {^tag, fields} -> {:ok, fields}
-      nil -> {:error, :not_found}
     end
   end
 end
