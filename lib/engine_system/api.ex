@@ -35,11 +35,17 @@ defmodule EngineSystem.API do
   - `fresh_id/0` - Generate a fresh unique ID
   - `validate_message/2` - Validate that a message conforms to an engine's interface
   - `clean_terminated_engines/0` - Clean up terminated engines from the system
+
+  ### Interface Utilities
+  - `has_message?/3` - Check if an engine specification supports a specific message tag
+  - `get_message_fields/3` - Get the field specification for a message tag from an engine specification
+  - `get_message_tags/2` - Get all message tags supported by an engine specification
+  - `get_instance_message_tags/1` - Get all message tags supported by a running engine instance
   """
 
   alias EngineSystem.Engine.{Spec, State}
   alias EngineSystem.Lifecycle
-  alias EngineSystem.Mailbox.{DefaultMailboxEngine, Message}
+  alias EngineSystem.System.Message
   alias EngineSystem.System.{Registry, Services, Spawner}
 
   @doc """
@@ -182,17 +188,61 @@ defmodule EngineSystem.API do
   @spec send_message(State.address(), any(), State.address() | nil) :: :ok | {:error, any()}
   def send_message(target_address, message_payload, sender_address \\ nil) do
     case Registry.lookup_instance(target_address) do
-      {:ok, %{mailbox_pid: mailbox_pid}} when not is_nil(mailbox_pid) ->
-        message = Message.new(sender_address, target_address, message_payload)
-        DefaultMailboxEngine.enqueue_message(mailbox_pid, message)
-        :ok
+      {:ok, instance_info} ->
+        # Validate message against target engine's interface
+        case validate_message_for_instance(instance_info, message_payload) do
+          :ok ->
+            send_validated_message(instance_info, target_address, message_payload, sender_address)
 
-      {:ok, %{mailbox_pid: nil}} ->
-        {:error, :no_mailbox}
+          {:error, reason} ->
+            {:error, {:invalid_message, reason}}
+        end
 
       {:error, :not_found} ->
         {:error, :engine_not_found}
     end
+  end
+
+  # Private helper functions for message sending
+  defp validate_message_for_instance(instance_info, message_payload) do
+    # Get the engine spec to validate against its interface
+    case Registry.lookup_spec(instance_info.spec_key) do
+      {:ok, spec} ->
+        Spec.validate_message(spec, message_payload)
+
+      {:error, _} ->
+        # If we can't find the spec, allow the message (backward compatibility)
+        :ok
+    end
+  end
+
+  defp send_validated_message(instance_info, target_address, message_payload, sender_address) do
+    message = Message.new(sender_address, target_address, message_payload)
+
+    # Determine the target PID based on engine configuration
+    target_pid =
+      if is_nil(instance_info.mailbox_pid) do
+        # Direct mailbox engine - send to engine_pid
+        instance_info.engine_pid
+      else
+        # Processing engine with mailbox - send to mailbox_pid
+        instance_info.mailbox_pid
+      end
+
+    send_to_engine(target_pid, message)
+  end
+
+  defp send_to_engine(pid, message) do
+    case Process.alive?(pid) do
+      true ->
+        GenStage.cast(pid, {:enqueue_message, message})
+        :ok
+
+      false ->
+        {:error, :process_dead}
+    end
+  rescue
+    _ -> {:error, :send_failed}
   end
 
   @doc """
@@ -372,5 +422,126 @@ defmodule EngineSystem.API do
   @spec clean_terminated_engines() :: non_neg_integer()
   def clean_terminated_engines do
     Services.clean_terminated_engines()
+  end
+
+  @doc """
+  I check if an engine specification supports a specific message tag.
+
+  ## Parameters
+
+  - `name` - The engine type name
+  - `version` - The engine type version (nil for latest)
+  - `tag` - Message tag to check
+
+  ## Returns
+
+  - `{:ok, true}` if the tag exists
+  - `{:ok, false}` if the tag does not exist
+  - `{:error, :not_found}` if the spec is not found
+
+  ## Examples
+
+      # Check if an engine supports a message
+      {:ok, true} = EngineSystem.API.has_message?(:my_engine, "1.0.0", :ping)
+      {:ok, false} = EngineSystem.API.has_message?(:my_engine, "1.0.0", :unknown)
+  """
+  @spec has_message?(atom() | String.t(), String.t() | nil, atom()) ::
+          {:ok, boolean()} | {:error, :not_found}
+  def has_message?(name, version, tag) do
+    case lookup_spec(name, version) do
+      {:ok, spec} -> {:ok, Spec.has_message?(spec, tag)}
+      {:error, :not_found} -> {:error, :not_found}
+    end
+  end
+
+  @doc """
+  I get the field specification for a message tag from an engine specification.
+
+  ## Parameters
+
+  - `name` - The engine type name
+  - `version` - The engine type version (nil for latest)
+  - `tag` - Message tag to find
+
+  ## Returns
+
+  - `{:ok, fields}` if found
+  - `{:error, :not_found}` if not found (either spec or message tag)
+
+  ## Examples
+
+      # Get message fields for an engine
+      {:ok, fields} = EngineSystem.API.get_message_fields(:my_engine, "1.0.0", :ping)
+      {:error, :not_found} = EngineSystem.API.get_message_fields(:my_engine, "1.0.0", :unknown)
+  """
+  @spec get_message_fields(atom() | String.t(), String.t() | nil, atom()) ::
+          {:ok, Spec.message_fields()} | {:error, :not_found}
+  def get_message_fields(name, version, tag) do
+    case lookup_spec(name, version) do
+      {:ok, spec} -> Spec.get_message_fields(spec, tag)
+      {:error, :not_found} -> {:error, :not_found}
+    end
+  end
+
+  @doc """
+  I get all message tags supported by an engine specification.
+
+  ## Parameters
+
+  - `name` - The engine type name
+  - `version` - The engine type version (nil for latest)
+
+  ## Returns
+
+  - `{:ok, tags}` if found
+  - `{:error, :not_found}` if not found
+
+  ## Examples
+
+      # Get message tags for an engine
+      {:ok, tags} = EngineSystem.API.get_message_tags(:my_engine, "1.0.0")
+  """
+  @spec get_message_tags(atom() | String.t(), String.t() | nil) ::
+          {:ok, [atom()]} | {:error, :not_found}
+  def get_message_tags(name, version) do
+    case lookup_spec(name, version) do
+      {:ok, spec} -> {:ok, Spec.get_message_tags(spec)}
+      {:error, :not_found} -> {:error, :not_found}
+    end
+  end
+
+  @doc """
+  I get all message tags supported by a running engine instance.
+
+  ## Parameters
+
+  - `address` - The engine's address
+
+  ## Returns
+
+  - `{:ok, tags}` if found
+  - `{:error, :not_found}` if not found
+
+  ## Examples
+
+      # Get instance message tags
+      {:ok, tags} = EngineSystem.API.get_instance_message_tags(target_address)
+  """
+  @spec get_instance_message_tags(State.address()) ::
+          {:ok, [atom()]} | {:error, :not_found}
+  def get_instance_message_tags(address) do
+    case Registry.lookup_instance(address) do
+      {:ok, instance_info} ->
+        # Get the spec using the spec_key from instance_info
+        {name, version} = instance_info.spec_key
+
+        case Registry.lookup_spec(name, version) do
+          {:ok, spec} -> {:ok, Spec.get_message_tags(spec)}
+          {:error, :not_found} -> {:error, :not_found}
+        end
+
+      {:error, :not_found} ->
+        {:error, :not_found}
+    end
   end
 end
