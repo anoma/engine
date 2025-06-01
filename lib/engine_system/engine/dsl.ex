@@ -190,7 +190,7 @@ defmodule EngineSystem.Engine.DSL do
   defmacro __before_compile__(env) do
     # Get the spec data at compile time
     spec_data = Module.get_attribute(env.module, :engine_spec_data)
-    generate_compiled = Module.get_attribute(env.module, :generate_compiled)
+    # generate_compiled = Module.get_attribute(env.module, :generate_compiled)
 
     # If no mode is declared, default to :process
     # Valid modes are :process or :mailbox
@@ -283,23 +283,23 @@ defmodule EngineSystem.Engine.DSL do
 
         # Generate compiled engine file only if enabled
         # Check both local flag and global application configuration
-        should_compile =
-          unquote(generate_compiled) or
-            Application.get_env(:engine_system, :compile_engines, false)
+        # should_compile =
+        #   unquote(generate_compiled) or
+        #     Application.get_env(:engine_system, :compile_engines, false)
 
-        if should_compile do
-          source_file = env.file
+        # if should_compile do
+        #   source_file = env.file
 
-          try do
-            EngineSystem.Engine.Compiler.generate_compiled_engine(spec, source_file)
-          catch
-            # Compilation failed, log but don't fail the build
-            kind, reason ->
-              IO.warn(
-                "Failed to generate compiled engine for #{spec.name}: #{inspect({kind, reason})}"
-              )
-          end
-        end
+        #   try do
+        #     EngineSystem.Engine.Compiler.generate_compiled_engine(spec, source_file)
+        #   catch
+        #     # Compilation failed, log but don't fail the build
+        #     kind, reason ->
+        #       IO.warn(
+        #         "Failed to generate compiled engine for #{spec.name}: #{inspect({kind, reason})}"
+        #       )
+        #   end
+        # end
       end
     end
   end

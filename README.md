@@ -34,7 +34,8 @@ diagram](operational-semantics-flow.md) of the operational semantics.
 - [x] Asynchronous, non-blocking message passing system
 - [x] Engine status and health monitoring
 - [x] Engine type introspection
-- [ ] Runtime-swappable mailbox types
+- [x] Runtime-swappable mailbox types with DSL support (requires a custom
+  mailbox engines definition and some internal changes)
 - [x] Engine type registration and lifecycle management
 - [x] Message interface lookup and validation
 
@@ -42,17 +43,17 @@ diagram](operational-semantics-flow.md) of the operational semantics.
 
 - [x] Engine type registration with system
 - [x] Engine lifecycle management (start/stop)
-- [ ] Message passing and effect handling
+- [x] Message passing and effect handling
 - [x] Engine instance creation
 - [x] Status and health monitoring
-- [ ] Location mobility for instances
+- [x] Location mobility for instances
 
 #### Message Handling
 
 - [x] System registry for message interfaces
 - [x] Message validation against interfaces
 - [x] Engine type documentation and introspection
-- [x] Custom mailbox type definitions
+- [x] Custom mailbox type definitions with DSL
 - [x] Runtime mailbox type swapping
 
 </details>
@@ -176,17 +177,23 @@ EngineSystem.Application
 
 ### DSL for Engine Definition
 
-The DSL now features **compile-time validation** and a clean, simplified syntax. Engine definitions consist of:
+The DSL now features **compile-time validation**, a clean simplified syntax, and **unified import**. Engine definitions consist of:
 
+- Declaring the engine mode (`:process` or `:mailbox`), by default `:process`
 - Declaring the message interface and behaviour (mandatory)
 - Declaring configuration and environment (optional but recommended)
 - Message filters for selective processing (optional)
 
+#### Simplified Import with `use EngineSystem`
+
+The recommended approach is now to use a single import:
+
 ```elixir
-import EngineSystem.Engine.DSL
+use EngineSystem
 
 defengine MyKVStore do
   version "2.0.0"
+  mode :process  # New mandatory mode directive
 
   interface do
     message :get, key: :atom
@@ -216,49 +223,83 @@ defengine MyKVStore do
   message_filter fn _msg, _config, _env -> true end
 
   behaviour do
-    on_message :get do
-      key = payload
+    on_message :get, msg, _config, env, sender do
+      key = msg[:key]
       value = Map.get(env.store, key, :not_found)
-      send(sender, {:result, value})
+      {:ok, [{:send, sender, {:result, value}}]}
     end
 
-    on_message :put do
-      {key, value} = payload
+    on_message :put, msg, _config, env, sender do
+      {key, value} = {msg[:key], msg[:value]}
       new_store = Map.put(env.store, key, value)
-      update_env(:store, new_store)
-      send(sender, {:ack})
+      {:ok, [
+        {:update_environment, %{env | store: new_store}},
+        {:send, sender, :ack}
+      ]}
     end
 
-    on_message :delete do
-      key = payload
+    on_message :delete, msg, _config, env, sender do
+      key = msg[:key]
       new_store = Map.delete(env.store, key)
-      update_env(:store, new_store)
-      send(sender, {:ack})
+      {:ok, [
+        {:update_environment, %{env | store: new_store}},
+        {:send, sender, :ack}
+      ]}
     end
   end
 end
+
+# You can now use all API functions directly:
+{:ok, address} = spawn_engine(MyKVStore)
+send_message(address, {:get, %{key: :my_key}})
 ```
 
 #### Key DSL Features
 
+- **Unified import**: Single `use EngineSystem` gives you DSL macros, utility functions, and API functions
+- **Mode directive**: New mandatory `mode` directive to specify `:process` or `:mailbox` engines
 - **Compile-time validation**: All handler functions are validated at compile time
 - **Clean syntax**: No quote blocks or complex macros
 - **Type safety**: Message interfaces enforce structure
-- **Direct variable access**: `payload`, `sender`, `config`, `env` available in handlers
-- **Effect helpers**: `send/2`, `update_env/2`, `update_config/2`, `terminate/0`
+- **Direct variable access**: Message payload, config, env, sender available in handlers
+- **Effect system**: Return tuples with effects like `{:update_environment, new_env}`, `{:send, address, message}`
+- **Stateless engines**: Environment is optional - engines can be stateless by default
+
+#### Engine Modes
+
+**Processing Engines** (`:process` mode):
+```elixir
+defengine MyProcessor do
+  mode :process  # GenStage consumer for business logic
+  # ... rest of definition
+end
+```
+
+**Mailbox Engines** (`:mailbox` mode):
+```elixir
+defengine CustomMailbox do
+  mode :mailbox  # GenStage producer for message queuing
+  # ... rest of definition
+end
+```
 
 #### Simple Examples
 
 **Echo Engine:**
 ```elixir
+use EngineSystem
+
 defengine SimpleEcho do
+  version "1.0.0"
+  mode :process
+
   interface do
     message :echo, text: :string
   end
 
   behaviour do
-    on_message :echo do
-      send(sender, {:echo_reply, payload})
+    on_message :echo, msg, _config, _env, sender do
+      {:ok, [{:send, sender, {:echo_reply, msg}}]}
     end
   end
 end
@@ -266,7 +307,12 @@ end
 
 **Stateless Calculator:**
 ```elixir
+use EngineSystem
+
 defengine StatelessCalculator do
+  version "1.0.0"
+  mode :process
+
   interface do
     message :add, a: :number, b: :number
     message :multiply, a: :number, b: :number
@@ -274,14 +320,56 @@ defengine StatelessCalculator do
   end
 
   behaviour do
-    on_message :add do
-      {a, b} = payload
-      send(sender, {:result, a + b})
+    on_message :add, msg, _config, _env, sender do
+      {a, b} = {msg[:a], msg[:b]}
+      {:ok, [{:send, sender, {:result, a + b}}]}
     end
 
-    on_message :multiply do
-      {a, b} = payload
-      send(sender, {:result, a * b})
+    on_message :multiply, msg, _config, _env, sender do
+      {a, b} = {msg[:a], msg[:b]}
+      {:ok, [{:send, sender, {:result, a * b}}]}
+    end
+  end
+end
+```
+
+**Counter with State:**
+```elixir
+use EngineSystem
+
+defengine SimpleCounter do
+  version "1.0.0"
+  mode :process
+
+  config do
+    %{max_count: 100, step: 1}
+  end
+
+  env do
+    %{count: 0, total_operations: 0}
+  end
+
+  interface do
+    message(:increment)
+    message(:decrement)
+    message(:get_count)
+    message(:reset)
+    message(:count_response, value: :integer)
+  end
+
+  behaviour do
+    on_message :increment, _msg, config, env, sender do
+      new_count = min(env.count + config.step, config.max_count)
+      new_env = %{env | count: new_count, total_operations: env.total_operations + 1}
+
+      {:ok, [
+        {:update_environment, new_env},
+        {:send, sender, {:count_response, new_count}}
+      ]}
+    end
+
+    on_message :get_count, _msg, _config, env, sender do
+      {:ok, [{:send, sender, {:count_response, env.count}}]}
     end
   end
 end
@@ -292,51 +380,82 @@ end
 ### Starting the System
 
 ```elixir
+# With unified import, start is directly available
+use EngineSystem
+
 # Start the EngineSystem application
-{:ok, _} = EngineSystem.start()
+{:ok, _} = start()
 ```
 
 ### Spawning Engine Instances
 
 ```elixir
 # Spawn an engine with default configuration
-{:ok, address} = EngineSystem.spawn_engine(MyKVStore)
+{:ok, address} = spawn_engine(MyKVStore)
 
 # Spawn with custom configuration
 config = %{access_mode: :read_only}
-{:ok, address} = EngineSystem.spawn_engine(MyKVStore, config)
+{:ok, address} = spawn_engine(MyKVStore, config)
+
+# Spawn with custom environment
+env = %{store: %{initial_key: :initial_value}}
+{:ok, address} = spawn_engine(MyKVStore, nil, env)
 
 # Spawn with a name for easy lookup
-{:ok, address} = EngineSystem.spawn_engine(MyKVStore, nil, nil, :my_store)
+{:ok, address} = spawn_engine(MyKVStore, nil, nil, :my_store)
+
+# Spawn with custom mailbox engine
+{:ok, address} = spawn_engine(MyKVStore, nil, nil, nil, CustomMailbox)
 ```
 
 ### Sending Messages
 
 ```elixir
 # Send a message to an engine
-:ok = EngineSystem.send_message(address, {:get, :my_key})
+:ok = send_message(address, {:get, %{key: :my_key}})
 
 # Send with explicit sender
-:ok = EngineSystem.send_message(address, {:put, :key, :value}, sender_address)
+:ok = send_message(address, {:put, %{key: :new_key, value: :new_value}}, sender_address)
 ```
 
 ### System Management
 
 ```elixir
 # List all running instances
-instances = EngineSystem.list_instances()
+instances = list_instances()
 
 # Look up engine by address
-{:ok, info} = EngineSystem.lookup_instance(address)
+{:ok, info} = lookup_instance(address)
 
 # Look up engine by name
-{:ok, address} = EngineSystem.lookup_address_by_name(:my_store)
+{:ok, address} = lookup_address_by_name(:my_store)
 
 # Get system information
-info = EngineSystem.get_system_info()
+info = get_system_info()
 
 # Terminate an engine
-:ok = EngineSystem.terminate_engine(address)
+:ok = terminate_engine(address)
+
+# Clean terminated engines
+:ok = clean_terminated_engines()
+```
+
+### Interface Utilities
+
+```elixir
+# Check if engine supports a message
+if has_message?(:MyKVStore, "2.0.0", :get) do
+  IO.puts("Engine supports :get message")
+end
+
+# Get message fields for a specific message
+{:ok, fields} = get_message_fields(:MyKVStore, "2.0.0", :put)
+
+# Get all supported message tags
+tags = get_message_tags(:MyKVStore, "2.0.0")
+
+# Get message tags for a running instance
+instance_tags = get_instance_message_tags(address)
 ```
 
 ## Implementation Details
@@ -376,13 +495,13 @@ Each processing engine maintains three types of state:
 6. Mailbox delivers messages based on filter and demand via GenStage producer
 7. Processing engine executes behaviour rules and effects
 
-
-
 ## Development Status
 
 This implementation provides a robust foundation for the actor model with mailbox-as-actors separation and **compile-time validated DSL**. Key features implemented:
 
-**DSL and Compile-time Validation**
+**Enhanced DSL and Unified Import**
+- **Single import** via `use EngineSystem` for complete functionality
+- **Mode directive** to specify processing vs. mailbox engines  
 - **Compile-time function generation** for all message handlers
 - **Type-safe message interfaces** with validation
 - **Clean, quote-free syntax** for better IDE support
@@ -395,7 +514,7 @@ This implementation provides a robust foundation for the actor model with mailbo
 - System registry and services
 
 **Mailbox-as-Actors**
-- First-class mailbox engines
+- First-class mailbox engines (can be custom-defined with DSL)
 - Message validation and filtering
 - Demand-driven message delivery
 
@@ -405,9 +524,10 @@ This implementation provides a robust foundation for the actor model with mailbo
 - **Generated behavior functions** with compile-time validation
 
 **System Management**
-- Engine spawning and termination
+- Engine spawning and termination with custom mailbox support
 - Address-based routing
 - System information and statistics
+- Interface introspection utilities
 
 ## Contributing
 
