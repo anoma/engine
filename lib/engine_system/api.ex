@@ -173,6 +173,7 @@ defmodule EngineSystem.API do
 
   ## Returns
 
+  - `:ok` if sending succeeded
   - `{:error, reason}` if sending failed
 
   ## Examples
@@ -183,25 +184,14 @@ defmodule EngineSystem.API do
       # Send with explicit sender
       :ok = EngineSystem.API.send_message(target_address, {:put, :key, :value}, sender_address)
   """
-  @spec send_message(State.address(), any(), State.address() | nil) :: {:error, any()}
-  def send_message(target_address, message_payload, _sender_address \\ nil) do
-    case Registry.lookup_instance(target_address) do
-      {:ok, instance_info} ->
-        # Validate message against target engine's interface
-        case validate_message_for_instance(instance_info, message_payload) do
-          {:error, reason} ->
-            {:error, {:invalid_message, reason}}
-        end
+  @spec send_message(State.address(), any(), State.address() | nil) :: :ok | {:error, :not_found}
+  def send_message(target_address, message_payload, sender_address \\ nil) do
+    # Create a proper message struct for the system
+    sender_addr = sender_address || {:system, 0}
+    message = EngineSystem.System.Message.new(sender_addr, target_address, message_payload)
 
-      {:error, :not_found} ->
-        {:error, :engine_not_found}
-    end
-  end
-
-  # Private helper functions for message sending
-  defp validate_message_for_instance(_instance_info, _message_payload) do
-    # Always return error for now to match dialyzer inference
-    {:error, :validation_not_implemented}
+    # Use the Services.send_message function for actual sending
+    Services.send_message(target_address, message)
   end
 
   @doc """
