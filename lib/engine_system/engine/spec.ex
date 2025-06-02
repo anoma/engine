@@ -34,6 +34,11 @@ defmodule EngineSystem.Engine.Spec do
   - `default_config/1` - Get the default configuration for this engine type
   - `default_environment/1` - Get the default environment for this engine type
   - `get_message_filter/1` - Get the message filter function for this engine type
+
+  ### Interface Utilities
+  - `has_message?/2` - Check if this engine supports a specific message tag
+  - `get_message_fields/2` - Get the field specification for a message tag
+  - `get_message_tags/1` - Get all message tags supported by this engine
   """
 
   @type message_tag :: atom()
@@ -101,6 +106,8 @@ defmodule EngineSystem.Engine.Spec do
     - `:env_spec` - The environment specification. Enforced: true.
     - `:behaviour_rules` - The behaviour rules. Enforced: true.
     - `:message_filter` - The message filter function. Enforced: true.
+    - `:mode` - The engine mode: `:process` or `:mailbox`. Enforced: false, default: `:process`.
+    - `:producer_config` - GenStage producer configuration for mailbox engines. Enforced: false.
     """
     field(:name, atom(), enforce: true)
     field(:version, String.t(), enforce: true)
@@ -109,6 +116,7 @@ defmodule EngineSystem.Engine.Spec do
     field(:env_spec, env_spec(), enforce: true)
     field(:behaviour_rules, behaviour_rules(), enforce: true)
     field(:message_filter, message_filter(), enforce: true)
+    field(:mode, atom(), enforce: false)
   end
 
   @doc """
@@ -296,5 +304,81 @@ defmodule EngineSystem.Engine.Spec do
   @spec spec_id(t()) :: String.t()
   def spec_id(%__MODULE__{name: name, version: version}) do
     "#{name}@#{version}"
+  end
+
+  @doc """
+  I check if an interface contains a specific message tag.
+
+  ## Parameters
+
+  - `spec` - The engine specification
+  - `tag` - Message tag to check
+
+  ## Returns
+
+  `true` if tag exists, `false` otherwise
+
+  ## Examples
+
+      iex> spec = EngineSystem.Engine.Spec.new(:my_engine)
+      iex> EngineSystem.Engine.Spec.has_message?(spec, :ping)
+      true
+      iex> EngineSystem.Engine.Spec.has_message?(spec, :unknown)
+      false
+  """
+  @spec has_message?(t(), message_tag()) :: boolean()
+  def has_message?(%__MODULE__{interface: interface}, tag) do
+    Enum.any?(interface, fn {msg_tag, _fields} -> msg_tag == tag end)
+  end
+
+  @doc """
+  I get the field specification for a message tag.
+
+  ## Parameters
+
+  - `spec` - The engine specification
+  - `tag` - Message tag to find
+
+  ## Returns
+
+  - `{:ok, fields}` if found
+  - `{:error, :not_found}` if not found
+
+  ## Examples
+
+      iex> spec = EngineSystem.Engine.Spec.new(:my_engine)
+      iex> EngineSystem.Engine.Spec.get_message_fields(spec, :ping)
+      {:ok, []}
+      iex> EngineSystem.Engine.Spec.get_message_fields(spec, :unknown)
+      {:error, :not_found}
+  """
+  @spec get_message_fields(t(), message_tag()) :: {:ok, message_fields()} | {:error, :not_found}
+  def get_message_fields(%__MODULE__{interface: interface}, tag) do
+    case Enum.find(interface, fn {msg_tag, _fields} -> msg_tag == tag end) do
+      {^tag, fields} -> {:ok, fields}
+      nil -> {:error, :not_found}
+    end
+  end
+
+  @doc """
+  I get all message tags supported by this engine specification.
+
+  ## Parameters
+
+  - `spec` - The engine specification
+
+  ## Returns
+
+  A list of message tags (atoms) that this engine supports.
+
+  ## Examples
+
+      iex> spec = EngineSystem.Engine.Spec.new(:my_engine)
+      iex> EngineSystem.Engine.Spec.get_message_tags(spec)
+      [:init, :terminate, :ping, :pong]
+  """
+  @spec get_message_tags(t()) :: [message_tag()]
+  def get_message_tags(%__MODULE__{interface: interface}) do
+    Enum.map(interface, fn {tag, _fields} -> tag end)
   end
 end

@@ -3,7 +3,7 @@ defmodule EngineSystem.Engine.Behaviour do
   I contain functions for evaluating an engine's behaviour against an incoming message.
 
   I implement guard matching and action selection strategies, taking an Engine.Spec,
-  current Engine.State, and a Mailbox.Message as input, and returning the list of
+  current Engine.State, and a System.Message as input, and returning the list of
   Engine.Effects to be executed.
 
   This implements the logic of behaviourtype and b-rules (guard evaluation) from
@@ -18,7 +18,7 @@ defmodule EngineSystem.Engine.Behaviour do
   """
 
   alias EngineSystem.Engine.{Effect, Spec, State}
-  alias EngineSystem.Mailbox.Message
+  alias EngineSystem.System.Message
 
   @type evaluation_result :: {:ok, [Effect.t()]} | {:error, any()}
 
@@ -44,6 +44,7 @@ defmodule EngineSystem.Engine.Behaviour do
   @spec evaluate(Spec.t(), Message.t(), State.Configuration.t(), State.Environment.t()) ::
           evaluation_result()
   def evaluate(spec, message, configuration, environment) do
+    # Here is where the guard-action evaluation strategy is implemented.
     case find_matching_rule(spec.behaviour_rules, message, configuration, environment) do
       {:ok, rule} ->
         execute_rule(rule, message, configuration, environment)

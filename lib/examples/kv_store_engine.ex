@@ -1,9 +1,11 @@
-import EngineSystem.Engine.DSL
+use EngineSystem
 
 defengine Examples.KVStoreEngine do
   @moduledoc "Simple key-value store engine."
 
   version("1.0.0")
+  # This is a processing engine
+  mode(:process)
 
   interface do
     message(:put, key: :atom, value: :any)
@@ -13,15 +15,9 @@ defengine Examples.KVStoreEngine do
     message(:ack)
   end
 
-  config do
-    %{}
-  end
-
   env do
     %{store: %{}, access_counts: %{}}
   end
-
-  message_filter(fn _msg, _config, _env -> true end)
 
   behaviour do
     on_message :put, %{key: key, value: value}, _config, env, sender do

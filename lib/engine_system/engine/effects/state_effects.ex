@@ -26,8 +26,7 @@ defmodule EngineSystem.Engine.Effects.StateEffects do
   @spec execute_update_environment(State.Environment.t(), Instance.t()) ::
           {:ok, Instance.t()}
   def execute_update_environment(new_environment, engine_state) do
-    updated_state = %{engine_state | environment: new_environment}
-    {:ok, updated_state}
+    {:ok, %{engine_state | environment: new_environment}}
   end
 
   @doc """
@@ -43,13 +42,12 @@ defmodule EngineSystem.Engine.Effects.StateEffects do
   - `{:ok, updated_state}` if execution succeeded
   - `{:error, reason}` if execution failed
   """
+
   @spec execute_mfilter(function(), Instance.t()) :: {:ok, Instance.t()} | {:error, any()}
   def execute_mfilter(new_filter, engine_state) do
-    # Update the engine's status with the new filter
     new_status = State.Status.ready(new_filter)
     updated_state = %{engine_state | status: new_status}
 
-    # Also notify the mailbox of the filter change
     if engine_state.mailbox_pid do
       case GenStage.call(engine_state.mailbox_pid, {:update_filter, new_filter}) do
         :ok -> {:ok, updated_state}
@@ -99,34 +97,4 @@ defmodule EngineSystem.Engine.Effects.StateEffects do
   def validate({:mfilter, _}), do: {:error, :invalid_filter_function}
   def validate(:terminate), do: :ok
   def validate(_), do: {:error, :not_state_effect}
-
-  @doc """
-  I check if an effect modifies the engine's environment.
-
-  ## Parameters
-
-  - `effect` - The effect to check
-
-  ## Returns
-
-  `true` if it modifies the environment, `false` otherwise.
-  """
-  @spec modifies_environment?(any()) :: boolean()
-  def modifies_environment?({:update_environment, _}), do: true
-  def modifies_environment?(_), do: false
-
-  @doc """
-  I check if an effect is a termination effect.
-
-  ## Parameters
-
-  - `effect` - The effect to check
-
-  ## Returns
-
-  `true` if it's a termination effect, `false` otherwise.
-  """
-  @spec termination?(any()) :: boolean()
-  def termination?(:terminate), do: true
-  def termination?(_), do: false
 end

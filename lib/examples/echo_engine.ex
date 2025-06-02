@@ -1,23 +1,17 @@
-import EngineSystem.Engine.DSL
+use EngineSystem
 
-defengine Examples.SimpleEcho do
+defengine Examples.EchoEngine do
   @moduledoc "Simple echo engine that echoes back any message."
 
   version("1.0.0")
+  # This is a processing engine
+  mode(:process)
 
   interface do
     message(:echo, content: :any)
     message(:ping)
     message(:pong)
   end
-
-  config do
-    %{}
-  end
-
-  # Stateless - no environment state
-
-  message_filter(fn _msg, _config, _env -> true end)
 
   behaviour do
     on_message :echo, msg_payload, _config, _env, sender do

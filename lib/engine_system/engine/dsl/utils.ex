@@ -35,6 +35,7 @@ defmodule EngineSystem.Engine.DSL.Utils do
   """
   # Check boolean first!
   def infer_type(value) when is_boolean(value), do: :boolean
+  def infer_type(value) when is_function(value), do: :function
   def infer_type(value) when is_atom(value) and value != nil, do: :atom
   def infer_type(value) when is_integer(value), do: :integer
   def infer_type(value) when is_float(value), do: :float

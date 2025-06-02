@@ -1,6 +1,6 @@
-defmodule EngineSystem.Mailbox.Message do
+defmodule EngineSystem.System.Message do
   @moduledoc """
-  I define the EngineSystem.Mailbox.Message struct.
+  I define the EngineSystem.System.Message struct.
 
   I include fields for header (sender PID/address, target engine name/ID) and
   payload (the actual message content). This represents a message in the system

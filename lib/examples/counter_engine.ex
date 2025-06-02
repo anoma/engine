@@ -1,4 +1,4 @@
-import EngineSystem.Engine.DSL
+use EngineSystem
 
 defengine Examples.SimpleCounterEngine do
   @moduledoc """
@@ -7,6 +7,8 @@ defengine Examples.SimpleCounterEngine do
   """
 
   version("2.0.0")
+  # This is a processing engine
+  mode(:process)
 
   interface do
     message(:increment)
@@ -34,8 +36,6 @@ defengine Examples.SimpleCounterEngine do
       metadata: %{}
     }
   end
-
-  message_filter(fn _msg, _config, _env -> true end)
 
   behaviour do
     on_message :increment, _payload, config, env, sender do

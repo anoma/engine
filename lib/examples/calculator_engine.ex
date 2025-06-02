@@ -1,12 +1,14 @@
-import EngineSystem.Engine.DSL
+use EngineSystem
 
-defengine Examples.SimplifiedCalculatorEngine do
+defengine Examples.CalculatorEngine do
   @moduledoc """
   A simplified calculator engine demonstrating the new simplified config syntax.
   This engine performs basic arithmetic operations with automatic type inference.
   """
 
   version("1.0.0")
+  # This is a processing engine
+  mode(:process)
 
   interface do
     message(:add, a: :float, b: :float)
@@ -26,13 +28,6 @@ defengine Examples.SimplifiedCalculatorEngine do
       operator_precision: 0.001
     }
   end
-
-  # No environment needed for stateless calculator
-  env do
-    %{}
-  end
-
-  message_filter(fn _msg, _config, _env -> true end)
 
   behaviour do
     on_message :add, %{a: a, b: b}, config, _env, sender do

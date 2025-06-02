@@ -188,36 +188,19 @@ defmodule EngineSystem.Engine.Effect do
   """
   @spec validate(t()) :: :ok | {:error, any()}
   def validate(effect) do
-    case effect do
-      # Try each specialized validator
-      _ ->
-        case SystemEffects.validate(effect) do
-          :ok ->
-            :ok
+    cond do
+      match?(:noop, effect) ->
+        :ok
 
-          {:error, :not_system_effect} ->
-            case MessageEffects.validate(effect) do
-              :ok ->
-                :ok
+      match?({:chain, _}, effect) ->
+        validate_chain_effect(effect)
 
-              {:error, :not_message_effect} ->
-                case StateEffects.validate(effect) do
-                  :ok ->
-                    :ok
-
-                  {:error, :not_state_effect} ->
-                    validate_chain_effect(effect)
-
-                  error ->
-                    error
-                end
-
-              error ->
-                error
-            end
-
-          error ->
-            error
+      true ->
+        # Try each specialized validator in sequence
+        with {:error, :not_system_effect} <- SystemEffects.validate(effect),
+             {:error, :not_message_effect} <- MessageEffects.validate(effect),
+             {:error, :not_state_effect} <- StateEffects.validate(effect) do
+          {:error, {:unknown_effect_type, effect}}
         end
     end
   end
@@ -231,44 +214,4 @@ defmodule EngineSystem.Engine.Effect do
 
   defp validate_chain_effect({:chain, _}), do: {:error, :invalid_chain_effects}
   defp validate_chain_effect(effect), do: {:error, {:unknown_effect_type, effect}}
-
-  @doc """
-  I check if an effect is a termination effect.
-
-  ## Parameters
-
-  - `effect` - The effect to check
-
-  ## Returns
-
-  `true` if it's a termination effect, `false` otherwise.
-  """
-  @spec termination?(t()) :: boolean()
-  def termination?({:chain, effects}) do
-    Enum.any?(effects, &termination?/1)
-  end
-
-  def termination?(effect) do
-    StateEffects.termination?(effect)
-  end
-
-  @doc """
-  I check if an effect modifies the engine's environment.
-
-  ## Parameters
-
-  - `effect` - The effect to check
-
-  ## Returns
-
-  `true` if it modifies the environment, `false` otherwise.
-  """
-  @spec modifies_environment?(t()) :: boolean()
-  def modifies_environment?({:chain, effects}) do
-    Enum.any?(effects, &modifies_environment?/1)
-  end
-
-  def modifies_environment?(effect) do
-    StateEffects.modifies_environment?(effect)
-  end
 end
