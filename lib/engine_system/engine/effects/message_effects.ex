@@ -28,11 +28,23 @@ defmodule EngineSystem.Engine.Effects.MessageEffects do
   @spec execute_send(State.address(), any(), Instance.t()) ::
           {:ok, Instance.t()} | {:error, any()}
   def execute_send(target_address, message_payload, engine_state) do
+    IO.puts(
+      "🚀 MessageEffects: Executing send effect to #{inspect(target_address)} with payload #{inspect(message_payload)}"
+    )
+
     message = Message.new(engine_state.address, target_address, message_payload)
 
     case Services.send_message(target_address, message) do
-      :ok -> {:ok, engine_state}
-      {:error, reason} -> {:error, {:send_failed, reason}}
+      :ok ->
+        IO.puts("🚀 MessageEffects: Successfully sent message to #{inspect(target_address)}")
+        {:ok, engine_state}
+
+      {:error, reason} ->
+        IO.puts(
+          "🚀 MessageEffects: Failed to send message to #{inspect(target_address)}: #{inspect(reason)}"
+        )
+
+        {:error, {:send_failed, reason}}
     end
   end
 

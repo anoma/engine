@@ -58,6 +58,7 @@ defmodule EngineSystem.System.Spawner do
            start_mailbox_engine(spec, address, mailbox_engine_module, mailbox_config),
          {:ok, engine_pid} <-
            start_processing_engine(spec, address, mailbox_pid, config, environment),
+         :ok <- update_mailbox_if_needed(mailbox_pid, address, engine_pid),
          :ok <- register_instance(address, spec, engine_pid, mailbox_pid, name) do
       {:ok, address}
     else
@@ -140,13 +141,26 @@ defmodule EngineSystem.System.Spawner do
       # Get the engine spec from the mailbox module
       mailbox_spec = engine_module.__engine_spec__()
 
-      # Create mailbox initialization data
+      # Create mailbox initialization data with processing engine spec for validation
+      # The mailbox will be created with the processing engine address as parent
+      # but we need to wait for the processing engine to be created to get its PID
       mailbox_init_data = %{
         address: mailbox_address,
         engine_module: engine_module,
         spec: mailbox_spec,
-        configuration: mailbox_config || %{},
-        environment: %{}
+        configuration:
+          Map.merge(mailbox_config || %{}, %{
+            # Configuration for the mailbox includes the processing engine as parent
+            # Will be updated after processing engine starts
+            parent: nil,
+            mode: :mailbox
+          }),
+        environment: %{
+          # Initialize with processing engine spec for message validation
+          pe_spec: spec,
+          # Will be set when processing engine starts
+          pe_address: nil
+        }
       }
 
       # Start the mailbox using the core runtime implementation
@@ -199,9 +213,14 @@ defmodule EngineSystem.System.Spawner do
   end
 
   defp start_regular_processing_engine(spec, address, mailbox_pid, config, environment) do
-    # Prepare the configuration, it would be simpler with dependent types :P
+    # Prepare the configuration with proper parent reference
+    # The processing engine's parent should be the mailbox engine's address, not the pid
     final_config = config || Spec.default_config(spec)
-    engine_config = State.Configuration.new(nil, :process, final_config)
+
+    # Convert mailbox_pid to a proper address format if needed
+    # For now, we'll use nil as parent since the pid format doesn't match address type
+    parent_address = nil
+    engine_config = State.Configuration.new(parent_address, :process, final_config)
 
     # Prepare the environment
     final_environment = environment || Spec.default_environment(spec)
@@ -337,6 +356,18 @@ defmodule EngineSystem.System.Spawner do
       else
         :ok
       end
+    end
+  end
+
+  @spec update_mailbox_if_needed(pid() | nil, State.address(), pid()) :: :ok | {:error, any()}
+  defp update_mailbox_if_needed(nil, _pe_address, _engine_pid), do: :ok
+
+  defp update_mailbox_if_needed(mailbox_pid, pe_address, engine_pid) when is_pid(mailbox_pid) do
+    # Update the mailbox environment with the processing engine address and PID
+    # This establishes the proper parent-child relationship where the processing engine is the parent
+    case GenStage.call(mailbox_pid, {:update_pe_info, pe_address, engine_pid}) do
+      :ok -> :ok
+      {:error, reason} -> {:error, {:mailbox_call_failed, reason}}
     end
   end
 end

@@ -187,7 +187,9 @@ defmodule EngineSystem.API do
   @spec send_message(State.address(), any(), State.address() | nil) :: :ok | {:error, :not_found}
   def send_message(target_address, message_payload, sender_address \\ nil) do
     # Create a proper message struct for the system
-    sender_addr = sender_address || {:system, 0}
+    # Use proper address format: {node_id, engine_id} where both are non_neg_integer
+    # System address using proper format
+    sender_addr = sender_address || {0, 0}
     message = EngineSystem.System.Message.new(sender_addr, target_address, message_payload)
 
     # Use the Services.send_message function for actual sending

@@ -88,13 +88,16 @@ defmodule EngineSystem.Mailbox.MailboxRuntime do
     new_demand = state.current_demand + demand
     new_state = %{state | current_demand: new_demand}
 
-    # Create a :request_batch message and process it through DSL behaviour
-    message = Message.new(nil, state.address, {:request_batch, %{demand: demand}})
+    # Create a properly formatted :request_batch message for DSL behaviour
+    # The DSL expects: on_message :request_batch, %{demand: demand}, ...
+    dsl_message = Message.new(nil, state.address, {:request_batch, %{demand: demand}})
 
-    case execute_behaviour(message, new_state) do
+    case execute_behaviour(dsl_message, new_state) do
       {:ok, effects, updated_state} ->
+        # Process immediate effects first
+        final_state = process_immediate_effects(effects, updated_state)
         events = extract_events_from_effects(effects)
-        {:noreply, events, updated_state}
+        {:noreply, events, final_state}
 
       {:error, _reason} ->
         {:noreply, [], new_state}
@@ -103,23 +106,88 @@ defmodule EngineSystem.Mailbox.MailboxRuntime do
 
   @impl true
   def handle_cast({:enqueue_message, message}, state) do
-    # Process enqueue_message through DSL behaviour
-    case execute_behaviour(message, state) do
-      {:ok, effects, updated_state} ->
-        events = extract_events_from_effects(effects)
-        {:noreply, events, updated_state}
+    IO.puts("🔧 MailboxRuntime: Received enqueue_message cast")
+    IO.puts("🔧 MailboxRuntime: Message payload: #{inspect(message.payload)}")
 
-      {:error, _reason} ->
-        {:noreply, [], state}
+    # Check if this is an internal mailbox message that should be routed directly
+    internal_mailbox_messages = [
+      :check_dispatch,
+      :request_batch,
+      :update_filter,
+      :pe_down,
+      :pe_ready
+    ]
+
+    message_tag =
+      case message.payload do
+        {tag, _} -> tag
+        tag when is_atom(tag) -> tag
+        _ -> nil
+      end
+
+    is_internal_message = message_tag in internal_mailbox_messages
+
+    if is_internal_message do
+      # Route internal messages directly to their handlers
+      IO.puts(
+        "🔧 MailboxRuntime: Routing internal message #{inspect(message_tag)} directly to handler"
+      )
+
+      dsl_message = Message.new(nil, state.address, message.payload)
+
+      case execute_behaviour(dsl_message, state) do
+        {:ok, effects, updated_state} ->
+          IO.puts(
+            "🔧 MailboxRuntime: Internal message behavior executed successfully, effects: #{inspect(effects)}"
+          )
+
+          # Process immediate effects first
+          final_state = process_immediate_effects(effects, updated_state)
+          events = extract_events_from_effects(effects)
+          IO.puts("🔧 MailboxRuntime: Extracted events: #{inspect(events)}")
+          {:noreply, events, final_state}
+
+        {:error, reason} ->
+          IO.puts(
+            "🔧 MailboxRuntime: Internal message behavior execution failed: #{inspect(reason)}"
+          )
+
+          {:noreply, [], state}
+      end
+    else
+      # External messages go through the normal :enqueue_message flow
+      IO.puts("🔧 MailboxRuntime: Processing external message through :enqueue_message handler")
+      # Create a properly formatted :enqueue_message message for DSL behaviour
+      # The DSL expects: on_message :enqueue_message, %{message: message}, ...
+      dsl_message = Message.new(nil, state.address, {:enqueue_message, %{message: message}})
+      IO.puts("🔧 MailboxRuntime: Created DSL message: #{inspect(dsl_message.payload)}")
+
+      case execute_behaviour(dsl_message, state) do
+        {:ok, effects, updated_state} ->
+          IO.puts(
+            "🔧 MailboxRuntime: Behavior executed successfully, effects: #{inspect(effects)}"
+          )
+
+          # Process immediate effects first
+          final_state = process_immediate_effects(effects, updated_state)
+          events = extract_events_from_effects(effects)
+          IO.puts("🔧 MailboxRuntime: Extracted events: #{inspect(events)}")
+          {:noreply, events, final_state}
+
+        {:error, reason} ->
+          IO.puts("🔧 MailboxRuntime: Behavior execution failed: #{inspect(reason)}")
+          {:noreply, [], state}
+      end
     end
   end
 
   @impl true
   def handle_call({:update_filter, new_filter}, _from, state) do
-    # Create an :update_filter message and process it through DSL behaviour
-    message = Message.new(nil, state.address, {:update_filter, %{filter: new_filter}})
+    # Create a properly formatted :update_filter message for DSL behaviour
+    # The DSL expects: on_message :update_filter, %{filter: filter}, ...
+    dsl_message = Message.new(nil, state.address, {:update_filter, %{filter: new_filter}})
 
-    case execute_behaviour(message, state) do
+    case execute_behaviour(dsl_message, state) do
       {:ok, _effects, updated_state} ->
         {:reply, :ok, [], updated_state}
 
@@ -141,11 +209,47 @@ defmodule EngineSystem.Mailbox.MailboxRuntime do
     {:reply, info, [], state}
   end
 
+  @impl true
+  def handle_call({:update_pe_address, pe_address}, _from, state) do
+    # Update the environment with the processing engine address
+    new_env = Map.put(state.environment, :pe_address, pe_address)
+    new_state = %{state | environment: new_env}
+    {:reply, :ok, [], new_state}
+  end
+
+  @impl true
+  def handle_call({:update_pe_info, pe_address, engine_pid}, _from, state) do
+    # Update the environment with the processing engine address and PID
+    # This establishes the proper parent-child relationship
+    new_env =
+      Map.merge(state.environment, %{
+        pe_address: pe_address,
+        pe_pid: engine_pid
+      })
+
+    # Update the configuration to include the processing engine as parent
+    new_config = Map.put(state.configuration, :parent, engine_pid)
+
+    new_state = %{state | environment: new_env, configuration: new_config}
+    {:reply, :ok, [], new_state}
+  end
+
   ## Private Functions
 
   # Execute DSL-defined behaviour patterns
   defp execute_behaviour(message, state) do
-    case Behaviour.evaluate(state.spec, message, state.configuration, state.environment) do
+    # Create proper State.Configuration and State.Environment structures
+    # The behavior evaluation expects these to have local_state fields
+    config_struct =
+      State.Configuration.new(
+        Map.get(state.configuration, :parent),
+        Map.get(state.configuration, :mode, :mailbox),
+        state.configuration
+      )
+
+    env_struct = State.Environment.new(state.environment, %{})
+
+    case Behaviour.evaluate(state.spec, message, config_struct, env_struct) do
       {:ok, effects} ->
         case apply_effects_to_state(effects, state) do
           {:ok, updated_state} -> {:ok, effects, updated_state}
@@ -186,6 +290,24 @@ defmodule EngineSystem.Mailbox.MailboxRuntime do
   end
 
   defp effect_to_events({:deliver_batch, messages}), do: messages
+  # Handle self-sends differently
+  defp effect_to_events({:send, :self, _message}), do: []
   defp effect_to_events({:send, _target, message}), do: [message]
   defp effect_to_events(_), do: []
+
+  # Process effects that need immediate handling (like self-sends)
+  defp process_immediate_effects(effects, state) do
+    Enum.reduce(effects, state, fn effect, current_state ->
+      case effect do
+        {:send, :self, message_payload} ->
+          # Send message to self asynchronously
+          dsl_message = Message.new(nil, current_state.address, message_payload)
+          GenStage.cast(self(), {:enqueue_message, dsl_message})
+          current_state
+
+        _ ->
+          current_state
+      end
+    end)
+  end
 end

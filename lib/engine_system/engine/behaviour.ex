@@ -23,18 +23,17 @@ defmodule EngineSystem.Engine.Behaviour do
   @type evaluation_result :: {:ok, [Effect.t()]} | {:error, any()}
 
   @doc """
-  I evaluate an engine's behaviour against an incoming message.
+  I evaluate the behaviour of an engine for a given message.
 
-  This implements guard matching and action selection. I take an Engine.Spec,
-  current Engine.State components, and a Message as input, and return the list
-  of Effects to be executed.
+  This is the main entry point for behaviour evaluation. I find the appropriate
+  behaviour rule for the message and execute it to produce effects.
 
   ## Parameters
 
   - `spec` - The engine specification containing behaviour rules
-  - `message` - The incoming message to process
-  - `configuration` - The engine's current configuration
-  - `environment` - The engine's current environment
+  - `message` - The message to process
+  - `configuration` - The engine's configuration
+  - `environment` - The engine's environment
 
   ## Returns
 
@@ -88,6 +87,11 @@ defmodule EngineSystem.Engine.Behaviour do
     find_rule_by_tag(rules, tag)
   end
 
+  def find_matching_rule(rules, %Message{payload: tag}, _configuration, _environment)
+      when is_atom(tag) do
+    find_rule_by_tag(rules, tag)
+  end
+
   def find_matching_rule(rules, {tag, _payload}, _configuration, _environment) do
     find_rule_by_tag(rules, tag)
   end
@@ -134,6 +138,16 @@ defmodule EngineSystem.Engine.Behaviour do
     execute_action(action_ast, tag, payload, sender, configuration, environment)
   end
 
+  def execute_rule(
+        {_tag, action_ast},
+        %Message{payload: tag, sender: sender},
+        configuration,
+        environment
+      )
+      when is_atom(tag) do
+    execute_action(action_ast, tag, nil, sender, configuration, environment)
+  end
+
   def execute_rule({_tag, action_ast}, {tag, payload}, configuration, environment) do
     # Handle simple tuple messages (assume no sender for now)
     execute_action(action_ast, tag, payload, nil, configuration, environment)
@@ -152,14 +166,14 @@ defmodule EngineSystem.Engine.Behaviour do
           State.Environment.t()
         ) ::
           {:ok, [Effect.t()]}
-  defp execute_action(
-         {:function_handler, module, handler_name},
-         tag,
-         payload,
-         sender,
-         configuration,
-         environment
-       ) do
+  def execute_action(
+        {:function_handler, module, handler_name},
+        tag,
+        payload,
+        sender,
+        configuration,
+        environment
+      ) do
     # Execute function-based handler with compile-time validation
     # Create proper payload structure based on tag
     msg_payload =
@@ -170,12 +184,24 @@ defmodule EngineSystem.Engine.Behaviour do
         _ -> payload
       end
 
-    # Call the actual generated function with proper arguments
-    # The function expects: msg_payload, config, env, sender
+    # Extract the actual raw environment data
+    # Handle case where local_state might be nested State.Environment structs
+    raw_env_data =
+      case environment.local_state do
+        %State.Environment{local_state: actual_data} ->
+          # Double-nested case: extract the actual raw data
+          actual_data
+
+        raw_data ->
+          # Normal case: local_state is already raw data
+          raw_data
+      end
+
     apply(module, handler_name, [
       msg_payload,
-      configuration.local_state,
-      environment.local_state,
+      configuration.engine_specific,
+      # Pass the raw data, not the nested struct
+      raw_env_data,
       sender
     ])
   rescue
@@ -183,7 +209,7 @@ defmodule EngineSystem.Engine.Behaviour do
       {:error, {:function_handler_error, error}}
   end
 
-  defp execute_action(_action_ast, :get, payload, sender, _configuration, environment) do
+  def execute_action(_action_ast, :get, payload, sender, _configuration, environment) do
     # Example: GET operation might send a result back
     effects =
       if sender do
@@ -195,7 +221,7 @@ defmodule EngineSystem.Engine.Behaviour do
     {:ok, effects}
   end
 
-  defp execute_action(_action_ast, :put, payload, sender, _configuration, environment) do
+  def execute_action(_action_ast, :put, payload, sender, _configuration, environment) do
     # Example: PUT operation might update environment and send ack
     effects = [Effect.update_environment(put_value_in_environment(payload, environment))]
 
@@ -209,7 +235,7 @@ defmodule EngineSystem.Engine.Behaviour do
     {:ok, final_effects}
   end
 
-  defp execute_action(_action_ast, :delete, payload, sender, _configuration, environment) do
+  def execute_action(_action_ast, :delete, payload, sender, _configuration, environment) do
     # Example: DELETE operation
     effects = [Effect.update_environment(delete_value_from_environment(payload, environment))]
 
@@ -223,7 +249,7 @@ defmodule EngineSystem.Engine.Behaviour do
     {:ok, final_effects}
   end
 
-  defp execute_action(_action_ast, _tag, _payload, _sender, _configuration, _environment) do
+  def execute_action(_action_ast, _tag, _payload, _sender, _configuration, _environment) do
     # Default: just noop
     {:ok, [Effect.noop()]}
   end
