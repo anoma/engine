@@ -296,19 +296,37 @@ defengine SimpleCounter do
 end
 ```
 
-Let's test the counter:
+Let's test the counter. Spawn the counter with default config:
 
 ```elixir
-# Spawn the counter with default config
 {:ok, counter_address} = spawn_engine(SimpleCounter)
+```
 
-# Test counter operations
+### Test counter operations
+
+```elixir
 send_message(counter_address, {:get_count, %{}})
+```
+
+```elixir
 send_message(counter_address, {:increment, %{}})
+```
+
+```elixir
 send_message(counter_address, {:increment, %{}})
+```
+
+```elixir
 send_message(counter_address, {:get_count, %{}})
+```
+
+```elixir
 send_message(counter_address, {:decrement, %{}})
+```
+
+```elixir
 send_message(counter_address, {:get_count, %{}})
+```
 
 ```elixir
 {:ok, counter_instance} = EngineSystem.lookup_instance({1,2})
