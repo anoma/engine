@@ -1,4 +1,6 @@
-# Engines in Elixir 
+# Engines in Elixir
+
+## Tutorial
 
 [![CI](https://github.com/anoma/engine/actions/workflows/ci.yml/badge.svg)](https://github.com/anoma/engine/actions/workflows/ci.yml)
 
@@ -131,6 +133,7 @@ defengine SimpleEcho do
 
   behaviour do
     on_message :echo, msg, _config, _env, sender do
+      IO.puts("HoTT is better than Cold")
       {:ok, [{:send, sender, {:echo_reply, msg}}]}
     end
 
@@ -147,12 +150,22 @@ Now let's spawn an instance and test it:
 # Spawn the echo engine
 {:ok, echo_address} = spawn_engine(SimpleEcho)
 IO.puts("Echo engine spawned at: #{inspect(echo_address)}")
+```
 
-# Send some messages
+```elixir
+echo_address
+```
+
+```elixir
 send_message(echo_address, {:echo, %{text: "Hello Engine System!"}})
+```
+
+```elixir
 send_message(echo_address, {:ping, %{}})
 
-# Check system status
+```
+
+```elixir
 EngineSystem.get_system_info()
 ```
 
@@ -725,4 +738,4 @@ When contributing:
 For a comprehensive tutorial with hands-on examples, check out:
 
 * [Engine System Essentials](notebooks/essentials.livemd) - Interactive
-introduction to the Engine System
+  introduction to the Engine System
