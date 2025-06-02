@@ -96,26 +96,46 @@ defmodule SimpleExample do
   """
   def demo do
     # Start the system (API function directly available)
-    {:ok, _} = start()
+    case start() do
+      {:ok, _} ->
+        # Spawn our counter engine (API function directly available)
+        case spawn_engine(SimpleCounter) do
+          {:ok, counter_address} ->
+            # Send some messages (API function directly available)
+            case send_message(counter_address, {:increment, %{}}) do
+              {:error, reason} ->
+                IO.puts("Failed to send first increment message: #{inspect(reason)}")
 
-    # Spawn our counter engine (API function directly available)
-    {:ok, counter_address} = spawn_engine(SimpleCounter)
+                case send_message(counter_address, {:increment, %{}}) do
+                  {:error, reason} ->
+                    IO.puts("Failed to send second increment message: #{inspect(reason)}")
 
-    # Send some messages (API function directly available)
-    :ok = send_message(counter_address, {:increment, %{}})
-    :ok = send_message(counter_address, {:increment, %{}})
-    :ok = send_message(counter_address, {:get_count, %{}})
+                    case send_message(counter_address, {:get_count, %{}}) do
+                      {:error, reason} ->
+                        IO.puts("Failed to send get_count message: #{inspect(reason)}")
+                        # Check system status (API function directly available)
+                        info = get_system_info()
+                        IO.inspect(info, label: "System Info")
 
-    # Check system status (API function directly available)
-    info = get_system_info()
-    IO.inspect(info, label: "System Info")
+                        # List running instances (API function directly available)
+                        instances = list_instances()
+                        IO.inspect(instances, label: "Running Instances")
 
-    # List running instances (API function directly available)
-    instances = list_instances()
-    IO.inspect(instances, label: "Running Instances")
+                        # Clean up (API function directly available)
+                        terminate_engine(counter_address)
+                    end
+                end
+            end
 
-    # Clean up (API function directly available)
-    :ok = terminate_engine(counter_address)
+          {:error, reason} ->
+            IO.puts("Failed to spawn engine: #{inspect(reason)}")
+            {:error, reason}
+        end
+
+      {:error, reason} ->
+        IO.puts("Failed to start system: #{inspect(reason)}")
+        {:error, reason}
+    end
   end
 
   @doc """

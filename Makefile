@@ -16,6 +16,11 @@ format:
 	@echo "Formatting code..."
 	@mix format
 
+# Run dialyzer
+dialyzer:
+	@echo "Running dialyzer..."
+	@mix dialyzer
+
 # Check if code is properly formatted
 check.format:
 	@echo "Checking code format..."
@@ -30,6 +35,10 @@ lint: deps
 check: check.format
 	@echo "Running compilation check..."
 	@mix compile --warnings-as-errors
+	@mix test
+	@mix dialyzer
+	@mix credo --strict
+	@mix format --check-formatted
 
 # Generate documentation
 docs:

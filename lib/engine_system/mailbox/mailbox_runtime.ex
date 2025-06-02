@@ -89,7 +89,7 @@ defmodule EngineSystem.Mailbox.MailboxRuntime do
     new_state = %{state | current_demand: new_demand}
 
     # Create a :request_batch message and process it through DSL behaviour
-    message = Message.new(:request_batch, %{demand: demand}, state.address)
+    message = Message.new(nil, state.address, {:request_batch, %{demand: demand}})
 
     case execute_behaviour(message, new_state) do
       {:ok, effects, updated_state} ->
@@ -117,7 +117,7 @@ defmodule EngineSystem.Mailbox.MailboxRuntime do
   @impl true
   def handle_call({:update_filter, new_filter}, _from, state) do
     # Create an :update_filter message and process it through DSL behaviour
-    message = Message.new(:update_filter, %{filter: new_filter}, state.address)
+    message = Message.new(nil, state.address, {:update_filter, %{filter: new_filter}})
 
     case execute_behaviour(message, state) do
       {:ok, _effects, updated_state} ->

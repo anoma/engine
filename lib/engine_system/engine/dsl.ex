@@ -102,12 +102,13 @@ defmodule EngineSystem.Engine.DSL do
 
   Use `defengine MyEngine, compile: true do` to enable file compilation if needed.
   """
-  @spec version(String.t()) :: :ok
+  @spec version(String.t()) :: any()
   defmacro version(version_string) do
     quote do
       spec_data = Module.get_attribute(__MODULE__, :engine_spec_data)
       updated_spec = %{spec_data | version: unquote(version_string)}
       Module.put_attribute(__MODULE__, :engine_spec_data, updated_spec)
+      :ok
     end
   end
 
