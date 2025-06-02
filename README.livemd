@@ -1,4 +1,6 @@
-# Engines in Elixir [![CI](https://github.com/anoma/engine/actions/workflows/ci.yml/badge.svg)](https://github.com/anoma/engine/actions/workflows/ci.yml)
+# Engines in Elixir 
+
+[![CI](https://github.com/anoma/engine/actions/workflows/ci.yml/badge.svg)](https://github.com/anoma/engine/actions/workflows/ci.yml)
 
 ```elixir
 Mix.install([
@@ -724,4 +726,3 @@ For a comprehensive tutorial with hands-on examples, check out:
 
 * [Engine System Essentials](notebooks/essentials.livemd) - Interactive
 introduction to the Engine System
-
