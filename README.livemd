@@ -5,6 +5,7 @@
 [![CI](https://github.com/anoma/engine/actions/workflows/ci.yml/badge.svg)](https://github.com/anoma/engine/actions/workflows/ci.yml)
 
 > **NOTE** This README is a [livebook](https://livebook.dev), so you can run it!
+> watch out for the terminal output!
 
 ```bash
 make livebook
@@ -117,7 +118,8 @@ Key architectural components include:
 
 ## DSL for Engine Definition
 
-The DSL features **compile-time validation**, clean simplified syntax, and **unified import**. Let's start the system and explore some examples:
+The DSL features **compile-time validation**, clean simplified syntax, and
+**unified import**. Let's start the system and explore some examples:
 
 ```elixir
 # Import the EngineSystem DSL and utilities
@@ -181,8 +183,7 @@ send_message(echo_address, {:ping, %{}})
 EngineSystem.get_system_info()
 ```
 
-<details>
-<summary>Stateless Calculator Example</summary>
+## Stateless Calculator Example
 
 Here's an example of a stateless processing engine:
 
@@ -221,22 +222,18 @@ defengine StatelessCalculator do
 end
 ```
 
-Let's test the calculator:
+Let's test the calculator. Spawn the calculator:
 
 ```elixir
-# Spawn the calculator
 {:ok, calc_address} = spawn_engine(StatelessCalculator)
+```
 
-# Perform some calculations
+```elixir
 send_message(calc_address, {:add, %{a: 10, b: 5}})
 send_message(calc_address, {:multiply, %{a: 7, b: 8}})
 send_message(calc_address, {:divide, %{a: 15, b: 3}})
 send_message(calc_address, {:divide, %{a: 10, b: 0}})  # This should return an error
-
-IO.puts("Calculator tests sent!")
 ```
-
-</details>
 
 ### Stateful Counter Engine
 
@@ -313,19 +310,15 @@ send_message(counter_address, {:get_count, %{}})
 send_message(counter_address, {:decrement, %{}})
 send_message(counter_address, {:get_count, %{}})
 
-IO.puts("Counter tests sent!")
+```elixir
+{:ok, counter_instance} = EngineSystem.lookup_instance({1,2})
 ```
 
 ```elixir
-{:ok, counter_instance} = EngineSystem.lookup_instance(counter_address)
+state = EngineSystem.Engine.Instance.get_state(counter_instance.engine_pid)
 ```
 
-```elixir
-EngineSystem.Engine.Instance.get_state(counter_address)
-```
-
-<details>
-<summary>Advanced Key-Value Store Example</summary>
+## Advanced Key-Value Store Example
 
 Here's a more complex example with configuration and sophisticated state management:
 
@@ -424,60 +417,75 @@ defengine MyKVStore do
 end
 ```
 
-Let's test the KV store:
+Let's test the KV store. Spawn with custom configuration:
 
 ```elixir
-# Spawn with custom configuration
 custom_config = %{access_mode: :read_write, max_size: 5}
 {:ok, kv_address} = spawn_engine(MyKVStore, custom_config)
+```
 
-# Test KV operations
+```elixir
 send_message(kv_address, {:put, %{key: :name, value: "Engine System"}})
-send_message(kv_address, {:put, %{key: :version, value: "2.0.0"}})
-send_message(kv_address, {:put, %{key: :language, value: "Elixir"}})
+```
 
+```elixir
+send_message(kv_address, {:put, %{key: :version, value: "2.0.0"}})
+```
+
+```elixir
+send_message(kv_address, {:put, %{key: :language, value: "Elixir"}})
+```
+
+```elixir
 send_message(kv_address, {:get, %{key: :name}})
+```
+
+```elixir
 send_message(kv_address, {:list_keys, %{}})
+```
+
+```elixir
 send_message(kv_address, {:size, %{}})
 
 IO.puts("KV Store tests sent!")
-```
-
-</details>
-
-## System Management
+```## System Management
 
 Let's explore the basic system management capabilities:
 
-```elixir
-# List all running instances
-instances = EngineSystem.list_instances()
-IO.puts("Running instances: #{length(instances)}")
+### List all running instances
 
+```elixir
+instances = EngineSystem.list_instances()
+```
+
+```elixir
 for instance <- instances do
-  IO.puts("  #{inspect(instance.address)} - #{instance.engine_name}")
+  {node_id,engine_id} = instance.address
+  {engine_name, eng_version} = instance.spec_key
+  IO.puts("  node_id=#{inspect(node_id)}, engine_id=#{inspect(engine_id)} - #{engine_name}-#{eng_version}")
 end
 ```
 
+### Get comprehensive system information
+
 ```elixir
-# Get comprehensive system information
 system_info = EngineSystem.get_system_info()
 IO.puts("System Information:")
 IO.puts("  Running instances: #{system_info.running_instances}")
-IO.puts("  Registered specs: #{system_info.registered_specs}")
-IO.puts("  Total messages processed: #{system_info.total_messages || 0}")
+IO.puts("  Registered specs: #{system_info.total_specs}")
 ```
 
-<details>
-<summary>Advanced System Management</summary>
+### Advanced System Management
+
+#### Look up engine by address
 
 ```elixir
-# Look up engine by address
 case EngineSystem.lookup_instance(kv_address) do
   {:ok, info} ->
     IO.puts("Engine found:")
-    IO.puts("  Name: #{info.engine_name}")
-    IO.puts("  Version: #{info.version}")
+    {engine_name, eng_version} = info.spec_key
+    IO.puts("  Name: #{engine_name}")
+    IO.puts("  Version: #{eng_version}")
     IO.puts("  Status: #{info.status}")
     IO.puts("  Address: #{inspect(info.address)}")
   error ->
@@ -485,11 +493,15 @@ case EngineSystem.lookup_instance(kv_address) do
 end
 ```
 
-```elixir
-# Spawn with a name for easy lookup
-{:ok, named_address} = spawn_engine(SimpleCounter, %{max_count: 50}, %{}, :my_counter)
+#### Spawn with a name for easy lookup
 
-# Look up by name
+```elixir
+{:ok, named_address} = spawn_engine(SimpleCounter, %{max_count: 50}, %{}, :my_counter)
+```
+
+#### Look up by name
+
+```elixir
 case EngineSystem.lookup_address_by_name(:my_counter) do
   {:ok, address} ->
     IO.puts("Found named engine at: #{inspect(address)}")
@@ -500,48 +512,48 @@ case EngineSystem.lookup_address_by_name(:my_counter) do
 end
 ```
 
-</details>
-
-<details>
-<summary>Interface Utilities</summary>
-
+## Interface Utilities
 
 The system provides utilities for introspecting engine interfaces:
 
+### Check if engine supports a message
+
 ```elixir
-# Check if engine supports a message
 if EngineSystem.has_message?(:MyKVStore, "2.0.0", :get) do
   IO.puts("MyKVStore supports :get message")
 end
+```
 
-# Get message fields for a specific message
+### Get message fields for a specific message
+
+```elixir
 case EngineSystem.get_message_fields(:MyKVStore, "2.0.0", :put) do
   {:ok, fields} ->
     IO.puts("Fields for :put message: #{inspect(fields)}")
   error ->
     IO.puts("Error getting fields: #{inspect(error)}")
 end
+```
 
-# Get all supported message tags
+### Get all supported message tags
+
+```elixir
 tags = EngineSystem.get_message_tags(:MyKVStore, "2.0.0")
 IO.puts("MyKVStore supports messages: #{inspect(tags)}")
+```
 
-# Get message tags for a running instance
+```elixir
 instance_tags = EngineSystem.get_instance_message_tags(kv_address)
 IO.puts("Running instance supports: #{inspect(instance_tags)}")
 ```
 
-</details>
-
-<details>
-
-<summary>Message Validation</summary>
-
+## Message Validation
 
 The system provides message validation before sending:
 
+### Validate a message before sending
+
 ```elixir
-# Validate a message before sending
 case EngineSystem.validate_message(kv_address, {:get, %{key: :test}}) do
   :ok ->
     IO.puts("Message is valid!")
@@ -549,8 +561,11 @@ case EngineSystem.validate_message(kv_address, {:get, %{key: :test}}) do
   {:error, reason} ->
     IO.puts("Message validation failed: #{inspect(reason)}")
 end
+```
 
-# Try an invalid message
+### Try an invalid message
+
+```elixir
 case EngineSystem.validate_message(kv_address, {:invalid_message, %{}}) do
   :ok ->
     IO.puts("Message is valid!")
@@ -559,10 +574,7 @@ case EngineSystem.validate_message(kv_address, {:invalid_message, %{}}) do
 end
 ```
 
-</details>
-
-<details>
-<summary>Custom Mailbox Engines</summary>
+## Custom Mailbox Engines
 
 You can create custom mailbox engines for specialized message handling:
 
@@ -607,158 +619,3 @@ defengine PriorityMailbox do
   end
 end
 ```
-
-</details>
-
-<details>
-<summary>Cleanup and Monitoring</summary>
-
-```elixir
-# Monitor system health
-instances = EngineSystem.list_instances()
-
-Enum.each(instances, fn inst ->
-  engine_alive = Process.alive?(inst.engine_pid)
-  mailbox_alive = Process.alive?(inst.mailbox_pid)
-  
-  status = if engine_alive and mailbox_alive, do: "HEALTHY", else: "DEAD"
-  IO.puts("#{status} #{inspect(inst.address)}")
-  
-  if engine_alive do
-    info = Process.info(inst.engine_pid)
-    IO.puts("  Work done: #{info[:reductions]} reductions")
-    IO.puts("  Queue: #{info[:message_queue_len]} messages")
-  end
-end)
-```
-
-```elixir
-# Clean up terminated engines
-EngineSystem.clean_terminated_engines()
-
-# Final system status
-final_info = EngineSystem.get_system_info()
-IO.puts("\nFinal System Status:")
-IO.puts("Running instances: #{final_info.running_instances}")
-IO.puts("Registered specs: #{final_info.registered_specs}")
-```
-
-</details>
-
-<details>
-<summary>Implementation Details</summary>
-
-### Formal Model Compliance
-
-The implementation follows the operational semantics from the formal model:
-
-* **s-EngineSpawn**: Implemented in `EngineSystem.System.Spawner`
-* **m-Send, m-Enqueue, m-Dequeue**: Implemented in `EngineSystem.Mailbox.DefaultMailboxEngine`
-* **s-Process**: Implemented in `EngineSystem.Engine.Instance`
-* **Effect System**: Implemented in `EngineSystem.Engine.Effect`
-
-### State Management
-
-Each processing engine maintains three types of state:
-
-1. **Configuration** (`EngineSystem.Engine.State.Configuration`)
-
-   * Parent references and operational mode
-   * Engine-specific configuration data
-
-2. **Environment** (`EngineSystem.Engine.State.Environment`)
-
-   * Local state and address book
-   * Mutable data for business logic
-
-3. **Status** (`EngineSystem.Engine.State.Status`)
-
-   * Ready/busy/terminated states
-   * Message filters for selective processing
-
-### Message Flow
-
-1. External message sent to engine address (or to a mailbox address directly).
-2. System routes message to engine's mailbox in case of a processing engine's address.
-3. Mailbox engines validate message against engine interface (contract checking)
-4. Message queued if valid, filtered based on engine status (message filter).
-5. Processing engine requests messages via GenStage demand
-6. Mailbox delivers messages based on filter and demand via GenStage producer
-7. Processing engine executes behaviour rules and effects
-
-</details>
-
-<details>
-<summary>Development Status</summary>
-
-This implementation provides a **production-ready** foundation for the actor model with mailbox-as-actors separation and **compile-time validated DSL**. 
-
-**Enhanced DSL and Unified Import**
-
-* **Single import** via `use EngineSystem` for complete functionality
-* **Mode directive** to specify processing vs. mailbox engines
-* **Compile-time function generation** for all message handlers
-* **Type-safe message interfaces** with validation
-* **Clean, quote-free syntax** for better IDE support
-* **Automatic spec registration** with validation
-* **Error detection at compile-time** rather than runtime
-
-**Core Architecture - Fully Implemented**
-
-* OTP supervision tree with robust fault tolerance
-* GenStage-based message flow with backpressure
-* System registry and services with address management
-* **Proper environment data handling** - Raw data correctly passed to handlers
-
-**Mailbox-as-Actors - Fully Implemented**
-
-* First-class mailbox engines (can be custom-defined with DSL)
-* Message validation and filtering with contract checking
-* Demand-driven message delivery with GenStage
-* **Complete inter-engine message routing** with successful delivery
-
-**Processing Engines - Fully Implemented**
-
-* GenStage consumers for business logic processing
-* State management (configuration, environment, status)
-* **Generated behavior functions** with compile-time validation
-* **Correct environment data flow** to message handlers
-
-**System Management - Fully Implemented**
-
-* Engine spawning and termination with custom mailbox support
-* Address-based routing with reliable message delivery
-* System information and statistics with real-time monitoring
-* Interface introspection utilities with validation
-* **Complete ping-pong communication** between engines working correctly
-
-**Recent Major Fixes**
-
-* **Environment Data Structure Issue** - Resolved handler functions receiving nested structs instead of raw environment data
-* **Effect System Improvements** - Enhanced `:update_environment` effect to handle both raw and structured environment data
-* **Message Processing Pipeline** - Complete end-to-end message flow with proper validation and delivery
-* **Test Suite Completion** - All 45 tests now pass, demonstrating system reliability
-
-</details>
-
-<details>
-<summary>Contributing</summary>
-
-This implementation follows Elixir and OTP best practices.
-When contributing:
-
-1. Maintain the formal model compliance, read the paper to give you a better
-   understanding of the model.
-2. Follow the existing code organization
-3. Add comprehensive tests for new features, they can live in separate files.
-4. Update documentation for API changes, we use ExDoc and anoma/anoma coding
-   standards.
-
-</details>
-
-## Further Reading
-
-For a comprehensive tutorial with hands-on examples, check out:
-
-* [Engine System Essentials](notebooks/essentials.livemd) - Interactive
-  introduction to the Engine System
