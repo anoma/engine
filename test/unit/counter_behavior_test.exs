@@ -19,6 +19,14 @@ defmodule EngineSystem.Unit.CounterBehaviorTest do
   setup do
     # Start the EngineSystem to ensure specs are registered
     {:ok, _} = EngineSystem.start()
+
+    # Ensure the SimpleCounterEngine module is loaded and its spec is registered
+    Code.ensure_loaded(Examples.SimpleCounterEngine)
+
+    # Manually register the spec to ensure it's available
+    spec = Examples.SimpleCounterEngine.__engine_spec__()
+    EngineSystem.register_spec(spec)
+
     :ok
   end
 
@@ -27,20 +35,25 @@ defmodule EngineSystem.Unit.CounterBehaviorTest do
       # Get the counter engine specification using the correct API
       {:ok, spec} = EngineSystem.lookup_spec(Examples.SimpleCounterEngine, "2.0.0")
 
-      config = State.Configuration.new(nil, :process, %{
-        mode: :unlimited,
-        auto_reset: false,
-        notifications: true
-      })
+      config =
+        State.Configuration.new(nil, :process, %{
+          mode: :unlimited,
+          auto_reset: false,
+          notifications: true
+        })
 
-      env = State.Environment.new(%{
-        counter: 0,
-        increment_by: 1,
-        max_count: 100,
-        enabled: true,
-        history: [],
-        metadata: %{}
-      }, %{})
+      env =
+        State.Environment.new(
+          %{
+            counter: 0,
+            increment_by: 1,
+            max_count: 100,
+            enabled: true,
+            history: [],
+            metadata: %{}
+          },
+          %{}
+        )
 
       {:ok, spec: spec, config: config, env: env}
     end
@@ -54,46 +67,54 @@ defmodule EngineSystem.Unit.CounterBehaviorTest do
       assert length(effects) >= 2
 
       # Find the update_environment effect
-      update_effect = Enum.find(effects, fn
-        {:update_environment, _} -> true
-        _ -> false
-      end)
+      update_effect =
+        Enum.find(effects, fn
+          {:update_environment, _} -> true
+          _ -> false
+        end)
 
       assert update_effect != nil
       {:update_environment, new_env_data} = update_effect
 
       # Counter should be incremented
       assert new_env_data.counter == 1
-      assert new_env_data.history == [0]  # Previous value added to history
+      # Previous value added to history
+      assert new_env_data.history == [0]
     end
 
     test "decrement behavior decreases counter", %{spec: spec, config: config} do
       # Start with counter at 5
-      env = State.Environment.new(%{
-        counter: 5,
-        increment_by: 1,
-        max_count: 100,
-        enabled: true,
-        history: [0, 1, 2, 3, 4],
-        metadata: %{}
-      }, %{})
+      env =
+        State.Environment.new(
+          %{
+            counter: 5,
+            increment_by: 1,
+            max_count: 100,
+            enabled: true,
+            history: [0, 1, 2, 3, 4],
+            metadata: %{}
+          },
+          %{}
+        )
 
       message = Message.new({:test, 1}, {1, 1}, {:decrement, %{}})
 
       {:ok, effects} = Behaviour.evaluate(spec, message, config, env)
 
       # Find the update_environment effect
-      update_effect = Enum.find(effects, fn
-        {:update_environment, _} -> true
-        _ -> false
-      end)
+      update_effect =
+        Enum.find(effects, fn
+          {:update_environment, _} -> true
+          _ -> false
+        end)
 
       assert update_effect != nil
       {:update_environment, new_env_data} = update_effect
 
       # Counter should be decremented
       assert new_env_data.counter == 4
-      assert new_env_data.history == [5, 0, 1, 2, 3, 4]  # Previous value added to history
+      # Previous value added to history
+      assert new_env_data.history == [5, 0, 1, 2, 3, 4]
     end
 
     test "decrement doesn't go below zero", %{spec: spec, config: config, env: env} do
@@ -102,10 +123,11 @@ defmodule EngineSystem.Unit.CounterBehaviorTest do
       {:ok, effects} = Behaviour.evaluate(spec, message, config, env)
 
       # Find the update_environment effect
-      update_effect = Enum.find(effects, fn
-        {:update_environment, _} -> true
-        _ -> false
-      end)
+      update_effect =
+        Enum.find(effects, fn
+          {:update_environment, _} -> true
+          _ -> false
+        end)
 
       assert update_effect != nil
       {:update_environment, new_env_data} = update_effect
@@ -114,21 +136,27 @@ defmodule EngineSystem.Unit.CounterBehaviorTest do
       assert new_env_data.counter == 0
     end
 
-    test "get_count returns current value without changing state", %{spec: spec, config: config, env: env} do
+    test "get_count returns current value without changing state", %{
+      spec: spec,
+      config: config,
+      env: env
+    } do
       message = Message.new({:test, 1}, {1, 1}, {:get_count, %{}})
 
       {:ok, effects} = Behaviour.evaluate(spec, message, config, env)
 
       # Should only have send effect, no update_environment
-      send_effects = Enum.filter(effects, fn
-        {:send, _, _} -> true
-        _ -> false
-      end)
+      send_effects =
+        Enum.filter(effects, fn
+          {:send, _, _} -> true
+          _ -> false
+        end)
 
-      update_effects = Enum.filter(effects, fn
-        {:update_environment, _} -> true
-        _ -> false
-      end)
+      update_effects =
+        Enum.filter(effects, fn
+          {:update_environment, _} -> true
+          _ -> false
+        end)
 
       assert length(send_effects) == 1
       assert length(update_effects) == 0
@@ -141,24 +169,29 @@ defmodule EngineSystem.Unit.CounterBehaviorTest do
 
     test "reset sets counter to zero and clears history", %{spec: spec, config: config} do
       # Start with non-zero counter and some history
-      env = State.Environment.new(%{
-        counter: 42,
-        increment_by: 1,
-        max_count: 100,
-        enabled: true,
-        history: [0, 10, 20, 30],
-        metadata: %{}
-      }, %{})
+      env =
+        State.Environment.new(
+          %{
+            counter: 42,
+            increment_by: 1,
+            max_count: 100,
+            enabled: true,
+            history: [0, 10, 20, 30],
+            metadata: %{}
+          },
+          %{}
+        )
 
       message = Message.new({:test, 1}, {1, 1}, {:reset, %{}})
 
       {:ok, effects} = Behaviour.evaluate(spec, message, config, env)
 
       # Find the update_environment effect
-      update_effect = Enum.find(effects, fn
-        {:update_environment, _} -> true
-        _ -> false
-      end)
+      update_effect =
+        Enum.find(effects, fn
+          {:update_environment, _} -> true
+          _ -> false
+        end)
 
       assert update_effect != nil
       {:update_environment, new_env_data} = update_effect
@@ -174,10 +207,11 @@ defmodule EngineSystem.Unit.CounterBehaviorTest do
       {:ok, effects} = Behaviour.evaluate(spec, message, config, env)
 
       # Find the update_environment effect
-      update_effect = Enum.find(effects, fn
-        {:update_environment, _} -> true
-        _ -> false
-      end)
+      update_effect =
+        Enum.find(effects, fn
+          {:update_environment, _} -> true
+          _ -> false
+        end)
 
       assert update_effect != nil
       {:update_environment, new_env_data} = update_effect
@@ -191,19 +225,24 @@ defmodule EngineSystem.Unit.CounterBehaviorTest do
     test "limited mode prevents exceeding max_count" do
       {:ok, spec} = EngineSystem.lookup_spec(Examples.SimpleCounterEngine, "2.0.0")
 
-      config = State.Configuration.new(nil, :process, %{
-        mode: :limited,
-        notifications: true
-      })
+      config =
+        State.Configuration.new(nil, :process, %{
+          mode: :limited,
+          notifications: true
+        })
 
-      env = State.Environment.new(%{
-        counter: 95,
-        increment_by: 1,
-        max_count: 100,
-        enabled: true,
-        history: [],
-        metadata: %{}
-      }, %{})
+      env =
+        State.Environment.new(
+          %{
+            counter: 95,
+            increment_by: 1,
+            max_count: 100,
+            enabled: true,
+            history: [],
+            metadata: %{}
+          },
+          %{}
+        )
 
       # Try to add a value that would exceed max_count
       message = Message.new({:test, 1}, {1, 1}, {:add, %{value: 10}})
@@ -211,15 +250,17 @@ defmodule EngineSystem.Unit.CounterBehaviorTest do
       {:ok, effects} = Behaviour.evaluate(spec, message, config, env)
 
       # Should get an error response, no environment update
-      send_effects = Enum.filter(effects, fn
-        {:send, _, _} -> true
-        _ -> false
-      end)
+      send_effects =
+        Enum.filter(effects, fn
+          {:send, _, _} -> true
+          _ -> false
+        end)
 
-      update_effects = Enum.filter(effects, fn
-        {:update_environment, _} -> true
-        _ -> false
-      end)
+      update_effects =
+        Enum.filter(effects, fn
+          {:update_environment, _} -> true
+          _ -> false
+        end)
 
       assert length(send_effects) == 1
       assert length(update_effects) == 0
@@ -232,29 +273,35 @@ defmodule EngineSystem.Unit.CounterBehaviorTest do
       {:ok, spec} = EngineSystem.lookup_spec(Examples.SimpleCounterEngine, "2.0.0")
 
       # Test with notifications enabled
-      config_with_notifications = State.Configuration.new(nil, :process, %{
-        mode: :unlimited,
-        notifications: true
-      })
+      config_with_notifications =
+        State.Configuration.new(nil, :process, %{
+          mode: :unlimited,
+          notifications: true
+        })
 
-      env = State.Environment.new(%{
-        counter: 0,
-        increment_by: 1,
-        max_count: 100,
-        enabled: true,
-        history: [],
-        metadata: %{}
-      }, %{})
+      env =
+        State.Environment.new(
+          %{
+            counter: 0,
+            increment_by: 1,
+            max_count: 100,
+            enabled: true,
+            history: [],
+            metadata: %{}
+          },
+          %{}
+        )
 
       message = Message.new({:test, 1}, {1, 1}, {:increment, %{}})
 
       {:ok, effects} = Behaviour.evaluate(spec, message, config_with_notifications, env)
 
       # Find the send effect
-      send_effect = Enum.find(effects, fn
-        {:send, _, _} -> true
-        _ -> false
-      end)
+      send_effect =
+        Enum.find(effects, fn
+          {:send, _, _} -> true
+          _ -> false
+        end)
 
       assert send_effect != nil
       {:send, _, response} = send_effect
@@ -263,26 +310,32 @@ defmodule EngineSystem.Unit.CounterBehaviorTest do
       assert response == {:count_updated, 1}
 
       # Test with notifications disabled
-      config_without_notifications = State.Configuration.new(nil, :process, %{
-        mode: :unlimited,
-        notifications: false
-      })
+      config_without_notifications =
+        State.Configuration.new(nil, :process, %{
+          mode: :unlimited,
+          notifications: false
+        })
 
-      env_reset = State.Environment.new(%{
-        counter: 0,
-        increment_by: 1,
-        max_count: 100,
-        enabled: true,
-        history: [],
-        metadata: %{}
-      }, %{})
+      env_reset =
+        State.Environment.new(
+          %{
+            counter: 0,
+            increment_by: 1,
+            max_count: 100,
+            enabled: true,
+            history: [],
+            metadata: %{}
+          },
+          %{}
+        )
 
       {:ok, effects2} = Behaviour.evaluate(spec, message, config_without_notifications, env_reset)
 
-      send_effect2 = Enum.find(effects2, fn
-        {:send, _, _} -> true
-        _ -> false
-      end)
+      send_effect2 =
+        Enum.find(effects2, fn
+          {:send, _, _} -> true
+          _ -> false
+        end)
 
       assert send_effect2 != nil
       {:send, _, response2} = send_effect2
@@ -294,29 +347,36 @@ defmodule EngineSystem.Unit.CounterBehaviorTest do
     test "increment_by affects increment amount" do
       {:ok, spec} = EngineSystem.lookup_spec(Examples.SimpleCounterEngine, "2.0.0")
 
-      config = State.Configuration.new(nil, :process, %{
-        mode: :unlimited,
-        notifications: false
-      })
+      config =
+        State.Configuration.new(nil, :process, %{
+          mode: :unlimited,
+          notifications: false
+        })
 
-      env = State.Environment.new(%{
-        counter: 10,
-        increment_by: 5,  # Custom increment
-        max_count: 100,
-        enabled: true,
-        history: [],
-        metadata: %{}
-      }, %{})
+      env =
+        State.Environment.new(
+          %{
+            counter: 10,
+            # Custom increment
+            increment_by: 5,
+            max_count: 100,
+            enabled: true,
+            history: [],
+            metadata: %{}
+          },
+          %{}
+        )
 
       message = Message.new({:test, 1}, {1, 1}, {:increment, %{}})
 
       {:ok, effects} = Behaviour.evaluate(spec, message, config, env)
 
       # Find the update_environment effect
-      update_effect = Enum.find(effects, fn
-        {:update_environment, _} -> true
-        _ -> false
-      end)
+      update_effect =
+        Enum.find(effects, fn
+          {:update_environment, _} -> true
+          _ -> false
+        end)
 
       assert update_effect != nil
       {:update_environment, new_env_data} = update_effect
@@ -330,34 +390,42 @@ defmodule EngineSystem.Unit.CounterBehaviorTest do
     test "disabled counter rejects operations" do
       {:ok, spec} = EngineSystem.lookup_spec(Examples.SimpleCounterEngine, "2.0.0")
 
-      config = State.Configuration.new(nil, :process, %{
-        mode: :unlimited,
-        notifications: true
-      })
+      config =
+        State.Configuration.new(nil, :process, %{
+          mode: :unlimited,
+          notifications: true
+        })
 
-      env = State.Environment.new(%{
-        counter: 5,
-        increment_by: 1,
-        max_count: 100,
-        enabled: false,  # Disabled
-        history: [],
-        metadata: %{}
-      }, %{})
+      env =
+        State.Environment.new(
+          %{
+            counter: 5,
+            increment_by: 1,
+            max_count: 100,
+            # Disabled
+            enabled: false,
+            history: [],
+            metadata: %{}
+          },
+          %{}
+        )
 
       message = Message.new({:test, 1}, {1, 1}, {:increment, %{}})
 
       {:ok, effects} = Behaviour.evaluate(spec, message, config, env)
 
       # Should get error response, no environment update
-      send_effects = Enum.filter(effects, fn
-        {:send, _, _} -> true
-        _ -> false
-      end)
+      send_effects =
+        Enum.filter(effects, fn
+          {:send, _, _} -> true
+          _ -> false
+        end)
 
-      update_effects = Enum.filter(effects, fn
-        {:update_environment, _} -> true
-        _ -> false
-      end)
+      update_effects =
+        Enum.filter(effects, fn
+          {:update_environment, _} -> true
+          _ -> false
+        end)
 
       assert length(send_effects) == 1
       assert length(update_effects) == 0
@@ -369,36 +437,44 @@ defmodule EngineSystem.Unit.CounterBehaviorTest do
     test "history is maintained correctly" do
       {:ok, spec} = EngineSystem.lookup_spec(Examples.SimpleCounterEngine, "2.0.0")
 
-      config = State.Configuration.new(nil, :process, %{
-        mode: :unlimited,
-        notifications: false
-      })
+      config =
+        State.Configuration.new(nil, :process, %{
+          mode: :unlimited,
+          notifications: false
+        })
 
-      env = State.Environment.new(%{
-        counter: 3,
-        increment_by: 2,
-        max_count: 100,
-        enabled: true,
-        history: [0, 1],  # Existing history
-        metadata: %{}
-      }, %{})
+      env =
+        State.Environment.new(
+          %{
+            counter: 3,
+            increment_by: 2,
+            max_count: 100,
+            enabled: true,
+            # Existing history
+            history: [0, 1],
+            metadata: %{}
+          },
+          %{}
+        )
 
       message = Message.new({:test, 1}, {1, 1}, {:increment, %{}})
 
       {:ok, effects} = Behaviour.evaluate(spec, message, config, env)
 
       # Find the update_environment effect
-      update_effect = Enum.find(effects, fn
-        {:update_environment, _} -> true
-        _ -> false
-      end)
+      update_effect =
+        Enum.find(effects, fn
+          {:update_environment, _} -> true
+          _ -> false
+        end)
 
       assert update_effect != nil
       {:update_environment, new_env_data} = update_effect
 
       # Counter should be updated and previous value added to history
       assert new_env_data.counter == 5
-      assert new_env_data.history == [3, 0, 1]  # Previous counter value prepended
+      # Previous counter value prepended
+      assert new_env_data.history == [3, 0, 1]
     end
   end
 
