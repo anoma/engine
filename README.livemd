@@ -1,0 +1,727 @@
+# Engines in Elixir [![CI](https://github.com/anoma/engine/actions/workflows/ci.yml/badge.svg)](https://github.com/anoma/engine/actions/workflows/ci.yml)
+
+```elixir
+Mix.install([
+  {:engine_system, path: "."}
+])
+```
+
+## Introduction
+
+A work-in-progress implementation of the **Engine Model** in Elixir.
+
+An *engine* is an actor-like entity that enables type-safe message passing and
+effectful actions through guarded actions. These actions can modify both the
+engine's state and its environment.
+
+Among other things, this library implements the Engine Model with a
+[DSL](#dsl-for-engine-definition) and runtime system. The DSL lets you easily
+define engines that follow the formal specification, including configuration,
+state, message handling, and behaviours. The runtime system manages engine
+lifecycles, message passing, monitoring, and introspection.
+
+## Prerequisites & Installation
+
+### Prerequisites
+
+* Elixir 1.18.0 or higher
+* Erlang/OTP 28 or higher
+
+```elixir
+# Check your Elixir version
+System.version()
+```
+
+```elixir
+def deps do
+  [
+    {:engine_system, "~> 0.1.0"}
+  ]
+end
+```
+
+### Installation
+
+The package can be installed by adding `engine_system` to your list of
+dependencies in `mix.exs`:
+
+## The Engine Model
+
+A complete implementation of the actor model with explicit mailbox-as-actors
+separation, based on the formal specifications described in the research paper.
+This system implements the core innovation of promoting mailboxes to first-class
+processing engines that receive messages but verify message writing using linked
+processing engines.
+
+<details>
+<summary>Architecture Overview</summary>
+
+The EngineSystem implements a clean separation between processing engines and
+their mailboxes, following the formal model's operational semantics.
+
+Key architectural components include:
+
+#### Core Components
+
+1. **Processing Engines** (`EngineSystem.Engine.Instance`)
+
+   * GenStage consumers that process business logic
+   * Maintain configuration, environment, and status state
+   * Subscribe to their dedicated mailbox engines
+   * Execute behavior rules and effects
+
+2. **Mailbox Engines** (`EngineSystem.Mailbox.DefaultMailboxEngine`)
+
+   * GenStage producers that act as first-class actors
+   * Validate incoming messages against processing engine interfaces
+   * Queue and filter messages based on processing engine state
+   * Implement backpressure and demand-driven message delivery
+
+3. **System Registry** (`EngineSystem.System.Registry`)
+
+   * Central registry for engine specifications and running instances
+   * Tracks address-to-PID mappings and metadata
+   * Provides fresh ID generation and system-wide services
+
+4. **DSL** (`EngineSystem.Engine.DSL`)
+
+   * User-friendly Elixir Domain Specific Language
+   * Compile-time generation of engine specifications
+   * Automatic registration of engine types
+
+#### Key Features
+
+**Mailbox-as-Actors Pattern:**
+
+* **Mailboxes as first-class engines** that handle message reception and validation independently
+* **Message validation** through contract checking against processing engine interfaces
+* **Independent message filtering** and queueing policies per mailbox
+* **Backpressure management** via GenStage demand-driven message flow
+
+
+</details>
+
+## DSL for Engine Definition
+
+The DSL features **compile-time validation**, clean simplified syntax, and **unified import**. Let's start the system and explore some examples:
+
+```elixir
+# Import the EngineSystem DSL and utilities
+use EngineSystem
+
+# Start the EngineSystem application
+{:ok, _} = EngineSystem.start()
+```
+
+### Simple Echo Engine
+
+Let's start with a basic echo engine:
+
+```elixir
+defengine SimpleEcho do
+  version "1.0.0"
+  mode :process
+
+  interface do
+    message :echo, text: :string
+    message :ping
+  end
+
+  behaviour do
+    on_message :echo, msg, _config, _env, sender do
+      {:ok, [{:send, sender, {:echo_reply, msg}}]}
+    end
+
+    on_message :ping, _msg, _config, _env, sender do
+      {:ok, [{:send, sender, :pong}]}
+    end
+  end
+end
+```
+
+Now let's spawn an instance and test it:
+
+```elixir
+# Spawn the echo engine
+{:ok, echo_address} = spawn_engine(SimpleEcho)
+IO.puts("Echo engine spawned at: #{inspect(echo_address)}")
+
+# Send some messages
+send_message(echo_address, {:echo, %{text: "Hello Engine System!"}})
+send_message(echo_address, {:ping, %{}})
+
+# Check system status
+EngineSystem.get_system_info()
+```
+
+<details>
+<summary>Stateless Calculator Example</summary>
+
+Here's an example of a stateless processing engine:
+
+```elixir
+defengine StatelessCalculator do
+  version "1.0.0"
+  mode :process
+
+  interface do
+    message :add, a: :number, b: :number
+    message :multiply, a: :number, b: :number
+    message :divide, a: :number, b: :number
+    message :result, value: :number
+  end
+
+  behaviour do
+    on_message :add, msg, _config, _env, sender do
+      {a, b} = {msg[:a], msg[:b]}
+      {:ok, [{:send, sender, {:result, a + b}}]}
+    end
+
+    on_message :multiply, msg, _config, _env, sender do
+      {a, b} = {msg[:a], msg[:b]}
+      {:ok, [{:send, sender, {:result, a * b}}]}
+    end
+
+    on_message :divide, msg, _config, _env, sender do
+      {a, b} = {msg[:a], msg[:b]}
+      if b != 0 do
+        {:ok, [{:send, sender, {:result, a / b}}]}
+      else
+        {:ok, [{:send, sender, {:error, :division_by_zero}}]}
+      end
+    end
+  end
+end
+```
+
+Let's test the calculator:
+
+```elixir
+# Spawn the calculator
+{:ok, calc_address} = spawn_engine(StatelessCalculator)
+
+# Perform some calculations
+send_message(calc_address, {:add, %{a: 10, b: 5}})
+send_message(calc_address, {:multiply, %{a: 7, b: 8}})
+send_message(calc_address, {:divide, %{a: 15, b: 3}})
+send_message(calc_address, {:divide, %{a: 10, b: 0}})  # This should return an error
+
+IO.puts("Calculator tests sent!")
+```
+
+</details>
+
+### Stateful Counter Engine
+
+Now let's create an engine with configuration and environment (state):
+
+```elixir
+defengine SimpleCounter do
+  version "1.0.0"
+  mode :process
+
+  config do
+    %{max_count: 100, step: 1}
+  end
+
+  env do
+    %{count: 0, total_operations: 0}
+  end
+
+  interface do
+    message(:increment)
+    message(:decrement)
+    message(:get_count)
+    message(:reset)
+    message(:count_response, value: :integer)
+  end
+
+  behaviour do
+    on_message :increment, _msg, config, env, sender do
+      new_count = min(env.count + config.step, config.max_count)
+      new_env = %{env | count: new_count, total_operations: env.total_operations + 1}
+
+      {:ok, [
+        {:update_environment, new_env},
+        {:send, sender, {:count_response, new_count}}
+      ]}
+    end
+
+    on_message :decrement, _msg, config, env, sender do
+      new_count = max(env.count - config.step, 0)
+      new_env = %{env | count: new_count, total_operations: env.total_operations + 1}
+
+      {:ok, [
+        {:update_environment, new_env},
+        {:send, sender, {:count_response, new_count}}
+      ]}
+    end
+
+    on_message :get_count, _msg, _config, env, sender do
+      {:ok, [{:send, sender, {:count_response, env.count}}]}
+    end
+
+    on_message :reset, _msg, _config, _env, sender do
+      new_env = %{count: 0, total_operations: 0}
+      {:ok, [
+        {:update_environment, new_env},
+        {:send, sender, {:count_response, 0}}
+      ]}
+    end
+  end
+end
+```
+
+Let's test the counter:
+
+```elixir
+# Spawn the counter with default config
+{:ok, counter_address} = spawn_engine(SimpleCounter)
+
+# Test counter operations
+send_message(counter_address, {:get_count, %{}})
+send_message(counter_address, {:increment, %{}})
+send_message(counter_address, {:increment, %{}})
+send_message(counter_address, {:get_count, %{}})
+send_message(counter_address, {:decrement, %{}})
+send_message(counter_address, {:get_count, %{}})
+
+IO.puts("Counter tests sent!")
+```
+
+```elixir
+{:ok, counter_instance} = EngineSystem.lookup_instance(counter_address)
+```
+
+```elixir
+EngineSystem.Engine.Instance.get_state(counter_address)
+```
+
+<details>
+<summary>Advanced Key-Value Store Example</summary>
+
+Here's a more complex example with configuration and sophisticated state management:
+
+```elixir
+defengine MyKVStore do
+  version "2.0.0"
+  mode :process
+
+  interface do
+    message :get, key: :atom
+    message :put, key: :atom, value: :any
+    message :delete, key: :atom
+    message :list_keys
+    message :clear
+    message :size
+    message :result, value: {:option, :any}
+  end
+
+  config do
+    %{
+      access_mode: :read_write,
+      max_size: 1000,
+      timeout: 30.5,
+      retries_enabled: true
+    }
+  end
+
+  env do
+    %{
+      store: %{},
+      access_counts: %{},
+      last_accessed: nil,
+      active_connections: 0
+    }
+  end
+
+  behaviour do
+    on_message :get, msg, _config, env, sender do
+      key = msg[:key]
+      value = Map.get(env.store, key, :not_found)
+      new_counts = Map.update(env.access_counts, key, 1, &(&1 + 1))
+      new_env = %{env | access_counts: new_counts, last_accessed: key}
+      
+      {:ok, [
+        {:update_environment, new_env},
+        {:send, sender, {:result, value}}
+      ]}
+    end
+
+    on_message :put, msg, config, env, sender do
+      {key, value} = {msg[:key], msg[:value]}
+      
+      if map_size(env.store) >= config.max_size and not Map.has_key?(env.store, key) do
+        {:ok, [{:send, sender, {:error, :store_full}}]}
+      else
+        new_store = Map.put(env.store, key, value)
+        new_env = %{env | store: new_store, last_accessed: key}
+        
+        {:ok, [
+          {:update_environment, new_env},
+          {:send, sender, :ack}
+        ]}
+      end
+    end
+
+    on_message :delete, msg, _config, env, sender do
+      key = msg[:key]
+      new_store = Map.delete(env.store, key)
+      new_counts = Map.delete(env.access_counts, key)
+      new_env = %{env | store: new_store, access_counts: new_counts}
+      
+      {:ok, [
+        {:update_environment, new_env},
+        {:send, sender, :ack}
+      ]}
+    end
+
+    on_message :list_keys, _msg, _config, env, sender do
+      keys = Map.keys(env.store)
+      {:ok, [{:send, sender, {:result, keys}}]}
+    end
+
+    on_message :clear, _msg, _config, _env, sender do
+      new_env = %{store: %{}, access_counts: %{}, last_accessed: nil, active_connections: 0}
+      {:ok, [
+        {:update_environment, new_env},
+        {:send, sender, :ack}
+      ]}
+    end
+
+    on_message :size, _msg, _config, env, sender do
+      size = map_size(env.store)
+      {:ok, [{:send, sender, {:result, size}}]}
+    end
+  end
+end
+```
+
+Let's test the KV store:
+
+```elixir
+# Spawn with custom configuration
+custom_config = %{access_mode: :read_write, max_size: 5}
+{:ok, kv_address} = spawn_engine(MyKVStore, custom_config)
+
+# Test KV operations
+send_message(kv_address, {:put, %{key: :name, value: "Engine System"}})
+send_message(kv_address, {:put, %{key: :version, value: "2.0.0"}})
+send_message(kv_address, {:put, %{key: :language, value: "Elixir"}})
+
+send_message(kv_address, {:get, %{key: :name}})
+send_message(kv_address, {:list_keys, %{}})
+send_message(kv_address, {:size, %{}})
+
+IO.puts("KV Store tests sent!")
+```
+
+</details>
+
+## System Management
+
+Let's explore the basic system management capabilities:
+
+```elixir
+# List all running instances
+instances = EngineSystem.list_instances()
+IO.puts("Running instances: #{length(instances)}")
+
+for instance <- instances do
+  IO.puts("  #{inspect(instance.address)} - #{instance.engine_name}")
+end
+```
+
+```elixir
+# Get comprehensive system information
+system_info = EngineSystem.get_system_info()
+IO.puts("System Information:")
+IO.puts("  Running instances: #{system_info.running_instances}")
+IO.puts("  Registered specs: #{system_info.registered_specs}")
+IO.puts("  Total messages processed: #{system_info.total_messages || 0}")
+```
+
+<details>
+<summary>Advanced System Management</summary>
+
+```elixir
+# Look up engine by address
+case EngineSystem.lookup_instance(kv_address) do
+  {:ok, info} ->
+    IO.puts("Engine found:")
+    IO.puts("  Name: #{info.engine_name}")
+    IO.puts("  Version: #{info.version}")
+    IO.puts("  Status: #{info.status}")
+    IO.puts("  Address: #{inspect(info.address)}")
+  error ->
+    IO.puts("Error looking up engine: #{inspect(error)}")
+end
+```
+
+```elixir
+# Spawn with a name for easy lookup
+{:ok, named_address} = spawn_engine(SimpleCounter, %{max_count: 50}, %{}, :my_counter)
+
+# Look up by name
+case EngineSystem.lookup_address_by_name(:my_counter) do
+  {:ok, address} ->
+    IO.puts("Found named engine at: #{inspect(address)}")
+    send_message(address, {:increment, %{}})
+    send_message(address, {:get_count, %{}})
+  error ->
+    IO.puts("Error finding named engine: #{inspect(error)}")
+end
+```
+
+</details>
+
+<details>
+<summary>Interface Utilities</summary>
+
+
+The system provides utilities for introspecting engine interfaces:
+
+```elixir
+# Check if engine supports a message
+if EngineSystem.has_message?(:MyKVStore, "2.0.0", :get) do
+  IO.puts("MyKVStore supports :get message")
+end
+
+# Get message fields for a specific message
+case EngineSystem.get_message_fields(:MyKVStore, "2.0.0", :put) do
+  {:ok, fields} ->
+    IO.puts("Fields for :put message: #{inspect(fields)}")
+  error ->
+    IO.puts("Error getting fields: #{inspect(error)}")
+end
+
+# Get all supported message tags
+tags = EngineSystem.get_message_tags(:MyKVStore, "2.0.0")
+IO.puts("MyKVStore supports messages: #{inspect(tags)}")
+
+# Get message tags for a running instance
+instance_tags = EngineSystem.get_instance_message_tags(kv_address)
+IO.puts("Running instance supports: #{inspect(instance_tags)}")
+```
+
+</details>
+
+<details>
+<summary>✅ Message Validation (Click to expand)</summary>
+
+## Message Validation
+
+The system provides message validation before sending:
+
+```elixir
+# Validate a message before sending
+case EngineSystem.validate_message(kv_address, {:get, %{key: :test}}) do
+  :ok ->
+    IO.puts("Message is valid!")
+    send_message(kv_address, {:get, %{key: :test}})
+  {:error, reason} ->
+    IO.puts("Message validation failed: #{inspect(reason)}")
+end
+
+# Try an invalid message
+case EngineSystem.validate_message(kv_address, {:invalid_message, %{}}) do
+  :ok ->
+    IO.puts("Message is valid!")
+  {:error, reason} ->
+    IO.puts("Expected validation failure: #{inspect(reason)}")
+end
+```
+
+</details>
+
+<details>
+<summary>Custom Mailbox Engines</summary>
+
+You can create custom mailbox engines for specialized message handling:
+
+```elixir
+defengine PriorityMailbox do
+  version "1.0.0"
+  mode :mailbox  # This is a mailbox engine
+
+  interface do
+    message :high_priority, content: :any
+    message :normal_priority, content: :any
+    message :low_priority, content: :any
+  end
+
+  env do
+    %{
+      high_queue: :queue.new(),
+      normal_queue: :queue.new(),
+      low_queue: :queue.new()
+    }
+  end
+
+  behaviour do
+    # Mailbox engines handle message queuing differently
+    on_message :high_priority, payload, _config, env, _sender do
+      new_high_queue = :queue.in(payload, env.high_queue)
+      new_env = %{env | high_queue: new_high_queue}
+      {:ok, [{:update_environment, new_env}]}
+    end
+
+    on_message :normal_priority, payload, _config, env, _sender do
+      new_normal_queue = :queue.in(payload, env.normal_queue)
+      new_env = %{env | normal_queue: new_normal_queue}
+      {:ok, [{:update_environment, new_env}]}
+    end
+
+    on_message :low_priority, payload, _config, env, _sender do
+      new_low_queue = :queue.in(payload, env.low_queue)
+      new_env = %{env | low_queue: new_low_queue}
+      {:ok, [{:update_environment, new_env}]}
+    end
+  end
+end
+```
+
+</details>
+
+<details>
+<summary>Cleanup and Monitoring</summary>
+
+```elixir
+# Monitor system health
+instances = EngineSystem.list_instances()
+
+Enum.each(instances, fn inst ->
+  engine_alive = Process.alive?(inst.engine_pid)
+  mailbox_alive = Process.alive?(inst.mailbox_pid)
+  
+  status = if engine_alive and mailbox_alive, do: "HEALTHY", else: "DEAD"
+  IO.puts("#{status} #{inspect(inst.address)}")
+  
+  if engine_alive do
+    info = Process.info(inst.engine_pid)
+    IO.puts("  Work done: #{info[:reductions]} reductions")
+    IO.puts("  Queue: #{info[:message_queue_len]} messages")
+  end
+end)
+```
+
+```elixir
+# Clean up terminated engines
+EngineSystem.clean_terminated_engines()
+
+# Final system status
+final_info = EngineSystem.get_system_info()
+IO.puts("\nFinal System Status:")
+IO.puts("Running instances: #{final_info.running_instances}")
+IO.puts("Registered specs: #{final_info.registered_specs}")
+```
+
+</details>
+
+<details>
+<summary>Implementation Details</summary>
+
+### Formal Model Compliance
+
+The implementation follows the operational semantics from the formal model:
+
+* **s-EngineSpawn**: Implemented in `EngineSystem.System.Spawner`
+* **m-Send, m-Enqueue, m-Dequeue**: Implemented in `EngineSystem.Mailbox.DefaultMailboxEngine`
+* **s-Process**: Implemented in `EngineSystem.Engine.Instance`
+* **Effect System**: Implemented in `EngineSystem.Engine.Effect`
+
+### State Management
+
+Each processing engine maintains three types of state:
+
+1. **Configuration** (`EngineSystem.Engine.State.Configuration`)
+
+   * Parent references and operational mode
+   * Engine-specific configuration data
+
+2. **Environment** (`EngineSystem.Engine.State.Environment`)
+
+   * Local state and address book
+   * Mutable data for business logic
+
+3. **Status** (`EngineSystem.Engine.State.Status`)
+
+   * Ready/busy/terminated states
+   * Message filters for selective processing
+
+### Message Flow
+
+1. External message sent to engine address (or to a mailbox address directly).
+2. System routes message to engine's mailbox in case of a processing engine's address.
+3. Mailbox engines validate message against engine interface (contract checking)
+4. Message queued if valid, filtered based on engine status (message filter).
+5. Processing engine requests messages via GenStage demand
+6. Mailbox delivers messages based on filter and demand via GenStage producer
+7. Processing engine executes behaviour rules and effects
+
+</details>
+
+<details>
+<summary>Development Status</summary>
+
+This implementation provides a robust foundation for the actor model with mailbox-as-actors separation and **compile-time validated DSL**. Key features implemented:
+
+**Enhanced DSL and Unified Import**
+
+* **Single import** via `use EngineSystem` for complete functionality
+* **Mode directive** to specify processing vs. mailbox engines
+* **Compile-time function generation** for all message handlers
+* **Type-safe message interfaces** with validation
+* **Clean, quote-free syntax** for better IDE support
+* **Automatic spec registration** with validation
+* **Error detection at compile-time** rather than runtime
+
+**Core Architecture**
+
+* OTP supervision tree
+* GenStage-based message flow
+* System registry and services
+
+**Mailbox-as-Actors**
+
+* First-class mailbox engines (can be custom-defined with DSL)
+* Message validation and filtering
+* Demand-driven message delivery
+
+**Processing Engines**
+
+* GenStage consumers for business logic
+* State management (configuration, environment, status)
+* **Generated behavior functions** with compile-time validation
+
+**System Management**
+
+* Engine spawning and termination with custom mailbox support
+* Address-based routing
+* System information and statistics
+* Interface introspection utilities
+
+</details>
+
+<details>
+<summary>Contributing</summary>
+
+This implementation follows Elixir and OTP best practices.
+When contributing:
+
+1. Maintain the formal model compliance, read the paper to give you a better
+   understanding of the model.
+2. Follow the existing code organization
+3. Add comprehensive tests for new features, they can live in separate files.
+4. Update documentation for API changes, we use ExDoc and anoma/anoma coding
+   standards.
+
+</details>
+
+## Further Reading
+
+For a comprehensive tutorial with hands-on examples, check out:
+
+* [Engine System Essentials](notebooks/essentials.livemd) - Interactive
+introduction to the Engine System
+
