@@ -172,7 +172,6 @@ send_message(echo_address, {:echo, %{text: "Hello Engine System!"}})
 
 ```elixir
 send_message(echo_address, {:ping, %{}})
-
 ```
 
 ```elixir
