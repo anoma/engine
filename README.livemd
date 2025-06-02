@@ -14,7 +14,11 @@ Mix.install([
 
 ## Introduction
 
-This library is a work-in-progress implementation of the **Engine Model** in Elixir. 
+This library is a work-in-progress implementation of the **Engine Model** in
+Elixir, following the formal specification described in
+[Dynamic Effective Timed Communication
+Systems](https://zenodo.org/records/14984148) and [Mailbox-as-Actors (under
+review)](https://www.overleaf.com/read/fzvnxbgkhhzd#17b19a).
 
 An *engine* is an actor-like entity that enables type-safe message passing and
 effectful actions through guarded actions. These actions can modify both the
