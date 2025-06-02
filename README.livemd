@@ -6,6 +6,10 @@
 
 > **NOTE** This README is a [livebook](https://livebook.dev), so you can run it!
 
+```bash
+make livebook
+```
+
 ```elixir
 Mix.install([
   {:engine_system, path: "."}
