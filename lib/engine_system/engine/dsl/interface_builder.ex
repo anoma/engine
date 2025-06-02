@@ -11,16 +11,43 @@ defmodule EngineSystem.Engine.DSL.InterfaceBuilder do
   """
   defmacro interface(do: block) do
     quote do
-      # Temporarily store current interface
+      # Temporarily store current interface and all message definitions (including duplicates)
       Module.put_attribute(__MODULE__, :current_interface, [])
+      Module.put_attribute(__MODULE__, :all_message_definitions, [])
       unquote(block)
+
+      # Validate for duplicates before updating spec
+      all_definitions =
+        Module.get_attribute(__MODULE__, :all_message_definitions) |> Enum.reverse()
+
+      current_interface = Module.get_attribute(__MODULE__, :current_interface)
+
+      case EngineSystem.Engine.DSL.InterfaceBuilder.validate_duplicate_tags(all_definitions) do
+        :ok ->
+          :ok
+
+        {:error, duplicate_info} ->
+          {tag, first_location, duplicate_location} = duplicate_info
+
+          raise CompileError,
+            file: duplicate_location.file,
+            line: duplicate_location.line,
+            description: """
+            duplicate message tag #{inspect(tag)}
+                First definition at #{first_location.file}:#{first_location.line}
+                Duplicate definition at #{duplicate_location.file}:#{duplicate_location.line}
+
+                Suggestion: Use different tag names like #{inspect(:"#{tag}_by_key")} and #{inspect(:"#{tag}_by_id")}
+            """
+      end
 
       # Update spec with collected interface
       spec_data = Module.get_attribute(__MODULE__, :engine_spec_data)
-      interface = Module.get_attribute(__MODULE__, :current_interface) |> Enum.reverse()
+      interface = current_interface |> Enum.reverse()
       updated_spec = %{spec_data | interface: interface}
       Module.put_attribute(__MODULE__, :engine_spec_data, updated_spec)
       Module.delete_attribute(__MODULE__, :current_interface)
+      Module.delete_attribute(__MODULE__, :all_message_definitions)
     end
   end
 
@@ -28,12 +55,44 @@ defmodule EngineSystem.Engine.DSL.InterfaceBuilder do
   I define a message type in the interface.
   """
   defmacro message(tag, fields \\ []) do
+    location = %{
+      file: __CALLER__.file,
+      line: __CALLER__.line
+    }
+
     quote do
       current_interface = Module.get_attribute(__MODULE__, :current_interface)
+      all_definitions = Module.get_attribute(__MODULE__, :all_message_definitions)
 
+      # Add this definition to our tracking list
+      Module.put_attribute(__MODULE__, :all_message_definitions, [
+        {unquote(tag), unquote(Macro.escape(location))} | all_definitions
+      ])
+
+      # Add to interface as well
       Module.put_attribute(__MODULE__, :current_interface, [
         {unquote(tag), unquote(fields)} | current_interface
       ])
+    end
+  end
+
+  @doc """
+  I validate for duplicate message tags and return detailed error information.
+  """
+  def validate_duplicate_tags(all_definitions) do
+    find_first_duplicate(all_definitions, %{})
+  end
+
+  # Helper function to find the first duplicate and its locations
+  defp find_first_duplicate([], _seen), do: :ok
+
+  defp find_first_duplicate([{tag, location} | rest], seen) do
+    case Map.get(seen, tag) do
+      nil ->
+        find_first_duplicate(rest, Map.put(seen, tag, location))
+
+      first_location ->
+        {:error, {tag, first_location, location}}
     end
   end
 
