@@ -8,14 +8,15 @@ defmodule EngineSystem.Unit.DuplicateMessageTest do
           import EngineSystem.Engine.DSL
 
           defengine TestEngineWithDuplicates do
-            version "1.0.0"
-            mode :process
+            version("1.0.0")
+            mode(:process)
 
             interface do
-              message :get, key: :binary
-              message :put, key: :binary, value: :any
-              message :get, id: :integer  # Duplicate tag - should be an error!
-              message :delete, key: :binary
+              message(:get, key: :binary)
+              message(:put, key: :binary, value: :any)
+              # Duplicate tag - should be an error!
+              message(:get, id: :integer)
+              message(:delete, key: :binary)
             end
           end
         end
@@ -28,14 +29,14 @@ defmodule EngineSystem.Unit.DuplicateMessageTest do
         import EngineSystem.Engine.DSL
 
         defengine TestEngineWithUniqueMessages do
-          version "1.0.0"
-          mode :process
+          version("1.0.0")
+          mode(:process)
 
           interface do
-            message :get, key: :binary
-            message :put, key: :binary, value: :any
-            message :delete, key: :binary
-            message :list
+            message(:get, key: :binary)
+            message(:put, key: :binary, value: :any)
+            message(:delete, key: :binary)
+            message(:list)
           end
         end
       end
@@ -45,21 +46,23 @@ defmodule EngineSystem.Unit.DuplicateMessageTest do
     end
 
     test "should provide detailed error message with line numbers" do
-      exception = assert_raise CompileError, fn ->
-        defmodule TestEngineWithDetailedDuplicate do
-          import EngineSystem.Engine.DSL
+      exception =
+        assert_raise CompileError, fn ->
+          defmodule TestEngineWithDetailedDuplicate do
+            import EngineSystem.Engine.DSL
 
-          defengine TestEngineWithDetailedDuplicate do
-            version "1.0.0"
-            mode :process
+            defengine TestEngineWithDetailedDuplicate do
+              version("1.0.0")
+              mode(:process)
 
-            interface do
-              message :user_action, type: :create
-              message :user_action, type: :update  # This should provide line info
+              interface do
+                message(:user_action, type: :create)
+                # This should provide line info
+                message(:user_action, type: :update)
+              end
             end
           end
         end
-      end
 
       # Check that the error message contains useful information
       assert exception.description =~ "duplicate message tag :user_action"

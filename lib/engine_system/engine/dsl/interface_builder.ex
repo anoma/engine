@@ -17,13 +17,18 @@ defmodule EngineSystem.Engine.DSL.InterfaceBuilder do
       unquote(block)
 
       # Validate for duplicates before updating spec
-      all_definitions = Module.get_attribute(__MODULE__, :all_message_definitions) |> Enum.reverse()
+      all_definitions =
+        Module.get_attribute(__MODULE__, :all_message_definitions) |> Enum.reverse()
+
       current_interface = Module.get_attribute(__MODULE__, :current_interface)
 
       case EngineSystem.Engine.DSL.InterfaceBuilder.validate_duplicate_tags(all_definitions) do
-        :ok -> :ok
+        :ok ->
+          :ok
+
         {:error, duplicate_info} ->
           {tag, first_location, duplicate_location} = duplicate_info
+
           raise CompileError,
             file: duplicate_location.file,
             line: duplicate_location.line,
@@ -85,6 +90,7 @@ defmodule EngineSystem.Engine.DSL.InterfaceBuilder do
     case Map.get(seen, tag) do
       nil ->
         find_first_duplicate(rest, Map.put(seen, tag, location))
+
       first_location ->
         {:error, {tag, first_location, location}}
     end
