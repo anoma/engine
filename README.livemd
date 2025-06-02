@@ -4,6 +4,8 @@
 
 [![CI](https://github.com/anoma/engine/actions/workflows/ci.yml/badge.svg)](https://github.com/anoma/engine/actions/workflows/ci.yml)
 
+> **NOTE** This README is a [livebook](https://livebook.dev), so you can run it!
+
 ```elixir
 Mix.install([
   {:engine_system, path: "."}
@@ -12,7 +14,7 @@ Mix.install([
 
 ## Introduction
 
-A work-in-progress implementation of the **Engine Model** in Elixir.
+This library is a work-in-progress implementation of the **Engine Model** in Elixir. 
 
 An *engine* is an actor-like entity that enables type-safe message passing and
 effectful actions through guarded actions. These actions can modify both the
@@ -522,9 +524,7 @@ IO.puts("Running instance supports: #{inspect(instance_tags)}")
 </details>
 
 <details>
-<summary>✅ Message Validation (Click to expand)</summary>
-
-## Message Validation
+<summary>Message Validation</summary>
 
 The system provides message validation before sending:
 
