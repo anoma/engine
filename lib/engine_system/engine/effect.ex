@@ -145,7 +145,27 @@ defmodule EngineSystem.Engine.Effect do
   end
 
   def execute({:update_environment, new_environment}, engine_state) do
-    StateEffects.execute_update_environment(new_environment, engine_state)
+    # Handler functions return raw environment data that should replace the local_state
+    # We need to preserve the existing State.Environment structure but update the local_state
+    current_env = engine_state.environment
+
+    updated_env =
+      case new_environment do
+        %State.Environment{} ->
+          # If it's already a State.Environment struct, we need to extract the meaningful data
+          # This might happen if the handler incorrectly modified the struct
+          new_environment
+
+        raw_env when is_map(raw_env) ->
+          # This is the expected case: handler returns raw environment data
+          %{current_env | local_state: raw_env}
+
+        _ ->
+          # Keep current environment if unexpected type
+          current_env
+      end
+
+    StateEffects.execute_update_environment(updated_env, engine_state)
   end
 
   def execute({:spawn, engine_module, config, environment}, engine_state) do

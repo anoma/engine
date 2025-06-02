@@ -16,6 +16,9 @@ defmodule EngineSystem.Mailbox.DefaultMailboxEngine do
 
   use EngineSystem
 
+  # Import utility functions for message validation and queue operations
+  import EngineSystem.Engine, only: [validate_message_for_pe: 2, extract_messages: 3]
+
   defengine DefaultMailbox do
     version("1.0.0")
     mode(:mailbox)
@@ -61,6 +64,9 @@ defmodule EngineSystem.Mailbox.DefaultMailboxEngine do
       # Filter update from processing engine
       message(:update_filter, [:filter])
 
+      # Internal dispatch trigger
+      message(:check_dispatch)
+
       # Processing engine status notifications
       message(:pe_down)
       message(:pe_ready)
@@ -70,9 +76,16 @@ defmodule EngineSystem.Mailbox.DefaultMailboxEngine do
       # Handle message enqueueing (m-Enqueue rule)
       # Using function-based syntax for compile-time validation
       on_message :enqueue_message, %{message: message}, _config, env, _sender do
+        IO.puts("📮 Mailbox: Received enqueue_message with payload: #{inspect(message.payload)}")
+        IO.puts("📮 Mailbox: PE spec available: #{not is_nil(env.pe_spec)}")
+
         # Validate message against processing engine interface
-        case validate_message_for_pe(message, env.pe_spec) do
+        # Extract payload for validation since validate_message_for_pe expects payload format
+        validation_message = %{payload: message.payload}
+
+        case validate_message_for_pe(validation_message, env.pe_spec) do
           :ok ->
+            IO.puts("📮 Mailbox: Message validation passed, adding to queue")
             # Add to queue
             new_queue = :queue.in(message, env.message_queue)
             new_env = %{env | message_queue: new_queue, total_received: env.total_received + 1}
@@ -81,13 +94,16 @@ defmodule EngineSystem.Mailbox.DefaultMailboxEngine do
 
             # If there's demand, try to dispatch immediately
             if env.current_demand > 0 do
-              {:ok, effects ++ [{:send, :self, {:check_dispatch}}]}
+              IO.puts("📮 Mailbox: Demand available (#{env.current_demand}), triggering dispatch")
+              {:ok, effects ++ [{:send, :self, :check_dispatch}]}
             else
+              IO.puts("📮 Mailbox: No demand, message queued")
               {:ok, effects}
             end
 
-          {:error, _reason} ->
-            # Invalid message - just ignore (could log if needed)
+          {:error, reason} ->
+            # Invalid message - log and ignore
+            IO.puts("⚠️  Mailbox: Invalid message rejected: #{inspect(reason)}")
             {:ok, []}
         end
       end
@@ -117,6 +133,43 @@ defmodule EngineSystem.Mailbox.DefaultMailboxEngine do
         end
       end
 
+      # Handle check_dispatch - process queued messages when there's demand
+      on_message :check_dispatch, _msg, _config, env, _sender do
+        IO.puts(
+          "📮 Mailbox: Processing check_dispatch - current_demand: #{env.current_demand}, queue_size: #{:queue.len(env.message_queue)}"
+        )
+
+        if env.current_demand > 0 and :queue.len(env.message_queue) > 0 do
+          # Extract messages from queue up to demand
+          {messages, remaining_queue} =
+            extract_messages(env.message_queue, env.current_demand, env.pe_filter)
+
+          final_env = %{
+            env
+            | message_queue: remaining_queue,
+              current_demand: env.current_demand - length(messages),
+              total_delivered: env.total_delivered + length(messages)
+          }
+
+          effects = [{:update_environment, final_env}]
+
+          # Deliver messages if any
+          if length(messages) > 0 do
+            IO.puts("📮 Mailbox: Dispatching #{length(messages)} messages")
+            {:ok, effects ++ [{:deliver_batch, messages}]}
+          else
+            IO.puts("📮 Mailbox: No messages to dispatch after filtering")
+            {:ok, effects}
+          end
+        else
+          IO.puts(
+            "📮 Mailbox: No dispatch needed - demand: #{env.current_demand}, queue: #{:queue.len(env.message_queue)}"
+          )
+
+          {:ok, []}
+        end
+      end
+
       # Handle filter updates
       on_message :update_filter, %{filter: filter}, _config, env, _sender do
         new_env = %{env | pe_filter: filter}
@@ -125,7 +178,7 @@ defmodule EngineSystem.Mailbox.DefaultMailboxEngine do
 
         # Check if any queued messages can now be dispatched
         if env.current_demand > 0 and :queue.len(env.message_queue) > 0 do
-          {:ok, effects ++ [{:send, :self, {:check_dispatch}}]}
+          {:ok, effects ++ [{:send, :self, :check_dispatch}]}
         else
           {:ok, effects}
         end

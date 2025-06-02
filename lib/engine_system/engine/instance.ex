@@ -140,14 +140,19 @@ defmodule EngineSystem.Engine.Instance do
       mailbox_pid: init_data.mailbox_pid
     }
 
-    # Subscribe to the mailbox as a consumer
-    # Configure to fetch one message at a time to maintain actor semantics
-    subscription_options = [
-      max_demand: 1,
-      min_demand: 0
-    ]
+    # Subscribe to the mailbox as a consumer only if we have a mailbox
+    if state.mailbox_pid do
+      # Configure to fetch one message at a time to maintain actor semantics
+      subscription_options = [
+        max_demand: 1,
+        min_demand: 0
+      ]
 
-    {:consumer, state, subscribe_to: [{state.mailbox_pid, subscription_options}]}
+      {:consumer, state, subscribe_to: [{state.mailbox_pid, subscription_options}]}
+    else
+      # No mailbox - this engine receives messages directly
+      {:consumer, state}
+    end
   end
 
   @impl true
@@ -183,26 +188,47 @@ defmodule EngineSystem.Engine.Instance do
     {:stop, :normal, :ok, new_state}
   end
 
+  @impl true
+  def handle_cast({:message, message_tag, payload, sender}, state) do
+    # Handle direct messages sent when engine has no mailbox
+    # Construct a proper message struct
+    message_payload = if payload == %{}, do: message_tag, else: {message_tag, payload}
+    message = Message.new(sender, state.address, message_payload)
+
+    # Process the message using the same logic as handle_events
+    new_state = process_message(message, state)
+    {:noreply, [], new_state}
+  end
+
   ## Private Functions
 
   @spec process_message(Message.t(), t()) :: t()
   defp process_message(message, state) do
+    IO.puts(
+      "🎭 Instance: Processing message #{inspect(message.payload)} from #{inspect(message.sender)}"
+    )
+
     # Transition to busy state
     busy_status = State.Status.busy(message)
     busy_state = %{state | status: busy_status}
+
+    # Create proper State.Environment struct with local_state field
+    env_struct = State.Environment.new(busy_state.environment, %{})
 
     with {:ok, effects} <-
            Behaviour.evaluate(
              busy_state.spec,
              message,
              busy_state.configuration,
-             busy_state.environment
+             env_struct
            ),
          {:ok, updated_state} <- execute_effects(effects, busy_state) do
+      IO.puts("🎭 Instance: Message processing completed successfully")
       # Return to ready state with current filter
       return_to_ready_state(updated_state, state)
     else
-      {:error, _reason} ->
+      {:error, reason} ->
+        IO.puts("🎭 Instance: Message processing failed: #{inspect(reason)}")
         # On error, return to ready state
         return_to_ready_state(busy_state, state)
     end
@@ -224,13 +250,26 @@ defmodule EngineSystem.Engine.Instance do
 
   @spec execute_effects([Effect.t()], t()) :: {:ok, t()} | {:error, any()}
   defp execute_effects(effects, state) do
+    IO.puts("🎭 Instance: Executing #{length(effects)} effects: #{inspect(effects)}")
+
     # Execute effects sequentially
-    Enum.reduce_while(effects, {:ok, state}, fn effect, {:ok, current_state} ->
-      case Effect.execute(effect, current_state) do
-        {:ok, updated_state} -> {:cont, {:ok, updated_state}}
-        {:error, reason} -> {:halt, {:error, reason}}
-      end
-    end)
+    result =
+      Enum.reduce_while(effects, {:ok, state}, fn effect, {:ok, current_state} ->
+        IO.puts("🎭 Instance: Executing effect: #{inspect(effect)}")
+
+        case Effect.execute(effect, current_state) do
+          {:ok, updated_state} ->
+            IO.puts("🎭 Instance: Effect executed successfully")
+            {:cont, {:ok, updated_state}}
+
+          {:error, reason} ->
+            IO.puts("🎭 Instance: Effect execution failed: #{inspect(reason)}")
+            {:halt, {:error, reason}}
+        end
+      end)
+
+    IO.puts("🎭 Instance: Effects execution result: #{inspect(result)}")
+    result
   end
 
   @impl true
