@@ -20,20 +20,20 @@ defmodule EngineSystem.Examples.CounterEngineTest do
 
   describe "basic counter operations" do
     test "can spawn counter engine with default configuration" do
-      {:ok, counter_address} = EngineSystem.spawn_engine(Examples.SimpleCounterEngine)
+      {:ok, counter_address} = EngineSystem.spawn_engine(Examples.CounterEngine)
 
       assert is_tuple(counter_address)
       {:ok, instance} = EngineSystem.lookup_instance(counter_address)
 
       # Check the spec_key structure instead of engine_name
       {engine_name, version} = instance.spec_key
-      assert engine_name == Examples.SimpleCounterEngine
+      assert engine_name == Examples.CounterEngine
       assert version == "2.0.0"
       assert instance.status == :running
     end
 
     test "increment increases counter value" do
-      {:ok, counter_address} = EngineSystem.spawn_engine(Examples.SimpleCounterEngine)
+      {:ok, counter_address} = EngineSystem.spawn_engine(Examples.CounterEngine)
 
       # Send increment message
       :ok = EngineSystem.send_message(counter_address, {:increment, %{}})
@@ -48,7 +48,7 @@ defmodule EngineSystem.Examples.CounterEngineTest do
     end
 
     test "decrement decreases counter value" do
-      {:ok, counter_address} = EngineSystem.spawn_engine(Examples.SimpleCounterEngine)
+      {:ok, counter_address} = EngineSystem.spawn_engine(Examples.CounterEngine)
 
       # First increment to have something to decrement
       :ok = EngineSystem.send_message(counter_address, {:increment, %{}})
@@ -67,7 +67,7 @@ defmodule EngineSystem.Examples.CounterEngineTest do
     end
 
     test "get_count returns current counter value" do
-      {:ok, counter_address} = EngineSystem.spawn_engine(Examples.SimpleCounterEngine)
+      {:ok, counter_address} = EngineSystem.spawn_engine(Examples.CounterEngine)
 
       # Send get_count message
       :ok = EngineSystem.send_message(counter_address, {:get_count, %{}})
@@ -82,7 +82,7 @@ defmodule EngineSystem.Examples.CounterEngineTest do
     end
 
     test "reset sets counter back to zero" do
-      {:ok, counter_address} = EngineSystem.spawn_engine(Examples.SimpleCounterEngine)
+      {:ok, counter_address} = EngineSystem.spawn_engine(Examples.CounterEngine)
 
       # Increment a few times, then reset
       :ok = EngineSystem.send_message(counter_address, {:increment, %{}})
@@ -99,7 +99,7 @@ defmodule EngineSystem.Examples.CounterEngineTest do
     end
 
     test "add increases counter by specified value" do
-      {:ok, counter_address} = EngineSystem.spawn_engine(Examples.SimpleCounterEngine)
+      {:ok, counter_address} = EngineSystem.spawn_engine(Examples.CounterEngine)
 
       # Add 5 to the counter
       :ok = EngineSystem.send_message(counter_address, {:add, %{value: 5}})
@@ -123,7 +123,7 @@ defmodule EngineSystem.Examples.CounterEngineTest do
       }
 
       {:ok, counter_address} =
-        EngineSystem.spawn_engine(Examples.SimpleCounterEngine, custom_config)
+        EngineSystem.spawn_engine(Examples.CounterEngine, custom_config)
 
       {:ok, instance} = EngineSystem.lookup_instance(counter_address)
       assert instance.status == :running
@@ -142,7 +142,7 @@ defmodule EngineSystem.Examples.CounterEngineTest do
       }
 
       {:ok, counter_address} =
-        EngineSystem.spawn_engine(Examples.SimpleCounterEngine, config, env)
+        EngineSystem.spawn_engine(Examples.CounterEngine, config, env)
 
       # This should work (counter goes to 96)
       :ok = EngineSystem.send_message(counter_address, {:increment, %{}})
@@ -165,7 +165,7 @@ defmodule EngineSystem.Examples.CounterEngineTest do
       config_with_notifications = %{notifications: true}
 
       {:ok, counter_address} =
-        EngineSystem.spawn_engine(Examples.SimpleCounterEngine, config_with_notifications)
+        EngineSystem.spawn_engine(Examples.CounterEngine, config_with_notifications)
 
       :ok = EngineSystem.send_message(counter_address, {:increment, %{}})
       Process.sleep(200)
@@ -189,7 +189,7 @@ defmodule EngineSystem.Examples.CounterEngineTest do
       }
 
       {:ok, counter_address} =
-        EngineSystem.spawn_engine(Examples.SimpleCounterEngine, %{}, custom_env)
+        EngineSystem.spawn_engine(Examples.CounterEngine, %{}, custom_env)
 
       {:ok, instance} = EngineSystem.lookup_instance(counter_address)
       assert instance.status == :running
@@ -206,7 +206,7 @@ defmodule EngineSystem.Examples.CounterEngineTest do
       }
 
       {:ok, counter_address} =
-        EngineSystem.spawn_engine(Examples.SimpleCounterEngine, %{}, disabled_env)
+        EngineSystem.spawn_engine(Examples.CounterEngine, %{}, disabled_env)
 
       # Try to increment - should be rejected
       :ok = EngineSystem.send_message(counter_address, {:increment, %{}})
@@ -231,7 +231,7 @@ defmodule EngineSystem.Examples.CounterEngineTest do
       }
 
       {:ok, counter_address} =
-        EngineSystem.spawn_engine(Examples.SimpleCounterEngine, %{}, custom_env)
+        EngineSystem.spawn_engine(Examples.CounterEngine, %{}, custom_env)
 
       :ok = EngineSystem.send_message(counter_address, {:increment, %{}})
       Process.sleep(200)
@@ -246,7 +246,7 @@ defmodule EngineSystem.Examples.CounterEngineTest do
 
   describe "message validation" do
     test "validates increment message" do
-      {:ok, counter_address} = EngineSystem.spawn_engine(Examples.SimpleCounterEngine)
+      {:ok, counter_address} = EngineSystem.spawn_engine(Examples.CounterEngine)
 
       # Valid increment message - be more tolerant of API inconsistencies
       case EngineSystem.validate_message(counter_address, {:increment, %{}}) do
@@ -266,7 +266,7 @@ defmodule EngineSystem.Examples.CounterEngineTest do
     end
 
     test "validates add message with value parameter" do
-      {:ok, counter_address} = EngineSystem.spawn_engine(Examples.SimpleCounterEngine)
+      {:ok, counter_address} = EngineSystem.spawn_engine(Examples.CounterEngine)
 
       # Valid add message - be more tolerant of API inconsistencies
       case EngineSystem.validate_message(counter_address, {:add, %{value: 5}}) do
@@ -291,7 +291,7 @@ defmodule EngineSystem.Examples.CounterEngineTest do
     end
 
     test "rejects invalid message types" do
-      {:ok, counter_address} = EngineSystem.spawn_engine(Examples.SimpleCounterEngine)
+      {:ok, counter_address} = EngineSystem.spawn_engine(Examples.CounterEngine)
 
       # Invalid message type - should return error (but be tolerant of spec issues)
       result = EngineSystem.validate_message(counter_address, {:invalid_message, %{}})
@@ -300,7 +300,7 @@ defmodule EngineSystem.Examples.CounterEngineTest do
     end
 
     test "lists supported message tags" do
-      {:ok, counter_address} = EngineSystem.spawn_engine(Examples.SimpleCounterEngine)
+      {:ok, counter_address} = EngineSystem.spawn_engine(Examples.CounterEngine)
 
       case EngineSystem.get_instance_message_tags(counter_address) do
         {:ok, supported_messages} ->
@@ -312,7 +312,7 @@ defmodule EngineSystem.Examples.CounterEngineTest do
           {engine_name, version} =
             case EngineSystem.lookup_instance(counter_address) do
               {:ok, instance} -> instance.spec_key
-              _ -> {Examples.SimpleCounterEngine, "2.0.0"}
+              _ -> {Examples.CounterEngine, "2.0.0"}
             end
 
           case EngineSystem.get_message_tags(engine_name, version) do
@@ -335,7 +335,7 @@ defmodule EngineSystem.Examples.CounterEngineTest do
 
   describe "concurrent operations" do
     test "handles multiple concurrent increments" do
-      {:ok, counter_address} = EngineSystem.spawn_engine(Examples.SimpleCounterEngine)
+      {:ok, counter_address} = EngineSystem.spawn_engine(Examples.CounterEngine)
 
       # Send multiple increment messages rapidly
       for _i <- 1..5 do
@@ -354,7 +354,7 @@ defmodule EngineSystem.Examples.CounterEngineTest do
     end
 
     test "handles mixed operation types concurrently" do
-      {:ok, counter_address} = EngineSystem.spawn_engine(Examples.SimpleCounterEngine)
+      {:ok, counter_address} = EngineSystem.spawn_engine(Examples.CounterEngine)
 
       # Send various operations
       :ok = EngineSystem.send_message(counter_address, {:increment, %{}})
@@ -377,7 +377,7 @@ defmodule EngineSystem.Examples.CounterEngineTest do
 
   describe "error handling" do
     test "handles add operation with zero value" do
-      {:ok, counter_address} = EngineSystem.spawn_engine(Examples.SimpleCounterEngine)
+      {:ok, counter_address} = EngineSystem.spawn_engine(Examples.CounterEngine)
 
       :ok = EngineSystem.send_message(counter_address, {:add, %{value: 0}})
       Process.sleep(200)
@@ -390,7 +390,7 @@ defmodule EngineSystem.Examples.CounterEngineTest do
     end
 
     test "handles add operation with negative value" do
-      {:ok, counter_address} = EngineSystem.spawn_engine(Examples.SimpleCounterEngine)
+      {:ok, counter_address} = EngineSystem.spawn_engine(Examples.CounterEngine)
 
       :ok = EngineSystem.send_message(counter_address, {:add, %{value: -5}})
       Process.sleep(200)
@@ -403,7 +403,7 @@ defmodule EngineSystem.Examples.CounterEngineTest do
     end
 
     test "decrement doesn't go below zero" do
-      {:ok, counter_address} = EngineSystem.spawn_engine(Examples.SimpleCounterEngine)
+      {:ok, counter_address} = EngineSystem.spawn_engine(Examples.CounterEngine)
 
       # Try to decrement from 0 (should stay at 0)
       :ok = EngineSystem.send_message(counter_address, {:decrement, %{}})
@@ -419,7 +419,7 @@ defmodule EngineSystem.Examples.CounterEngineTest do
 
   describe "system integration" do
     test "engine remains responsive after many operations" do
-      {:ok, counter_address} = EngineSystem.spawn_engine(Examples.SimpleCounterEngine)
+      {:ok, counter_address} = EngineSystem.spawn_engine(Examples.CounterEngine)
 
       # Perform many operations
       for i <- 1..20 do
@@ -456,10 +456,10 @@ defmodule EngineSystem.Examples.CounterEngineTest do
     end
 
     test "can spawn multiple counter engines independently" do
-      {:ok, counter1} = EngineSystem.spawn_engine(Examples.SimpleCounterEngine)
+      {:ok, counter1} = EngineSystem.spawn_engine(Examples.CounterEngine)
 
       {:ok, counter2} =
-        EngineSystem.spawn_engine(Examples.SimpleCounterEngine, %{notifications: false})
+        EngineSystem.spawn_engine(Examples.CounterEngine, %{notifications: false})
 
       # Provide complete environment for the third engine
       complete_env = %{
@@ -471,7 +471,7 @@ defmodule EngineSystem.Examples.CounterEngineTest do
         metadata: %{}
       }
 
-      {:ok, counter3} = EngineSystem.spawn_engine(Examples.SimpleCounterEngine, %{}, complete_env)
+      {:ok, counter3} = EngineSystem.spawn_engine(Examples.CounterEngine, %{}, complete_env)
 
       # All should be running
       {:ok, instance1} = EngineSystem.lookup_instance(counter1)
@@ -492,7 +492,7 @@ defmodule EngineSystem.Examples.CounterEngineTest do
   describe "interface introspection" do
     test "provides correct message interface information" do
       # Check message fields for add operation - use the correct engine name from spec_key
-      case EngineSystem.get_message_fields(Examples.SimpleCounterEngine, "2.0.0", :add) do
+      case EngineSystem.get_message_fields(Examples.CounterEngine, "2.0.0", :add) do
         {:ok, fields} ->
           assert Keyword.has_key?(fields, :value)
 
@@ -504,11 +504,11 @@ defmodule EngineSystem.Examples.CounterEngineTest do
     end
 
     test "reports correct engine version and name" do
-      {:ok, counter_address} = EngineSystem.spawn_engine(Examples.SimpleCounterEngine)
+      {:ok, counter_address} = EngineSystem.spawn_engine(Examples.CounterEngine)
       {:ok, instance} = EngineSystem.lookup_instance(counter_address)
 
       {engine_name, version} = instance.spec_key
-      assert engine_name == Examples.SimpleCounterEngine
+      assert engine_name == Examples.CounterEngine
       assert version == "2.0.0"
     end
   end

@@ -199,57 +199,93 @@ defmodule EngineSystem.Engine do
 
   ## Returns
 
-  A tuple `{messages, remaining_queue}` where:
-  - `messages` - List of extracted messages that passed the filter
-  - `remaining_queue` - The queue with remaining messages
+  A tuple `{extracted_messages, remaining_queue}` where:
+  - `extracted_messages` - List of messages that passed the filter (up to demand limit)
+  - `remaining_queue` - The queue with extracted messages removed
 
   ## Examples
 
-      iex> queue = :queue.from_list([msg1, msg2, msg3])
-      iex> filter = fn msg, _, _ -> true end
-      iex> {messages, _} = EngineSystem.Engine.extract_messages(queue, 2, filter)
+      # Extract up to 5 messages without filtering
+      iex> queue = :queue.from_list([{:msg, 1}, {:msg, 2}, {:msg, 3}])
+      iex> {messages, remaining} = EngineSystem.Engine.extract_messages(queue, 5, nil)
+      iex> length(messages)
+      3
+
+      # Extract with filtering - only even numbers
+      iex> queue = :queue.from_list([{:msg, 1}, {:msg, 2}, {:msg, 3}, {:msg, 4}])
+      iex> filter = fn {_, n} -> rem(n, 2) == 0 end
+      iex> {messages, _} = EngineSystem.Engine.extract_messages(queue, 10, filter)
+      iex> messages
+      [{:msg, 2}, {:msg, 4}]
+
+      # Extract with demand limit
+      iex> queue = :queue.from_list([{:msg, 1}, {:msg, 2}, {:msg, 3}, {:msg, 4}])
+      iex> {messages, _} = EngineSystem.Engine.extract_messages(queue, 2, nil)
       iex> length(messages)
       2
 
   """
   @spec extract_messages(:queue.queue(), non_neg_integer(), function() | nil) ::
-          {list(), :queue.queue()}
+          {[any()], :queue.queue()}
   def extract_messages(queue, demand, filter) do
     extract_messages_recursive(queue, demand, filter, [])
   end
 
   @doc """
-  I apply a message filter safely with error handling.
+  I safely apply a filter function to a message.
+
+  This function handles potential errors in filter functions gracefully,
+  ensuring that a misbehaving filter doesn't crash the system.
 
   ## Parameters
 
-  - `filter` - The filter function (can be nil)
+  - `filter` - The filter function to apply (can be nil)
   - `message` - The message to filter
 
   ## Returns
 
-  - `true` if the message should be processed
-  - `false` if the message should be filtered out
+  - `true` if the message passes the filter or if no filter is provided
+  - `false` if the message fails the filter or if the filter function crashes
 
   ## Examples
 
-      iex> filter = fn msg, _, _ -> msg.important end
-      iex> message = %{important: true}
-      iex> EngineSystem.Engine.apply_filter(filter, message)
+      # No filter provided - always passes
+      iex> EngineSystem.Engine.apply_filter(nil, {:any, :message})
       true
+
+      # Simple filter function
+      iex> filter = fn {:msg, n} -> n > 5 end
+      iex> EngineSystem.Engine.apply_filter(filter, {:msg, 10})
+      true
+      iex> EngineSystem.Engine.apply_filter(filter, {:msg, 3})
+      false
+
+      # Filter that crashes - safely returns false
+      iex> bad_filter = fn _ -> raise "oops" end
+      iex> EngineSystem.Engine.apply_filter(bad_filter, {:msg, 1})
+      false
+
+      # Complex filter with pattern matching
+      iex> priority_filter = fn
+      ...>   {:priority, level} when level >= 3 -> true
+      ...>   {:normal, _} -> false
+      ...>   _ -> false
+      ...> end
+      iex> EngineSystem.Engine.apply_filter(priority_filter, {:priority, 5})
+      true
+      iex> EngineSystem.Engine.apply_filter(priority_filter, {:normal, "test"})
+      false
 
   """
   @spec apply_filter(function() | nil, any()) :: boolean()
   def apply_filter(nil, _message), do: true
 
   def apply_filter(filter, message) do
-    # Filter functions expect (message, config, env)
-    # For simplicity, pass nils for config/env since filter
-    # typically only looks at message content
-    filter.(message, nil, nil)
+    filter.(message)
   rescue
-    # Default to accepting message if filter fails
-    _ -> true
+    _ -> false
+  catch
+    _ -> false
   end
 
   # Private helper functions

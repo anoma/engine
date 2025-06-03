@@ -3,7 +3,7 @@ defmodule EngineSystem.Unit.CounterBehaviorTest do
 
   alias EngineSystem.Engine.{Behaviour, State}
   alias EngineSystem.System.Message
-  alias Examples.SimpleCounterEngine
+  alias Examples.CounterEngine
 
   @moduledoc """
   Unit tests specifically for counter engine behavior evaluation.
@@ -21,10 +21,10 @@ defmodule EngineSystem.Unit.CounterBehaviorTest do
     {:ok, _} = EngineSystem.start()
 
     # Ensure the SimpleCounterEngine module is loaded and its spec is registered
-    Code.ensure_loaded(Examples.SimpleCounterEngine)
+    Code.ensure_loaded(Examples.CounterEngine)
 
     # Manually register the spec to ensure it's available
-    spec = Examples.SimpleCounterEngine.__engine_spec__()
+    spec = Examples.CounterEngine.__engine_spec__()
     EngineSystem.register_spec(spec)
 
     :ok
@@ -33,7 +33,7 @@ defmodule EngineSystem.Unit.CounterBehaviorTest do
   describe "counter behavior rules" do
     setup do
       # Get the counter engine specification using the correct API
-      {:ok, spec} = EngineSystem.lookup_spec(Examples.SimpleCounterEngine, "2.0.0")
+      {:ok, spec} = EngineSystem.lookup_spec(Examples.CounterEngine, "2.0.0")
 
       config =
         State.Configuration.new(nil, :process, %{
@@ -223,7 +223,7 @@ defmodule EngineSystem.Unit.CounterBehaviorTest do
 
   describe "configuration effects" do
     test "limited mode prevents exceeding max_count" do
-      {:ok, spec} = EngineSystem.lookup_spec(Examples.SimpleCounterEngine, "2.0.0")
+      {:ok, spec} = EngineSystem.lookup_spec(Examples.CounterEngine, "2.0.0")
 
       config =
         State.Configuration.new(nil, :process, %{
@@ -270,7 +270,7 @@ defmodule EngineSystem.Unit.CounterBehaviorTest do
     end
 
     test "notifications configuration affects response format" do
-      {:ok, spec} = EngineSystem.lookup_spec(Examples.SimpleCounterEngine, "2.0.0")
+      {:ok, spec} = EngineSystem.lookup_spec(Examples.CounterEngine, "2.0.0")
 
       # Test with notifications enabled
       config_with_notifications =
@@ -345,7 +345,7 @@ defmodule EngineSystem.Unit.CounterBehaviorTest do
     end
 
     test "increment_by affects increment amount" do
-      {:ok, spec} = EngineSystem.lookup_spec(Examples.SimpleCounterEngine, "2.0.0")
+      {:ok, spec} = EngineSystem.lookup_spec(Examples.CounterEngine, "2.0.0")
 
       config =
         State.Configuration.new(nil, :process, %{
@@ -388,7 +388,7 @@ defmodule EngineSystem.Unit.CounterBehaviorTest do
 
   describe "environment state handling" do
     test "disabled counter rejects operations" do
-      {:ok, spec} = EngineSystem.lookup_spec(Examples.SimpleCounterEngine, "2.0.0")
+      {:ok, spec} = EngineSystem.lookup_spec(Examples.CounterEngine, "2.0.0")
 
       config =
         State.Configuration.new(nil, :process, %{
@@ -435,7 +435,7 @@ defmodule EngineSystem.Unit.CounterBehaviorTest do
     end
 
     test "history is maintained correctly" do
-      {:ok, spec} = EngineSystem.lookup_spec(Examples.SimpleCounterEngine, "2.0.0")
+      {:ok, spec} = EngineSystem.lookup_spec(Examples.CounterEngine, "2.0.0")
 
       config =
         State.Configuration.new(nil, :process, %{
@@ -480,7 +480,7 @@ defmodule EngineSystem.Unit.CounterBehaviorTest do
 
   describe "error handling" do
     test "handles invalid message format gracefully" do
-      {:ok, spec} = EngineSystem.lookup_spec(Examples.SimpleCounterEngine, "2.0.0")
+      {:ok, spec} = EngineSystem.lookup_spec(Examples.CounterEngine, "2.0.0")
 
       config = State.Configuration.new(nil, :process, %{})
       env = State.Environment.new(%{}, %{})
@@ -491,7 +491,7 @@ defmodule EngineSystem.Unit.CounterBehaviorTest do
     end
 
     test "handles messages not in interface" do
-      {:ok, spec} = EngineSystem.lookup_spec(Examples.SimpleCounterEngine, "2.0.0")
+      {:ok, spec} = EngineSystem.lookup_spec(Examples.CounterEngine, "2.0.0")
 
       config = State.Configuration.new(nil, :process, %{})
       env = State.Environment.new(%{}, %{})

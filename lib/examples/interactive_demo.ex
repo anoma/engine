@@ -1,18 +1,87 @@
 defmodule Examples.InteractiveDemo do
   @moduledoc """
-  Interactive demo showcasing real engine interactions and message passing.
+  I am an interactive demonstration system that showcases real engine interactions
+  and comprehensive message passing patterns within the EngineSystem.
 
-  This module demonstrates:
-  1. Two engines communicating with each other (Ping-Pong engines)
-  2. A GenServer sending messages to engines and getting responses
-  3. An engine sending messages to a GenServer
-  4. Visible effects when messages are processed
+  ## My Purpose
 
-  Usage:
-    iex> Examples.InteractiveDemo.start_demo()
-    iex> Examples.InteractiveDemo.test_engine_to_engine()
-    iex> Examples.InteractiveDemo.test_genserver_to_engine()
-    iex> Examples.InteractiveDemo.test_engine_to_genserver()
+  I serve as a live, interactive showcase of the EngineSystem's capabilities,
+  demonstrating various communication patterns and integration scenarios that
+  developers will encounter when building distributed engine-based applications.
+
+  ## Demonstration Scenarios
+
+  I orchestrate and demonstrate several key interaction patterns:
+
+  ### 1. Engine-to-Engine Communication
+  I coordinate ping-pong interactions between dedicated engines, showing how
+  engines can maintain ongoing conversations and state synchronization.
+
+  ### 2. GenServer-to-Engine Integration
+  I demonstrate how traditional Elixir GenServers can seamlessly communicate
+  with engines, bridging the gap between OTP patterns and the engine model.
+
+  ### 3. Engine-to-GenServer Responses
+  I show how engines can initiate communication with GenServers, enabling
+  engines to integrate with existing Elixir applications and services.
+
+  ### 4. Visible Effect Monitoring
+  I provide real-time feedback and logging of all message exchanges, making
+  the normally invisible message passing visible for educational purposes.
+
+  ## My Architecture
+
+  I implement a GenServer that manages multiple engine instances and coordinates
+  their interactions:
+
+  - **Engine Management**: I spawn and track multiple engine instances
+  - **Message Coordination**: I orchestrate complex message flows
+  - **Response Handling**: I capture and display responses from engines
+  - **State Tracking**: I maintain counters and metrics for demonstration purposes
+
+  ## Interactive API
+
+  I provide several interactive functions for exploring engine capabilities:
+
+  ### `start_demo/0`
+  Initializes my demonstration environment, starting the EngineSystem and
+  spawning all necessary engine instances.
+
+  ### `test_engine_to_engine/0`
+  Demonstrates direct engine-to-engine communication using ping-pong protocols.
+
+  ### `test_genserver_to_engine/0`
+  Shows how GenServers can send messages to engines and receive responses.
+
+  ### `test_engine_to_genserver/0`
+  Demonstrates engines initiating communication with GenServer processes.
+
+  ### `status/0`
+  Provides comprehensive status information about all running engines and
+  system metrics.
+
+  ## Usage Examples
+
+      # Start my demonstration environment
+      Examples.InteractiveDemo.start_demo()
+
+      # Run individual demonstrations
+      Examples.InteractiveDemo.test_engine_to_engine()
+      Examples.InteractiveDemo.test_genserver_to_engine()
+      Examples.InteractiveDemo.test_engine_to_genserver()
+
+      # Check system status
+      Examples.InteractiveDemo.status()
+
+  ## Educational Value
+
+  I serve multiple educational purposes:
+
+  - **Pattern Learning**: I demonstrate common engine communication patterns
+  - **Integration Examples**: I show how to integrate engines with existing systems
+  - **Debugging Techniques**: I provide visibility into message flows
+  - **Performance Monitoring**: I track and display system metrics
+  - **Best Practices**: I exemplify proper engine design and usage patterns
   """
 
   use GenServer
