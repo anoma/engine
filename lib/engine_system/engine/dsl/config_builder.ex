@@ -13,14 +13,85 @@ defmodule EngineSystem.Engine.DSL.ConfigBuilder do
   @doc """
   I define the configuration structure for the engine.
 
+  The configuration defines the initial settings and parameters that the engine
+  needs to operate. This includes default values and field specifications for
+  type validation and documentation.
+
   ## Parameters
 
-  - `config_args` - Configuration arguments including name and default
-  - `block` - Block containing field definitions
+  - `config_args` - Configuration arguments as a keyword list with name and default value
+  - `block` - Block containing field definitions using the `field/2` macro
 
-  ## Returns
+  ## Examples
 
-  Quoted AST for configuration definition
+  ```elixir
+  # Simple configuration with default values
+  defengine MyEngine do
+    config my_config: %{debug: false, timeout: 5000} do
+      field :debug, default: false, type: :boolean
+      field :timeout, default: 5000, type: :integer
+    end
+  end
+
+  # Database configuration example
+  defengine DatabaseEngine do
+    config db_config: %{
+      host: "localhost",
+      port: 5432,
+      database: "myapp",
+      pool_size: 10,
+      ssl: false
+    } do
+      field :host, default: "localhost", type: :string
+      field :port, default: 5432, type: :integer
+      field :database, default: "myapp", type: :string
+      field :pool_size, default: 10, type: :integer
+      field :ssl, default: false, type: :boolean
+    end
+  end
+
+  # Configuration with optional and complex fields
+  defengine APIEngine do
+    config api_config: %{
+      base_url: "https://api.example.com",
+      api_key: nil,
+      timeout: 30_000,
+      retry_attempts: 3,
+      headers: %{},
+      auth_method: :api_key
+    } do
+      field :base_url, default: "https://api.example.com", type: :string
+      field :api_key, type: :string  # No default, must be provided
+      field :timeout, default: 30_000, type: :integer
+      field :retry_attempts, default: 3, type: :integer
+      field :headers, default: %{}, type: :map
+      field :auth_method, default: :api_key, type: :atom
+    end
+  end
+
+  # Minimal configuration for stateless engines
+  defengine StatelessEngine do
+    config simple_config: %{mode: :active} do
+      field :mode, default: :active, type: :atom
+    end
+  end
+  ```
+
+  ## Field Options
+
+  Each field can specify:
+  - `default` - Default value for the field
+  - `type` - Expected type for validation
+  - `required` - Whether the field is required (boolean)
+  - `description` - Human-readable description
+
+  ## Notes
+
+  - Configuration is validated at engine spawn time
+  - Missing required fields will cause spawn to fail
+  - Default values are merged with provided configuration
+  - Field types are used for runtime validation
+
   """
   defmacro config(config_args, do: block) do
     quote do
@@ -46,16 +117,125 @@ defmodule EngineSystem.Engine.DSL.ConfigBuilder do
   end
 
   @doc """
-  I define a field in the configuration.
+  I define a field in the configuration or environment specification.
+
+  Fields specify the structure, types, and constraints for configuration
+  or environment data. They provide validation, documentation, and default
+  value handling.
 
   ## Parameters
 
-  - `name` - Field name
-  - `options` - Field options (default, type, etc.)
+  - `name` - Field name (atom)
+  - `options` - Keyword list of field options (defaults to [])
 
-  ## Returns
+  ## Available Options
 
-  Quoted AST for field definition
+  - `default` - Default value for the field
+  - `type` - Expected data type for validation
+  - `required` - Whether the field is required (default: false)
+  - `description` - Human-readable description of the field
+  - `validate` - Custom validation function
+
+  ## Supported Types
+
+  - `:atom` - Atom values
+  - `:string` - String values
+  - `:integer` - Integer values
+  - `:float` - Float values
+  - `:boolean` - Boolean values
+  - `:map` - Map values
+  - `:list` - List values
+  - `:tuple` - Tuple values
+  - `:pid` - Process ID values
+  - `:reference` - Reference values
+  - `:any` - Any value type (no validation)
+
+  ## Examples
+
+  ```elixir
+  # Basic field with type and default
+  field :debug, default: false, type: :boolean
+
+  # Required field without default
+  field :api_key, type: :string, required: true
+
+  # Field with description
+  field :timeout,
+    default: 5000,
+    type: :integer,
+    description: "Request timeout in milliseconds"
+
+  # Field with custom validation
+  field :port,
+    default: 8080,
+    type: :integer,
+    validate: &(&1 > 0 and &1 < 65536)
+
+  # Complex field types
+  field :database_config, type: :map, default: %{}
+  field :allowed_hosts, type: :list, default: []
+
+  # Optional field with nil default
+  field :ssl_cert_path, type: :string, default: nil
+
+  # Field for configuration mode
+  field :mode,
+    default: :production,
+    type: :atom,
+    description: "Operating mode: :development, :test, or :production"
+
+  # Numeric fields with constraints
+  field :pool_size,
+    default: 10,
+    type: :integer,
+    description: "Connection pool size",
+    validate: &(&1 > 0 and &1 <= 100)
+
+  # Boolean flags
+  field :enable_logging, default: true, type: :boolean
+  field :auto_reconnect, default: false, type: :boolean
+
+  # File path fields
+  field :log_file,
+    type: :string,
+    default: "/tmp/engine.log",
+    description: "Path to log file"
+  ```
+
+  ## Usage Context
+
+  Fields can be used in two contexts:
+
+  ### Configuration Fields
+  ```elixir
+  config app_config: %{debug: false} do
+    field :debug, default: false, type: :boolean
+    field :log_level, default: :info, type: :atom
+  end
+  ```
+
+  ### Environment Fields
+  ```elixir
+  environment initial_state: %{counter: 0} do
+    field :counter, default: 0, type: :integer
+    field :last_updated, type: :integer
+  end
+  ```
+
+  ## Validation
+
+  - Type validation occurs at runtime when values are set
+  - Custom validators receive the field value and return true/false
+  - Required fields must be present (not nil)
+  - Default values are automatically applied when fields are missing
+
+  ## Notes
+
+  - Field names must be unique within their configuration/environment
+  - Type validation helps catch configuration errors early
+  - Descriptions are useful for documentation and tooling
+  - Custom validators provide flexible validation logic
+
   """
   defmacro field(name, options \\ []) do
     quote do

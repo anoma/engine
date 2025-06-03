@@ -1,104 +1,112 @@
-.PHONY: install deps compile test livebook
+# EngineSystem Makefile
+
+.PHONY: help docs livebook test compile clean deps check
 
 # Default target
-all: deps compile
+help:
+	@echo "EngineSystem Development Commands:"
+	@echo ""
+	@echo "  📚 Documentation & Tutorials:"
+	@echo "    docs        - Generate ExDoc documentation"
+	@echo "    livebook    - Start Livebook with the interactive tutorial"
+	@echo ""
+	@echo "  🔧 Development:"
+	@echo "    compile     - Compile the project"
+	@echo "    test        - Run tests"
+	@echo "    check       - Run quality checks (credo, dialyzer)"
+	@echo "    deps        - Get dependencies"
+	@echo "    clean       - Clean build artifacts"
+	@echo ""
+	@echo "  🚀 Quick Start:"
+	@echo "    make livebook   # Start the interactive tutorial"
+	@echo "    make docs       # Generate documentation"
 
-# Compile the project
+# Documentation generation
+docs:
+	@echo "📚 Generating ExDoc documentation..."
+	mix docs
+	@echo "✅ Documentation generated at doc/index.html"
+	@echo "   You can also view it online after publishing to hex.pm"
+
+# Start Livebook with the tutorial
+livebook:
+	@echo "🚀 Starting Livebook with EngineSystem tutorial..."
+	@echo "   The tutorial will open at: http://localhost:8080"
+	@echo "   📓 Interactive examples and guided learning ahead!"
+	@echo ""
+	livebook server README.livemd --open
+
+# Alternative livebook command for systems without livebook installed
+livebook-docker:
+	@echo "🐳 Starting Livebook via Docker..."
+	docker run -p 8080:8080 -v $(PWD):/data livebook/livebook
+
+# Development tasks
 compile:
+	@echo "🔨 Compiling EngineSystem..."
 	mix compile
 
-# Run tests
 test:
+	@echo "🧪 Running tests..."
 	mix test
+
+deps:
+	@echo "📦 Getting dependencies..."
+	mix deps.get
+
+clean:
+	@echo "🧹 Cleaning build artifacts..."
+	mix clean
+	rm -rf doc/
+	rm -rf _build/
+
+# Quality checks
+check: credo dialyzer
+	@echo "✅ All quality checks completed"
+
+credo:
+	@echo "🔍 Running Credo..."
+	mix credo
+
+dialyzer:
+	@echo "🔬 Running Dialyzer..."
+	mix dialyzer
+
+# Setup for new developers
+setup: deps compile test docs
+	@echo ""
+	@echo "🎉 EngineSystem development environment setup complete!"
+	@echo ""
+	@echo "Next steps:"
+	@echo "  📓 Start learning: make livebook"
+	@echo "  📚 View docs: open doc/index.html"
+	@echo "  🧪 Run tests: make test"
+
+# Publishing (for maintainers)
+publish-docs: docs
+	@echo "📤 Publishing documentation to hex.pm..."
+	@echo "   Note: This happens automatically when publishing the package"
+
+# Development server (if you want to serve docs locally)
+serve-docs: docs
+	@echo "🌐 Serving documentation locally..."
+	@echo "   Available at: http://localhost:8000"
+	cd doc && python -m http.server 8000
+
+# Install development dependencies
+dev-deps:
+	@echo "🛠️  Installing development dependencies..."
+	mix deps.get
+	@echo "   Consider installing:"
+	@echo "   - Livebook: https://livebook.dev/"
+	@echo "   - ExDoc: included in deps"
 
 # Format code
 format:
-	@echo "Formatting code..."
-	@mix format
+	@echo "💅 Formatting code..."
+	mix format
 
-# Run dialyzer
-dialyzer:
-	@echo "Running dialyzer..."
-	@mix dialyzer
-
-# Check if code is properly formatted
-check.format:
-	@echo "Checking code format..."
-	@mix format --check-formatted
-
-# Run linting
-lint: deps
-	@echo "Running linter..."
-	@mix credo --strict
-
-# Run all checks
-check: check.format
-	@echo "Running compilation check..."
-	@mix compile --warnings-as-errors
-	@mix test
-	@mix dialyzer
-	@mix credo --strict
-	@mix format --check-formatted
-
-# Generate documentation
-docs:
-	@echo "Generating documentation..."
-	@mix docs
-
-# Install dependencies
-deps:
-	@echo "Installing dependencies..."
-	@mix deps.get
-
-# Update dependencies
-deps.update:
-	@echo "Updating dependencies..."
-	@mix deps.update --all 
-	
-# Check for outdated dependencies
-outdated:
-	@echo "Checking for outdated dependencies..."
-	@mix hex.outdated --all
-
-# Ensure notebooks directory exists
-ensure-notebooks-dir:
-	@mkdir -p notebooks
-
-# Install Livebook if not already installed
-install-livebook:
-	@if ! ls ~/.mix/escripts/livebook >/dev/null 2>&1; then \
-		echo "Installing Livebook..."; \
-		mix escript.install hex livebook --force; \
-	else \
-		echo "Livebook is already installed."; \
-	fi
-
-# Start Livebook with the engine examples notebook
-livebook: install-livebook ensure-notebooks-dir
-	@echo "Starting Livebook..."
-	@~/.mix/escripts/livebook server
-
-# Start Livebook in detached mode (background)
-livebook-detached: install-livebook ensure-notebooks-dir
-	@echo "Starting Livebook in the background..."
-	@~/.mix/escripts/livebook server --no-auto-shutdown &
-
-# Start Livebook with notebooks directory as home
-livebook-home: install-livebook ensure-notebooks-dir
-	@echo "Starting Livebook with notebooks directory as home..."
-	@~/.mix/escripts/livebook server --home notebooks
-# Help target
-help:
-	@echo "Available targets:"
-	@echo "  deps              - Install dependencies"
-	@echo "  deps.update       - Update dependencies"
-	@echo "  compile           - Compile the project"
-	@echo "  test              - Run tests"
-	@echo "  check            - Run all checks (format, compile)"
-	@echo "  check.format     - Check code formatting"
-	@echo "  docs             - Generate documentation"
-	@echo "  install-livebook  - Install Livebook if not already installed"
-	@echo "  livebook          - Start Livebook"
-	@echo "  livebook-detached - Start Livebook in detached mode"
-	@echo "  livebook-home     - Start Livebook with notebooks directory as home"
-	@echo "  help              - Show this help"
+# Run all checks before committing
+pre-commit: format compile test credo
+	@echo "✅ Pre-commit checks completed successfully!"
+	@echo "   Ready to commit! 🚀"

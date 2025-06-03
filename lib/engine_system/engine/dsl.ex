@@ -53,6 +53,7 @@ defmodule EngineSystem.Engine.DSL do
       end
     end
   end
+  ```
   """
 
   alias EngineSystem.Engine.DSL.Validation
@@ -158,19 +159,103 @@ defmodule EngineSystem.Engine.DSL do
   @doc """
   I define the message filter function for the engine.
 
-  The filter function is called with the message, configuration, and environment.
-  It must return `true` if the message should be processed, `false` otherwise.
+  The filter function is called for each incoming message to determine
+  whether it should be processed by the engine. This allows you to implement
+  custom message filtering logic based on message content, configuration,
+  or current environment state.
+
+  ## Parameters
+
+  The filter function receives three parameters:
+  - `message` - The incoming message payload
+  - `config` - The engine's current configuration
+  - `env` - The engine's current environment/state
+
+  ## Returns
+
+  The filter function must return:
+  - `true` if the message should be processed
+  - `false` if the message should be ignored/filtered out
 
   ## Examples
 
   ```elixir
+  # Simple filter - accept all messages
   defengine MyEngine do
-    message_filter fn msg, config, env ->
-      # Implement your filter logic here
+    message_filter fn _msg, _config, _env ->
       true
     end
   end
   ```
+
+  ```elixir
+  # Filter based on message type
+  defengine SelectiveEngine do
+    message_filter fn msg, _config, _env ->
+      case msg do
+        {:priority, _} -> true
+        {:normal, _} -> false
+        _ -> true
+      end
+    end
+  end
+  ```
+
+  ```elixir
+  # Filter based on configuration
+  defengine ConfigurableEngine do
+    message_filter fn msg, config, _env ->
+      case config.access_mode do
+        :read_only ->
+          # Only allow read operations
+          case msg do
+            {:get, _} -> true
+            {:list, _} -> true
+            _ -> false
+          end
+        :read_write ->
+          # Allow all operations
+          true
+      end
+    end
+  end
+  ```
+
+  ```elixir
+  # Filter based on environment state
+  defengine StatefulEngine do
+    message_filter fn _msg, _config, env ->
+      # Only process messages if we're not overloaded
+      Map.get(env, :queue_size, 0) < 100
+    end
+  end
+  ```
+
+  ```elixir
+  # Complex filter with pattern matching
+  defengine AdvancedEngine do
+    message_filter fn msg, config, env ->
+      case {msg, config.mode, env.status} do
+        # High priority messages always pass
+        {{:urgent, _}, _, _} -> true
+        # Normal messages only in active mode
+        {{:normal, _}, :active, :running} -> true
+        # Maintenance messages only in maintenance mode
+        {{:maintenance, _}, :maintenance, _} -> true
+        # Everything else is filtered out
+        _ -> false
+      end
+    end
+  end
+  ```
+
+  ## Notes
+
+  - If no message_filter is defined, all messages are accepted by default
+  - Filter functions should be fast and avoid side effects
+  - Exceptions in filter functions will cause the message to be rejected
+  - The filter is applied before message validation against the interface
+
   """
   defmacro message_filter(filter_ast) do
     quote do

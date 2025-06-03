@@ -1,13 +1,14 @@
 # Engines in Elixir
 
-## Tutorial
-
 [![CI](https://github.com/anoma/engine/actions/workflows/ci.yml/badge.svg)](https://github.com/anoma/engine/actions/workflows/ci.yml)
 
 > **NOTE** This README is a [livebook](https://livebook.dev), so you can run it!
 > watch out for the terminal output!
 
 ```bash
+git clone https://github.com/anoma/engine.git
+cd engine
+mix deps.get
 make livebook
 ```
 
@@ -68,64 +69,20 @@ This system implements the core innovation of promoting mailboxes to first-class
 processing engines that receive messages but verify message writing using linked
 processing engines.
 
-<details>
-<summary>Architecture Overview</summary>
-
-The EngineSystem implements a clean separation between processing engines and
-their mailboxes, following the formal model's operational semantics.
-
-Key architectural components include:
-
-#### Core Components
-
-1. **Processing Engines** (`EngineSystem.Engine.Instance`)
-
-   * GenStage consumers that process business logic
-   * Maintain configuration, environment, and status state
-   * Subscribe to their dedicated mailbox engines
-   * Execute behavior rules and effects
-
-2. **Mailbox Engines** (`EngineSystem.Mailbox.DefaultMailboxEngine`)
-
-   * GenStage producers that act as first-class actors
-   * Validate incoming messages against processing engine interfaces
-   * Queue and filter messages based on processing engine state
-   * Implement backpressure and demand-driven message delivery
-
-3. **System Registry** (`EngineSystem.System.Registry`)
-
-   * Central registry for engine specifications and running instances
-   * Tracks address-to-PID mappings and metadata
-   * Provides fresh ID generation and system-wide services
-
-4. **DSL** (`EngineSystem.Engine.DSL`)
-
-   * User-friendly Elixir Domain Specific Language
-   * Compile-time generation of engine specifications
-   * Automatic registration of engine types
-
-#### Key Features
-
-**Mailbox-as-Actors Pattern:**
-
-* **Mailboxes as first-class engines** that handle message reception and validation independently
-* **Message validation** through contract checking against processing engine interfaces
-* **Independent message filtering** and queueing policies per mailbox
-* **Backpressure management** via GenStage demand-driven message flow
-
-
-</details>
-
 ## DSL for Engine Definition
 
 The DSL features **compile-time validation**, clean simplified syntax, and
 **unified import**. Let's start the system and explore some examples:
 
-```elixir
-# Import the EngineSystem DSL and utilities
-use EngineSystem
+### Import the EngineSystem DSL and utilities
 
-# Start the EngineSystem application
+```elixir
+use EngineSystem
+```
+
+### Start the EngineSystem application
+
+```elixir
 {:ok, _} = EngineSystem.start()
 ```
 
@@ -158,8 +115,9 @@ end
 
 Now let's spawn an instance and test it:
 
+### Spawn the echo engine
+
 ```elixir
-# Spawn the echo engine
 {:ok, echo_address} = EngineSystem.spawn_engine(SimpleEcho)
 IO.puts("Echo engine spawned at: #{inspect(echo_address)}")
 ```
@@ -466,7 +424,9 @@ send_message(kv_address, {:list_keys, %{}})
 send_message(kv_address, {:size, %{}})
 
 IO.puts("KV Store tests sent!")
-```## System Management
+```
+
+## System Management
 
 Let's explore the basic system management capabilities:
 

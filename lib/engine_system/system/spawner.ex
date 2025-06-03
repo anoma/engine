@@ -15,6 +15,7 @@ defmodule EngineSystem.System.Spawner do
   """
 
   alias EngineSystem.Engine.{Instance, Spec, State}
+  alias EngineSystem.Mailbox.DefaultMailboxEngine
   alias EngineSystem.System.{Registry, Services}
   alias EngineSystem.System.Spawner.{Logger, Validator}
 
@@ -126,7 +127,7 @@ defmodule EngineSystem.System.Spawner do
   end
 
   @spec start_mailbox_engine(Spec.t(), State.address(), module() | nil, any() | nil) ::
-          {:ok, pid()} | {:error, any()}
+          {:ok, pid() | nil} | {:error, any()}
   defp start_mailbox_engine(spec, mailbox_address, mailbox_engine_module, mailbox_config) do
     # If the processing engine is itself a mailbox engine, we don't need a separate mailbox
     if spec.mode == :mailbox do
@@ -250,10 +251,10 @@ defmodule EngineSystem.System.Spawner do
 
   # Get the default mailbox module
   defp get_default_mailbox_module do
-    EngineSystem.Mailbox.DefaultMailboxEngine.DefaultMailbox
+    DefaultMailboxEngine.DefaultMailbox
   end
 
-  @spec register_instance(State.address(), Spec.t(), pid(), pid(), atom() | nil) ::
+  @spec register_instance(State.address(), Spec.t(), pid(), pid() | nil, atom() | nil) ::
           :ok | {:error, any()}
   defp register_instance(address, spec, engine_pid, mailbox_pid, name) do
     # Validate inputs before registration
@@ -359,7 +360,8 @@ defmodule EngineSystem.System.Spawner do
     end
   end
 
-  @spec update_mailbox_if_needed(pid() | nil, State.address(), pid()) :: :ok | {:error, any()}
+  @spec update_mailbox_if_needed(pid() | nil, State.address(), pid()) ::
+          :ok | {:error, {:mailbox_call_failed, any()}}
   defp update_mailbox_if_needed(nil, _pe_address, _engine_pid), do: :ok
 
   defp update_mailbox_if_needed(mailbox_pid, pe_address, engine_pid) when is_pid(mailbox_pid) do

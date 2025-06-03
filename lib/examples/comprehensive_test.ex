@@ -1,15 +1,75 @@
 defmodule Examples.ComprehensiveTest do
   @moduledoc """
-  Comprehensive test suite for the EngineSystem that verifies each component
-  individually and then tests the full integration.
+  I am a comprehensive test suite for the EngineSystem that meticulously verifies
+  each component individually before testing the complete system integration.
 
-  This test provides clear diagnostics and step-by-step verification of:
-  1. DSL compilation and spec generation
-  2. Handler function generation
-  3. Engine spawning and registration
-  4. Message routing and processing
-  5. Effect execution
-  6. Full system integration
+  ## My Testing Philosophy
+
+  I believe in thorough, systematic testing that provides clear diagnostics and
+  step-by-step verification. Rather than treating the system as a black box, I
+  examine each layer of functionality to ensure robust operation.
+
+  ## Test Coverage
+
+  I provide comprehensive verification across these critical areas:
+
+  ### 1. DSL Compilation & Spec Generation
+  I verify that the EngineSystem DSL correctly compiles engine definitions into
+  internal specifications, ensuring all message handlers, configurations, and
+  interfaces are properly captured.
+
+  ### 2. Handler Function Generation
+  I confirm that the macro system generates the correct handler functions with
+  proper signatures and that all expected message types have corresponding handlers.
+
+  ### 3. System Startup & Registration
+  I test that the EngineSystem supervisor tree starts correctly and that all
+  required components (registries, managers, etc.) are properly initialized.
+
+  ### 4. Engine Spawning & Lifecycle Management
+  I verify engines can be spawned successfully, are properly registered in the
+  system, and maintain correct state throughout their lifecycle.
+
+  ### 5. Message Routing & Processing
+  I test direct handler function calls to ensure message processing logic works
+  correctly before testing the full message routing infrastructure.
+
+  ### 6. Effect Execution
+  I verify that engine effects (state updates, message sending, etc.) are
+  properly executed by the runtime system.
+
+  ### 7. Full System Integration
+  I conduct end-to-end tests with real engine interactions to verify the complete
+  message passing pipeline works correctly.
+
+  ## Diagnostic Capabilities
+
+  I provide detailed diagnostic output for each test phase:
+  - Clear success/failure indicators with emojis for visual scanning
+  - Detailed error information when tests fail
+  - Comprehensive summary of all test results
+  - Overall system health assessment
+
+  ## Usage
+
+      # Run all tests in sequence
+      Examples.ComprehensiveTest.run_all_tests()
+
+      # Run individual test components if needed
+      Examples.ComprehensiveTest.test_spec_compilation()
+      Examples.ComprehensiveTest.test_message_sending()
+
+  ## Test Design Principles
+
+  I follow these principles in my test design:
+  - **Isolation**: Each test can run independently without side effects
+  - **Clarity**: Test output clearly indicates what's being tested and why
+  - **Completeness**: I test both success and failure scenarios
+  - **Diagnostics**: Failures provide actionable information for debugging
+  - **Repeatability**: Tests produce consistent results across runs
+
+  My goal is to provide confidence that the EngineSystem operates correctly
+  while making it easy to diagnose issues when they occur.
   """
 
   alias EngineSystem.API
@@ -29,7 +89,7 @@ defmodule Examples.ComprehensiveTest do
       full_integration: test_full_integration()
     }
 
-    IO.puts("\n📊 Test Results Summary:")
+    IO.puts("\nTest Results Summary:")
     IO.puts("=" |> String.duplicate(60))
 
     Enum.each(results, fn {test_name, result} ->
@@ -345,7 +405,7 @@ defmodule Examples.ComprehensiveTest do
   end
 
   def quick_spawn_test do
-    IO.puts("\n🚀 Quick Spawn Test")
+    IO.puts("\n�� Quick Spawn Test")
 
     API.start_system()
     {:ok, addr} = API.spawn_engine(PingEngine, %{}, %{})

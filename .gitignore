@@ -31,3 +31,4 @@ _build/
 
 .engine/
 **_compiled.ex
+assets/docs.css
