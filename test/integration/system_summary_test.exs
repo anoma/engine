@@ -160,7 +160,7 @@ defmodule EngineSystem.Integration.SystemSummaryTest do
     end
   end
 
-  describe "📋 Summary" do
+  describe "Summary" do
     test "overall system health check" do
       IO.puts("""
 
