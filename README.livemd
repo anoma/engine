@@ -115,6 +115,10 @@ defengine SimpleEcho do
 end
 ```
 
+```elixir
+SimpleEcho.__engine_spec_
+```
+
 Now let's spawn an instance and test it:
 
 ### Spawn the echo engine
