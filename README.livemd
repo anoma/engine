@@ -1,5 +1,7 @@
 # Engines in Elixir
 
+## Section
+
 [![CI](https://github.com/anoma/engine/actions/workflows/ci.yml/badge.svg)](https://github.com/anoma/engine/actions/workflows/ci.yml)
 
 > **NOTE** This README is a [livebook](https://livebook.dev), so you can run it!
@@ -111,6 +113,10 @@ defengine SimpleEcho do
     end
   end
 end
+```
+
+```elixir
+SimpleEcho.__engine_spec_
 ```
 
 Now let's spawn an instance and test it:

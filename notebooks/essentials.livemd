@@ -571,7 +571,7 @@ defengine KVStore do
 
 #### Test the KV Store
 
-````elixir
+```elixir
 {:ok, kv_addr} = spawn_engine(KVStore)
 ```
 
@@ -719,3 +719,4 @@ IO.puts("  Queue: #{info[:message_queue_len]} messages")
 end
 end)
 ```
+````
