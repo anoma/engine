@@ -16,7 +16,11 @@ This interactive demo demonstrates **real message passing and interactions** bet
 
 ## Engine Documentation Format
 
-All engines in this examples collection follow a **standardized documentation format** that provides comprehensive information about their capabilities and usage. Each engine's `@moduledoc` includes:
+All engines in this examples collection follow a **standardized documentation
+format** that provides comprehensive information about their capabilities and
+usage. See the [documentation template](DOCUMENTATION_TEMPLATE.md) for more details.
+
+Each engine's `@moduledoc` includes:
 
 ### 🏷️ **Who I Am** 
 A first-person introduction explaining the engine's identity and role in the system.
@@ -53,6 +57,7 @@ Complete specification of the engine's message interface:
 - Example input/output scenarios with code samples
 
 ### 💡 **Usage Examples**
+
 Practical code examples showing:
 - Basic usage patterns
 - Common integration scenarios

@@ -98,6 +98,7 @@ This [protects against/prevents] [specific problem].
 ## Usage Examples
 
 ### Basic Operations
+
 ```elixir
 # Spawn me
 {:ok, engine_addr} = EngineSystem.API.spawn_engine(Examples.YourEngine)
@@ -108,6 +109,7 @@ EngineSystem.API.send_message(engine_addr, {:message_type, %{param: "value"}})
 ```
 
 ### Advanced Usage (if applicable)
+
 ```elixir
 # Advanced scenarios
 # [Show more complex usage patterns]
@@ -122,6 +124,7 @@ EngineSystem.API.send_message(engine_addr, {:message_type, %{param: "value"}})
 ## Integration Scenarios
 
 I'm particularly useful in these scenarios:
+
 - **[Use Case 1]**: [Description of when and how to use this engine]
 - **[Use Case 2]**: [Another practical application]
 - **[Use Case 3]**: [Additional scenario where this engine provides value]
@@ -129,36 +132,29 @@ I'm particularly useful in these scenarios:
 ## [Additional Sections as Needed]
 
 ### Extensibility (for foundational engines)
+
 [How this engine can be extended or built upon]
 
 ### State Management Patterns (for stateful engines)  
+
 [Key patterns demonstrated in state handling]
 
 ### Configuration Patterns (for configurable engines)
+
 [Important configuration concepts demonstrated]
-
-## Design Philosophy
-
-I embody [key design principle] in engine design:
-- **[Principle 1]**: [How this engine demonstrates this principle]
-- **[Principle 2]**: [Another key design aspect]
-- **[Principle 3]**: [Additional design consideration]
-
-I serve as both a practical utility for [primary use case] and an
-educational example of [key concepts] within the EngineSystem.
-"""
-```
 
 ## Documentation Guidelines
 
 ### Writing Style
+
 - **First Person**: Always write from the engine's perspective ("I am...", "I do...", "I serve...")
 - **Active Voice**: Use active voice for clarity ("I process messages" not "Messages are processed")
-- **Present Tense**: Describe current behavior ("I respond with" not "I will respond with")
+- **Present Tense**: Describe current behaviour ("I respond with" not "I will respond with")
 
 ### Content Requirements
 
 #### Essential Sections (All Engines)
+
 - **Who I Am**: Brief, engaging identity statement
 - **My Purpose**: Clear value proposition with bullet points
 - **Public API**: Complete message interface specification
@@ -167,18 +163,21 @@ educational example of [key concepts] within the EngineSystem.
 - **Integration Scenarios**: Real-world applications
 
 #### Conditional Sections
+
 - **My Configuration**: Include if engine accepts configuration parameters
 - **My Internal State**: Include if engine maintains persistent state
 - **Error Conditions**: Include if engine can generate specific errors
 - **Design Philosophy**: Include for engines that demonstrate important patterns
 
 ### Code Examples
+
 - Always use `EngineSystem.API.spawn_engine()` and `EngineSystem.API.send_message()`
 - Include both input and expected output
 - Show realistic parameter values
 - Format consistently with proper syntax highlighting
 
 ### Message Handling Details
+
 This is the **most important section**. For each message type, include:
 1. **Processing Steps**: Numbered list of exactly what happens
 2. **State Changes**: How the engine's state is modified (if applicable)
@@ -187,6 +186,7 @@ This is the **most important section**. For each message type, include:
 5. **Code Example**: Input/Process/Output example in comments
 
 ### Quality Checklist
+
 - [ ] First-person narrative throughout
 - [ ] Clear purpose statement with practical value
 - [ ] Complete message interface specification
