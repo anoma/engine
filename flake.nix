@@ -54,8 +54,11 @@
 
         devShell = pkgs.mkShell {
           buildInputs = with pkgs; [
-            epkgs.elixir
             epkgs.hex
+            epkgs.elixir
+            epkgs.elixir-ls
+            lexical
+            next-ls
             glibcLocales
             mix2nix
             livebook
