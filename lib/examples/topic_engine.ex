@@ -186,8 +186,8 @@ educational example of [key concepts] within the EngineSystem.
     end
 
     on_message :pub, %{msg: msg}, _config, env, sender do
-      if Map.get(sender) == true do
-        fx = Enum.map(env.subs, fn ({id, is_publisher}) -> {:send, id, msg} end)
+      if Map.get(env.subs, sender) == true do
+        fx = Enum.map(env.subs, fn ({id, _is_publisher}) -> {:send, id, msg} end)
         {:ok, fx}
       else
         {:error, {:permission_denied}}
