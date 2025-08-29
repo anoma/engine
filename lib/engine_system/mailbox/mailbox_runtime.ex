@@ -149,7 +149,7 @@ defmodule EngineSystem.Mailbox.MailboxRuntime do
 
         {:error, reason} ->
           IO.puts(
-            "🔧 MailboxRuntime: Internal message behavior execution failed: #{inspect(reason)}"
+            "🔧 MailboxRuntime: Internal message behavior execution failed: #{format_behaviour_error(reason)}"
           )
 
           {:noreply, [], state}
@@ -175,7 +175,9 @@ defmodule EngineSystem.Mailbox.MailboxRuntime do
           {:noreply, events, final_state}
 
         {:error, reason} ->
-          IO.puts("🔧 MailboxRuntime: Behavior execution failed: #{inspect(reason)}")
+          IO.puts(
+            "🔧 MailboxRuntime: Behavior execution failed: #{format_behaviour_error(reason)}"
+          )
           {:noreply, [], state}
       end
     end
@@ -238,6 +240,7 @@ defmodule EngineSystem.Mailbox.MailboxRuntime do
 
   # Execute DSL-defined behaviour patterns
   defp execute_behaviour(message, state) do
+    context_meta = message_context(message)
     # Create proper State.Configuration and State.Environment structures
     # The behavior evaluation expects these to have local_state fields
     config_struct =
@@ -253,14 +256,16 @@ defmodule EngineSystem.Mailbox.MailboxRuntime do
       {:ok, effects} ->
         case apply_effects_to_state(effects, state) do
           {:ok, updated_state} -> {:ok, effects, updated_state}
-          {:error, reason} -> {:error, reason}
+          {:error, reason} -> {:error, {:apply_effects_error, reason, context_meta}}
         end
 
       {:error, reason} ->
-        {:error, reason}
+        {:error, {:dsl_evaluation_error, reason, context_meta}}
     end
   rescue
-    exception -> {:error, {:behaviour_error, exception}}
+    exception ->
+      meta = safe_message_context(message)
+      {:error, {:behaviour_exception, exception, __STACKTRACE__, meta}}
   end
 
   # Apply effects to update mailbox state
@@ -309,5 +314,45 @@ defmodule EngineSystem.Mailbox.MailboxRuntime do
           current_state
       end
     end)
+  end
+
+  # Build structured metadata from a DSL message payload for better diagnostics
+  defp message_context(%Message{payload: {op, args}}) when is_atom(op),
+    do: %{behaviour: op, args: args}
+
+  defp message_context(%Message{payload: op}) when is_atom(op),
+    do: %{behaviour: op, args: nil}
+
+  defp message_context(%Message{}), do: %{behaviour: :unknown, args: nil}
+
+  defp safe_message_context(message) do
+    message_context(message)
+  rescue
+    _ -> %{behaviour: :unknown, args: nil}
+  end
+
+  defp format_behaviour_error({:behaviour_exception, exception, stacktrace, meta}) do
+    op = Map.get(meta, :behaviour, :unknown)
+    args = Map.get(meta, :args)
+    location =
+      case stacktrace do
+        [top | _] -> Exception.format_stacktrace_entry(top)
+        _ -> "unknown"
+      end
+
+    "behaviour=#{inspect(op)} args=#{inspect(args)} error=#{Exception.message(exception)} at=#{location}\n" <>
+      Exception.format_stacktrace(stacktrace)
+  end
+
+  defp format_behaviour_error({:dsl_evaluation_error, inner, meta}) do
+    op = Map.get(meta, :behaviour, :unknown)
+    args = Map.get(meta, :args)
+    "behaviour=#{inspect(op)} args=#{inspect(args)} reason=#{inspect(inner)}"
+  end
+
+  defp format_behaviour_error({:apply_effects_error, inner, meta}) do
+    op = Map.get(meta, :behaviour, :unknown)
+    args = Map.get(meta, :args)
+    "behaviour=#{inspect(op)} args=#{inspect(args)} apply_effects_error=#{inspect(inner)}"
   end
 end
