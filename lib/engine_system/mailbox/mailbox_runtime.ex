@@ -178,6 +178,7 @@ defmodule EngineSystem.Mailbox.MailboxRuntime do
           IO.puts(
             "🔧 MailboxRuntime: Behavior execution failed: #{format_behaviour_error(reason)}"
           )
+
           {:noreply, [], state}
       end
     end
@@ -334,25 +335,38 @@ defmodule EngineSystem.Mailbox.MailboxRuntime do
   defp format_behaviour_error({:behaviour_exception, exception, stacktrace, meta}) do
     op = Map.get(meta, :behaviour, :unknown)
     args = Map.get(meta, :args)
+
     location =
       case stacktrace do
         [top | _] -> Exception.format_stacktrace_entry(top)
         _ -> "unknown"
       end
 
-    "behaviour=#{inspect(op)} args=#{inspect(args)} error=#{Exception.message(exception)} at=#{location}\n" <>
+    "- behaviour=#{inspect(op)}\n" <>
+      "  - args=#{inspect(args)}\n" <>
+      "  - error=#{Exception.message(exception)}\n" <>
+      "  - at=#{location}\n" <>
+      "  - meta=#{inspect(meta)}\n" <>
       Exception.format_stacktrace(stacktrace)
   end
 
   defp format_behaviour_error({:dsl_evaluation_error, inner, meta}) do
     op = Map.get(meta, :behaviour, :unknown)
     args = Map.get(meta, :args)
-    "behaviour=#{inspect(op)} args=#{inspect(args)} reason=#{inspect(inner)}"
+
+    "- behaviour=#{inspect(op)}\n" <>
+      "  - args=#{inspect(args)}\n" <>
+      "  - reason=#{inspect(inner)}\n" <>
+      "  - meta=#{inspect(meta)}\n"
   end
 
   defp format_behaviour_error({:apply_effects_error, inner, meta}) do
     op = Map.get(meta, :behaviour, :unknown)
     args = Map.get(meta, :args)
-    "behaviour=#{inspect(op)} args=#{inspect(args)} apply_effects_error=#{inspect(inner)}"
+
+    "- behaviour=#{inspect(op)}\n" <>
+      "  - args=#{inspect(args)}\n" <>
+      "  - apply_effects_error=#{inspect(inner)}\n" <>
+      "  - meta=#{inspect(meta)}\n"
   end
 end
