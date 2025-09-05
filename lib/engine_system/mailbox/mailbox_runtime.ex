@@ -106,8 +106,15 @@ defmodule EngineSystem.Mailbox.MailboxRuntime do
 
   @impl true
   def handle_cast({:enqueue_message, message}, state) do
-    IO.puts("🔧 MailboxRuntime: Received enqueue_message cast")
-    IO.puts("🔧 MailboxRuntime: Message payload: #{inspect(message.payload)}")
+    IO.puts("🔧 MailboxRuntime #{inspect(message.target)}: Received enqueue_message cast")
+
+    IO.puts(
+      "🔧 MailboxRuntime #{inspect(message.target)}: Message from: #{inspect(message.sender)}"
+    )
+
+    IO.puts(
+      "🔧 MailboxRuntime #{inspect(message.target)}: Message payload: #{inspect(message.payload)}"
+    )
 
     # Check if this is an internal mailbox message that should be routed directly
     internal_mailbox_messages = [
@@ -130,7 +137,7 @@ defmodule EngineSystem.Mailbox.MailboxRuntime do
     if is_internal_message do
       # Route internal messages directly to their handlers
       IO.puts(
-        "🔧 MailboxRuntime: Routing internal message #{inspect(message_tag)} directly to handler"
+        "🔧 MailboxRuntime #{inspect(message.target)}: Routing internal message #{inspect(message_tag)} directly to handler"
       )
 
       dsl_message = Message.new(nil, state.address, message.payload)
@@ -138,45 +145,59 @@ defmodule EngineSystem.Mailbox.MailboxRuntime do
       case execute_behaviour(dsl_message, state) do
         {:ok, effects, updated_state} ->
           IO.puts(
-            "🔧 MailboxRuntime: Internal message behavior executed successfully, effects: #{inspect(effects)}"
+            "🔧 MailboxRuntime #{inspect(message.target)}: Internal message behavior executed successfully, effects: #{inspect(effects)}"
           )
 
           # Process immediate effects first
           final_state = process_immediate_effects(effects, updated_state)
           events = extract_events_from_effects(effects)
-          IO.puts("🔧 MailboxRuntime: Extracted events: #{inspect(events)}")
+
+          IO.puts(
+            "🔧 MailboxRuntime #{inspect(message.target)}: Extracted events: #{inspect(events)}"
+          )
+
           {:noreply, events, final_state}
 
         {:error, reason} ->
           IO.puts(
-            "🔧 MailboxRuntime: Internal message behavior execution failed: #{format_behaviour_error(reason)}"
+            "🔧 MailboxRuntime #{inspect(message.target)}: Internal message behavior execution failed: #{inspect(reason)}"
           )
 
           {:noreply, [], state}
       end
     else
       # External messages go through the normal :enqueue_message flow
-      IO.puts("🔧 MailboxRuntime: Processing external message through :enqueue_message handler")
+      IO.puts(
+        "🔧 MailboxRuntime #{inspect(message.target)}: Processing external message through :enqueue_message handler"
+      )
+
       # Create a properly formatted :enqueue_message message for DSL behaviour
       # The DSL expects: on_message :enqueue_message, %{message: message}, ...
       dsl_message = Message.new(nil, state.address, {:enqueue_message, %{message: message}})
-      IO.puts("🔧 MailboxRuntime: Created DSL message: #{inspect(dsl_message.payload)}")
+
+      IO.puts(
+        "🔧 MailboxRuntime #{inspect(message.target)}: Created DSL message: #{inspect(dsl_message.payload)}"
+      )
 
       case execute_behaviour(dsl_message, state) do
         {:ok, effects, updated_state} ->
           IO.puts(
-            "🔧 MailboxRuntime: Behavior executed successfully, effects: #{inspect(effects)}"
+            "🔧 MailboxRuntime #{inspect(message.target)}: Behavior executed successfully, effects: #{inspect(effects)}"
           )
 
           # Process immediate effects first
           final_state = process_immediate_effects(effects, updated_state)
           events = extract_events_from_effects(effects)
-          IO.puts("🔧 MailboxRuntime: Extracted events: #{inspect(events)}")
+
+          IO.puts(
+            "🔧 MailboxRuntime #{inspect(message.target)}: Extracted events: #{inspect(events)}"
+          )
+
           {:noreply, events, final_state}
 
         {:error, reason} ->
           IO.puts(
-            "🔧 MailboxRuntime: Behavior execution failed: #{format_behaviour_error(reason)}"
+            "🔧 MailboxRuntime #{inspect(message.target)}: Behavior execution failed: #{inspect(reason)}"
           )
 
           {:noreply, [], state}
