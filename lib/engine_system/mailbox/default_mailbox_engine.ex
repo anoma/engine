@@ -76,8 +76,13 @@ defmodule EngineSystem.Mailbox.DefaultMailboxEngine do
       # Handle message enqueueing (m-Enqueue rule)
       # Using function-based syntax for compile-time validation
       on_message :enqueue_message, %{message: message}, _config, env, _sender do
-        IO.puts("📮 Mailbox: Received enqueue_message with payload: #{inspect(message.payload)}")
-        IO.puts("📮 Mailbox: PE spec available: #{not is_nil(env.pe_spec)}")
+        IO.puts(
+          "📮 Mailbox #{inspect(env.pe_address)}: Received enqueue_message with payload: #{inspect(message.payload)}"
+        )
+
+        IO.puts(
+          "📮 Mailbox #{inspect(env.pe_address)}: PE spec available: #{not is_nil(env.pe_spec)}"
+        )
 
         # Validate message against processing engine interface
         # Extract payload for validation since validate_message_for_pe expects payload format
@@ -85,7 +90,10 @@ defmodule EngineSystem.Mailbox.DefaultMailboxEngine do
 
         case validate_message_for_pe(validation_message, env.pe_spec) do
           :ok ->
-            IO.puts("📮 Mailbox: Message validation passed, adding to queue")
+            IO.puts(
+              "📮 Mailbox #{inspect(env.pe_address)}: Message validation passed, adding to queue"
+            )
+
             # Add to queue
             new_queue = :queue.in(message, env.message_queue)
             new_env = %{env | message_queue: new_queue, total_received: env.total_received + 1}
@@ -94,16 +102,22 @@ defmodule EngineSystem.Mailbox.DefaultMailboxEngine do
 
             # If there's demand, try to dispatch immediately
             if env.current_demand > 0 do
-              IO.puts("📮 Mailbox: Demand available (#{env.current_demand}), triggering dispatch")
+              IO.puts(
+                "📮 Mailbox #{inspect(env.pe_address)}: Demand available (#{env.current_demand}), triggering dispatch"
+              )
+
               {:ok, effects ++ [{:send, :self, :check_dispatch}]}
             else
-              IO.puts("📮 Mailbox: No demand, message queued")
+              IO.puts("📮 Mailbox #{inspect(env.pe_address)}: No demand, message queued")
               {:ok, effects}
             end
 
           {:error, reason} ->
             # Invalid message - log and ignore
-            IO.puts("⚠️  Mailbox: Invalid message rejected: #{inspect(reason)}")
+            IO.puts(
+              "⚠️  Mailbox #{inspect(env.pe_address)}: Invalid message rejected: #{inspect(reason)}"
+            )
+
             {:ok, []}
         end
       end
@@ -136,7 +150,7 @@ defmodule EngineSystem.Mailbox.DefaultMailboxEngine do
       # Handle check_dispatch - process queued messages when there's demand
       on_message :check_dispatch, _msg, _config, env, _sender do
         IO.puts(
-          "📮 Mailbox: Processing check_dispatch - current_demand: #{env.current_demand}, queue_size: #{:queue.len(env.message_queue)}"
+          "📮 Mailbox #{inspect(env.pe_address)}: Processing check_dispatch - current_demand: #{env.current_demand}, queue_size: #{:queue.len(env.message_queue)}"
         )
 
         if env.current_demand > 0 and :queue.len(env.message_queue) > 0 do
@@ -155,15 +169,21 @@ defmodule EngineSystem.Mailbox.DefaultMailboxEngine do
 
           # Deliver messages if any
           if length(messages) > 0 do
-            IO.puts("📮 Mailbox: Dispatching #{length(messages)} messages")
+            IO.puts(
+              "📮 Mailbox #{inspect(env.pe_address)}: Dispatching #{length(messages)} messages"
+            )
+
             {:ok, effects ++ [{:deliver_batch, messages}]}
           else
-            IO.puts("📮 Mailbox: No messages to dispatch after filtering")
+            IO.puts(
+              "📮 Mailbox #{inspect(env.pe_address)}: No messages to dispatch after filtering"
+            )
+
             {:ok, effects}
           end
         else
           IO.puts(
-            "📮 Mailbox: No dispatch needed - demand: #{env.current_demand}, queue: #{:queue.len(env.message_queue)}"
+            "📮 Mailbox #{inspect(env.pe_address)}: No dispatch needed - demand: #{env.current_demand}, queue: #{:queue.len(env.message_queue)}"
           )
 
           {:ok, []}
