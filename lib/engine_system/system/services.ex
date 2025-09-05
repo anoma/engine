@@ -129,8 +129,12 @@ defmodule EngineSystem.System.Services do
     case Registry.lookup_instance(target_address) do
       {:ok, %{mailbox_pid: mailbox_pid}} when not is_nil(mailbox_pid) ->
         # Send the message to the mailbox engine using the MailboxRuntime
-        EngineSystem.Mailbox.MailboxRuntime.enqueue_message(mailbox_pid, message)
-        :ok
+        if Process.alive?(mailbox_pid) do
+          EngineSystem.Mailbox.MailboxRuntime.enqueue_message(mailbox_pid, message)
+          :ok
+        else
+          {:error, :mailbox_down}
+        end
 
       {:ok, %{mailbox_pid: nil}} ->
         # Engine has no mailbox, send directly to the engine process
@@ -145,7 +149,7 @@ defmodule EngineSystem.System.Services do
               end
 
             # Send directly to engine using GenServer call
-            GenServer.cast(engine_pid, {:message, message_tag, payload, message.header.sender})
+            GenServer.cast(engine_pid, {:message, message_tag, payload, message.sender})
             :ok
 
           {:error, _} ->

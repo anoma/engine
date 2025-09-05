@@ -281,7 +281,15 @@ defmodule EngineSystem.Engine do
   def apply_filter(nil, _message), do: true
 
   def apply_filter(filter, message) do
-    filter.(message)
+    case :erlang.fun_info(filter, :arity) do
+      {:arity, 1} -> safe_filter_call(fn -> filter.(message) end)
+      {:arity, 3} -> safe_filter_call(fn -> filter.(message, nil, nil) end)
+      _ -> safe_filter_call(fn -> filter.(message) end)
+    end
+  end
+
+  defp safe_filter_call(fun) do
+    fun.()
   rescue
     _ -> false
   catch
