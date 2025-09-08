@@ -59,47 +59,49 @@ defmodule EngineSystem.Engine.DiagramGenerator do
   alias EngineSystem.Engine.{Effect, Spec, RuntimeFlowTracker}
 
   @type message_flow :: %{
-    source_engine: atom(),
-    target_engine: atom() | :dynamic | :sender,
-    message_type: atom(),
-    payload_pattern: any(),
-    conditions: [any()],
-    effects: [Effect.t()],
-    handler_type: :function | :complex_pattern
-  }
+          source_engine: atom(),
+          target_engine: atom() | :dynamic | :sender,
+          message_type: atom(),
+          payload_pattern: any(),
+          conditions: [any()],
+          effects: [Effect.t()],
+          handler_type: :function | :complex_pattern
+        }
 
   @type runtime_enriched_flow :: %{
-    source_engine: atom(),
-    target_engine: atom() | :dynamic | :sender,
-    message_type: atom(),
-    payload_pattern: any(),
-    conditions: [any()],
-    effects: [Effect.t()],
-    handler_type: :function | :complex_pattern,
-    runtime_data: %{
-      total_count: non_neg_integer(),
-      success_rate: float(),
-      avg_duration_ms: float() | nil,
-      frequency_per_minute: float(),
-      first_seen: integer(),
-      last_seen: integer()
-    } | nil
-  }
+          source_engine: atom(),
+          target_engine: atom() | :dynamic | :sender,
+          message_type: atom(),
+          payload_pattern: any(),
+          conditions: [any()],
+          effects: [Effect.t()],
+          handler_type: :function | :complex_pattern,
+          runtime_data:
+            %{
+              total_count: non_neg_integer(),
+              success_rate: float(),
+              avg_duration_ms: float() | nil,
+              frequency_per_minute: float(),
+              first_seen: integer(),
+              last_seen: integer()
+            }
+            | nil
+        }
 
   @type diagram_metadata :: %{
-    title: String.t(),
-    engines: [atom()],
-    generated_at: DateTime.t(),
-    source_files: [String.t()],
-    version: String.t()
-  }
+          title: String.t(),
+          engines: [atom()],
+          generated_at: DateTime.t(),
+          source_files: [String.t()],
+          version: String.t()
+        }
 
   @type generation_options :: %{
-    output_dir: String.t(),
-    include_metadata: boolean(),
-    diagram_title: String.t() | nil,
-    file_prefix: String.t()
-  }
+          output_dir: String.t(),
+          include_metadata: boolean(),
+          diagram_title: String.t() | nil,
+          file_prefix: String.t()
+        }
 
   @default_options %{
     output_dir: "docs/diagrams",
@@ -132,7 +134,7 @@ defmodule EngineSystem.Engine.DiagramGenerator do
       {:ok, "custom/docs/my_engine.md"}
   """
   @spec generate_diagram(Spec.t(), String.t() | nil, generation_options() | nil) ::
-    {:ok, String.t()} | {:error, any()}
+          {:ok, String.t()} | {:error, any()}
   def generate_diagram(spec, output_dir \\ nil, opts \\ nil) do
     try do
       options = merge_options(opts, output_dir)
@@ -183,7 +185,7 @@ defmodule EngineSystem.Engine.DiagramGenerator do
       {:ok, "docs/diagrams/my_engine_runtime.md"}
   """
   @spec generate_runtime_refined_diagram(Spec.t(), String.t() | nil, generation_options() | nil) ::
-    {:ok, String.t()} | {:error, any()}
+          {:ok, String.t()} | {:error, any()}
   def generate_runtime_refined_diagram(spec, output_dir \\ nil, opts \\ nil) do
     try do
       options = merge_options(opts, output_dir)
@@ -241,12 +243,12 @@ defmodule EngineSystem.Engine.DiagramGenerator do
       {:ok, "docs/diagrams/system_interaction.md"}
   """
   @spec generate_system_diagram(String.t() | nil, generation_options() | nil) ::
-    {:ok, String.t()} | {:error, any()}
+          {:ok, String.t()} | {:error, any()}
   def generate_system_diagram(output_dir \\ nil, opts \\ nil) do
     try do
       # Get all registered engine specs
       specs = get_all_registered_specs()
-      
+
       if specs == [] do
         {:error, :no_engines_registered}
       else
@@ -279,7 +281,7 @@ defmodule EngineSystem.Engine.DiagramGenerator do
       {:ok, "docs/diagrams/ping_pong_interaction.md"}
   """
   @spec generate_multi_engine_diagram([Spec.t()], String.t() | nil, generation_options() | nil) ::
-    {:ok, String.t()} | {:error, any()}
+          {:ok, String.t()} | {:error, any()}
   def generate_multi_engine_diagram(specs, output_dir \\ nil, opts \\ nil) do
     try do
       options = merge_options(opts, output_dir)
@@ -392,11 +394,12 @@ defmodule EngineSystem.Engine.DiagramGenerator do
     sequences = generate_message_sequences(flows)
 
     # Generate metadata if requested
-    metadata = if options.include_metadata do
-      generate_metadata_section(spec, options)
-    else
-      ""
-    end
+    metadata =
+      if options.include_metadata do
+        generate_metadata_section(spec, options)
+      else
+        ""
+      end
 
     # Combine all parts
     [header, participants, sequences, metadata]
@@ -426,19 +429,23 @@ defmodule EngineSystem.Engine.DiagramGenerator do
         # For function handlers, we know there's a message flow but can't
         # statically analyze the implementation. We create a placeholder
         # that shows the message is processed by the function.
-        flows = [%{
-          source_engine: :client,
-          target_engine: engine_name,
-          message_type: message_type,
-          payload_pattern: :any,
-          conditions: [],
-          effects: [],
-          handler_type: :function,
-          metadata: %{function: function_name}
-        }]
-        
+        flows = [
+          %{
+            source_engine: :client,
+            target_engine: engine_name,
+            message_type: message_type,
+            payload_pattern: :any,
+            conditions: [],
+            effects: [],
+            handler_type: :function,
+            metadata: %{function: function_name}
+          }
+        ]
+
         # For known patterns, we can infer likely effects
-        inferred_effects = infer_effects_from_function_name(function_name, message_type, engine_name)
+        inferred_effects =
+          infer_effects_from_function_name(function_name, message_type, engine_name)
+
         flows ++ inferred_effects
 
       {:complex_patterns, pattern_data} when is_map(pattern_data) ->
@@ -467,23 +474,27 @@ defmodule EngineSystem.Engine.DiagramGenerator do
           effects: [effect],
           handler_type: :simple_effect
         }
-        
-        effect_flows = case effect do
-          :pong ->
-            # :pong effect typically means send pong back to sender
-            [%{
-              source_engine: engine_name,
-              target_engine: :sender,
-              message_type: :pong,
-              payload_pattern: :pong,
-              conditions: [],
-              effects: [effect],
-              handler_type: :inferred_response
-            }]
-          _ ->
-            []
-        end
-        
+
+        effect_flows =
+          case effect do
+            :pong ->
+              # :pong effect typically means send pong back to sender
+              [
+                %{
+                  source_engine: engine_name,
+                  target_engine: :sender,
+                  message_type: :pong,
+                  payload_pattern: :pong,
+                  conditions: [],
+                  effects: [effect],
+                  handler_type: :inferred_response
+                }
+              ]
+
+            _ ->
+              []
+          end
+
         [base_flow] ++ effect_flows
 
       # Handle tuple effects like {:send, target, payload}
@@ -492,27 +503,31 @@ defmodule EngineSystem.Engine.DiagramGenerator do
         extract_flows_from_effects(message_type, effects, engine_name)
 
       {effect_type, target, payload} when effect_type in [:send, :spawn] ->
-        [%{
-          source_engine: engine_name,
-          target_engine: resolve_target(target, engine_name),
-          message_type: message_type,
-          payload_pattern: payload,
-          conditions: [],
-          effects: [{effect_type, target, payload}],
-          handler_type: :effect_tuple
-        }]
+        [
+          %{
+            source_engine: engine_name,
+            target_engine: resolve_target(target, engine_name),
+            message_type: message_type,
+            payload_pattern: payload,
+            conditions: [],
+            effects: [{effect_type, target, payload}],
+            handler_type: :effect_tuple
+          }
+        ]
 
       _ ->
         # For unrecognized handler types, create a basic flow
-        [%{
-          source_engine: :client,
-          target_engine: engine_name,
-          message_type: message_type,
-          payload_pattern: :any,
-          conditions: [],
-          effects: [],
-          handler_type: :unknown
-        }]
+        [
+          %{
+            source_engine: :client,
+            target_engine: engine_name,
+            message_type: message_type,
+            payload_pattern: :any,
+            conditions: [],
+            effects: [],
+            handler_type: :unknown
+          }
+        ]
     end
   end
 
@@ -530,7 +545,7 @@ defmodule EngineSystem.Engine.DiagramGenerator do
 
     # Extract effects from the pattern data
     effects = extract_effects_from_pattern_data(pattern_data)
-    
+
     if effects == [] do
       [base_flow]
     else
@@ -539,21 +554,23 @@ defmodule EngineSystem.Engine.DiagramGenerator do
       |> Enum.map(fn effect ->
         case effect do
           {:send, target, payload} ->
-            %{base_flow |
-              source_engine: engine_name,
-              target_engine: resolve_target(target, engine_name),
-              payload_pattern: payload,
-              effects: [effect]
+            %{
+              base_flow
+              | source_engine: engine_name,
+                target_engine: resolve_target(target, engine_name),
+                payload_pattern: payload,
+                effects: [effect]
             }
-          
+
           {:spawn, target_engine, config, environment} ->
-            %{base_flow |
-              source_engine: engine_name,
-              target_engine: target_engine,
-              effects: [effect],
-              metadata: %{spawn_config: config, spawn_env: environment}
+            %{
+              base_flow
+              | source_engine: engine_name,
+                target_engine: target_engine,
+                effects: [effect],
+                metadata: %{spawn_config: config, spawn_env: environment}
             }
-          
+
           _ ->
             nil
         end
@@ -567,22 +584,24 @@ defmodule EngineSystem.Engine.DiagramGenerator do
       {_pattern, effects} when is_list(effects) ->
         # Pattern with direct effects list
         extract_flows_from_effects(message_type, effects, engine_name)
-      
+
       {_pattern, {:ok, effects}} when is_list(effects) ->
         # Pattern returning {:ok, effects}
         extract_flows_from_effects(message_type, effects, engine_name)
-      
+
       _ ->
         # Default flow for unrecognized pattern
-        [%{
-          source_engine: :client,
-          target_engine: engine_name,
-          message_type: message_type,
-          payload_pattern: :any,
-          conditions: [],
-          effects: [],
-          handler_type: :pattern
-        }]
+        [
+          %{
+            source_engine: :client,
+            target_engine: engine_name,
+            message_type: message_type,
+            payload_pattern: :any,
+            conditions: [],
+            effects: [],
+            handler_type: :pattern
+          }
+        ]
     end
   end
 
@@ -599,50 +618,51 @@ defmodule EngineSystem.Engine.DiagramGenerator do
     }
 
     # Extract communication effects from the effects list
-    communication_flows = effects
-    |> Enum.filter(fn
-      {:send, _, _} -> true
-      {:spawn, _, _, _} -> true
-      {:spawn, _, _} -> true
-      _ -> false
-    end)
-    |> Enum.map(fn effect ->
-      case effect do
-        {:send, target, payload} ->
-          %{
-            source_engine: engine_name,
-            target_engine: resolve_target(target, engine_name),
-            message_type: extract_message_type(payload),
-            payload_pattern: payload,
-            conditions: [],
-            effects: [effect],
-            handler_type: :send_effect
-          }
-        
-        {:spawn, target_engine, config, environment} ->
-          %{
-            source_engine: engine_name,
-            target_engine: target_engine,
-            message_type: :spawn,
-            payload_pattern: %{config: config, environment: environment},
-            conditions: [],
-            effects: [effect],
-            handler_type: :spawn_effect
-          }
-          
-        {:spawn, target_engine, config} ->
-          %{
-            source_engine: engine_name,
-            target_engine: target_engine,
-            message_type: :spawn,
-            payload_pattern: %{config: config},
-            conditions: [],
-            effects: [effect],
-            handler_type: :spawn_effect
-          }
-      end
-    end)
-    |> Enum.filter(&(&1 != nil))
+    communication_flows =
+      effects
+      |> Enum.filter(fn
+        {:send, _, _} -> true
+        {:spawn, _, _, _} -> true
+        {:spawn, _, _} -> true
+        _ -> false
+      end)
+      |> Enum.map(fn effect ->
+        case effect do
+          {:send, target, payload} ->
+            %{
+              source_engine: engine_name,
+              target_engine: resolve_target(target, engine_name),
+              message_type: extract_message_type(payload),
+              payload_pattern: payload,
+              conditions: [],
+              effects: [effect],
+              handler_type: :send_effect
+            }
+
+          {:spawn, target_engine, config, environment} ->
+            %{
+              source_engine: engine_name,
+              target_engine: target_engine,
+              message_type: :spawn,
+              payload_pattern: %{config: config, environment: environment},
+              conditions: [],
+              effects: [effect],
+              handler_type: :spawn_effect
+            }
+
+          {:spawn, target_engine, config} ->
+            %{
+              source_engine: engine_name,
+              target_engine: target_engine,
+              message_type: :spawn,
+              payload_pattern: %{config: config},
+              conditions: [],
+              effects: [effect],
+              handler_type: :spawn_effect
+            }
+        end
+      end)
+      |> Enum.filter(&(&1 != nil))
 
     [base_flow] ++ communication_flows
   end
@@ -652,17 +672,17 @@ defmodule EngineSystem.Engine.DiagramGenerator do
     cond do
       Map.has_key?(pattern_data, :effects) ->
         pattern_data.effects
-      
+
       Map.has_key?(pattern_data, :handler) ->
         case pattern_data.handler do
           {:ok, effects} when is_list(effects) -> effects
           effects when is_list(effects) -> effects
           _ -> []
         end
-      
+
       Map.has_key?(pattern_data, :actions) ->
         pattern_data.actions
-      
+
       true ->
         []
     end
@@ -671,53 +691,65 @@ defmodule EngineSystem.Engine.DiagramGenerator do
   # Extract message type from payload for better diagram labeling
   defp extract_message_type(payload) do
     case payload do
-      atom when is_atom(atom) -> atom
-      {message_type, _} when is_atom(message_type) -> message_type
+      atom when is_atom(atom) ->
+        atom
+
+      {message_type, _} when is_atom(message_type) ->
+        message_type
+
       %{} = map when map_size(map) > 0 ->
         # Try to find a type or tag field
         Map.get(map, :type, Map.get(map, :tag, :message))
-      _ -> :message
+
+      _ ->
+        :message
     end
   end
-  
+
   # Infer likely effects from function names for common patterns
   defp infer_effects_from_function_name(function_name, message_type, engine_name) do
     function_str = Atom.to_string(function_name)
-    
+
     cond do
       String.contains?(function_str, "ping") and message_type == :ping ->
-        [%{
-          source_engine: engine_name,
-          target_engine: :sender,
-          message_type: :pong,
-          payload_pattern: :pong,
-          conditions: [],
-          effects: [{:send, :sender, :pong}],
-          handler_type: :inferred_response
-        }]
-      
+        [
+          %{
+            source_engine: engine_name,
+            target_engine: :sender,
+            message_type: :pong,
+            payload_pattern: :pong,
+            conditions: [],
+            effects: [{:send, :sender, :pong}],
+            handler_type: :inferred_response
+          }
+        ]
+
       String.contains?(function_str, "echo") ->
-        [%{
-          source_engine: engine_name,
-          target_engine: :sender,
-          message_type: message_type,
-          payload_pattern: :echo_response,
-          conditions: [],
-          effects: [{:send, :sender, :echo_response}],
-          handler_type: :inferred_echo
-        }]
-      
+        [
+          %{
+            source_engine: engine_name,
+            target_engine: :sender,
+            message_type: message_type,
+            payload_pattern: :echo_response,
+            conditions: [],
+            effects: [{:send, :sender, :echo_response}],
+            handler_type: :inferred_echo
+          }
+        ]
+
       String.contains?(function_str, "forward") or String.contains?(function_str, "relay") ->
-        [%{
-          source_engine: engine_name,
-          target_engine: :dynamic,
-          message_type: :forwarded_message,
-          payload_pattern: :dynamic,
-          conditions: [],
-          effects: [{:send, :dynamic, :forwarded_message}],
-          handler_type: :inferred_forward
-        }]
-      
+        [
+          %{
+            source_engine: engine_name,
+            target_engine: :dynamic,
+            message_type: :forwarded_message,
+            payload_pattern: :dynamic,
+            conditions: [],
+            effects: [{:send, :dynamic, :forwarded_message}],
+            handler_type: :inferred_forward
+          }
+        ]
+
       true ->
         []
     end
@@ -752,12 +784,14 @@ defmodule EngineSystem.Engine.DiagramGenerator do
 
   defp generate_participants(flows, _spec) do
     # Extract unique participants from flows
-    participants = flows
-    |> Enum.flat_map(fn flow ->
-      [flow.source_engine, flow.target_engine]
-    end)
-    |> Enum.uniq()
-    |> Enum.filter(&(&1 != :client and &1 != :dynamic and &1 != :sender))  # These are handled specially
+    participants =
+      flows
+      |> Enum.flat_map(fn flow ->
+        [flow.source_engine, flow.target_engine]
+      end)
+      |> Enum.uniq()
+      # These are handled specially
+      |> Enum.filter(&(&1 != :client and &1 != :dynamic and &1 != :sender))
 
     # Add client as default participant
     all_participants = [:client | participants]
@@ -785,57 +819,62 @@ defmodule EngineSystem.Engine.DiagramGenerator do
     sequences = []
 
     # Add the initial message flow
-    initial_sequence = case flow.handler_type do
-      :effects_list when flow.source_engine == :client ->
-        # This is a message received by the engine from client
-        "    #{format_participant_name(:client)}->>#{format_participant_name(flow.target_engine)}: #{format_message_type(flow.message_type)}"
-      
-      handler_type when handler_type in [:effect_tuple, :inferred_response] and flow.source_engine != :client ->
-        # This is an effect sending a message from the engine
-        source = format_participant_name(flow.source_engine)
-        target = format_participant_name(flow.target_engine)
-        "    #{source}->>#{target}: #{format_message_payload(flow.payload_pattern)}"
-      
-      _ when flow.source_engine == :client ->
-        # Default: show client sending to engine
-        "    #{format_participant_name(:client)}->>#{format_participant_name(flow.target_engine)}: #{format_message_type(flow.message_type)}"
-      
-      _ ->
-        nil
-    end
+    initial_sequence =
+      case flow.handler_type do
+        :effects_list when flow.source_engine == :client ->
+          # This is a message received by the engine from client
+          "    #{format_participant_name(:client)}->>#{format_participant_name(flow.target_engine)}: #{format_message_type(flow.message_type)}"
+
+        handler_type
+        when handler_type in [:effect_tuple, :inferred_response] and flow.source_engine != :client ->
+          # This is an effect sending a message from the engine
+          source = format_participant_name(flow.source_engine)
+          target = format_participant_name(flow.target_engine)
+          "    #{source}->>#{target}: #{format_message_payload(flow.payload_pattern)}"
+
+        _ when flow.source_engine == :client ->
+          # Default: show client sending to engine
+          "    #{format_participant_name(:client)}->>#{format_participant_name(flow.target_engine)}: #{format_message_type(flow.message_type)}"
+
+        _ ->
+          nil
+      end
 
     sequences = if initial_sequence, do: [initial_sequence | sequences], else: sequences
 
     # Add note about handler type if it's interesting
-    note_sequence = case flow.handler_type do
-      :function ->
-        metadata = Map.get(flow, :metadata, %{})
-        if function = Map.get(metadata, :function) do
-          "    Note over #{format_participant_name(flow.target_engine)}: Handled by #{function}/#{Map.get(metadata, :arity, "?")}"
-        else
+    note_sequence =
+      case flow.handler_type do
+        :function ->
+          metadata = Map.get(flow, :metadata, %{})
+
+          if function = Map.get(metadata, :function) do
+            "    Note over #{format_participant_name(flow.target_engine)}: Handled by #{function}/#{Map.get(metadata, :arity, "?")}"
+          else
+            nil
+          end
+
+        :complex_pattern when flow.conditions != [] ->
+          "    Note over #{format_participant_name(flow.target_engine)}: With guards: #{inspect(flow.conditions)}"
+
+        _ ->
           nil
-        end
-      
-      :complex_pattern when flow.conditions != [] ->
-        "    Note over #{format_participant_name(flow.target_engine)}: With guards: #{inspect(flow.conditions)}"
-      
-      _ ->
-        nil
-    end
+      end
 
     sequences = if note_sequence, do: sequences ++ [note_sequence], else: sequences
 
     # Add effects as additional sequences
     # Skip effects for inferred_response flows since they're already represented
-    effect_sequences = if flow.handler_type == :inferred_response do
-      []
-    else
-      flow.effects
-      |> Enum.map(fn effect ->
-        generate_sequence_from_effect(effect, flow)
-      end)
-      |> Enum.filter(&(&1 != nil))
-    end
+    effect_sequences =
+      if flow.handler_type == :inferred_response do
+        []
+      else
+        flow.effects
+        |> Enum.map(fn effect ->
+          generate_sequence_from_effect(effect, flow)
+        end)
+        |> Enum.filter(&(&1 != nil))
+      end
 
     sequences ++ effect_sequences
   end
@@ -852,7 +891,7 @@ defmodule EngineSystem.Engine.DiagramGenerator do
         source = format_participant_name(flow.target_engine)
         target_name = format_participant_name(engine_module)
         "    #{source}-->>#{target_name}: spawn #{format_engine_name(engine_module)}"
-        
+
       {:update_environment, _new_env} ->
         # Show state update as a note
         "    Note over #{format_participant_name(flow.target_engine)}: State updated"
@@ -894,11 +933,12 @@ defmodule EngineSystem.Engine.DiagramGenerator do
     sequences = generate_message_sequences(flows)
 
     # Generate metadata if requested
-    metadata = if options.include_metadata do
-      generate_multi_engine_metadata_section(specs, options)
-    else
-      ""
-    end
+    metadata =
+      if options.include_metadata do
+        generate_multi_engine_metadata_section(specs, options)
+      else
+        ""
+      end
 
     # Combine all parts
     [header, participants, sequences, metadata]
@@ -931,7 +971,8 @@ defmodule EngineSystem.Engine.DiagramGenerator do
     case participant do
       :client -> "Client"
       :dynamic -> "Dynamic"
-      :sender -> "Client"  # :sender typically refers back to the client
+      # :sender typically refers back to the client
+      :sender -> "Client"
       engine_name -> "#{engine_name}"
     end
   end
@@ -949,9 +990,10 @@ defmodule EngineSystem.Engine.DiagramGenerator do
   end
 
   defp generate_multi_engine_file_path(specs, options) do
-    engine_names = specs
-    |> Enum.map(&format_engine_name(&1.name))
-    |> Enum.join("_")
+    engine_names =
+      specs
+      |> Enum.map(&format_engine_name(&1.name))
+      |> Enum.join("_")
 
     filename = "#{options.file_prefix}#{engine_names}_interaction.md"
     Path.join(options.output_dir, filename)
@@ -1003,6 +1045,7 @@ defmodule EngineSystem.Engine.DiagramGenerator do
 
   defp generate_multi_engine_metadata_section(specs, _options) do
     engine_names = specs |> Enum.map(& &1.name) |> Enum.join(", ")
+
     """
 
     Note over Client, #{List.last(specs).name}: Generated at #{DateTime.utc_now() |> DateTime.to_iso8601()}
@@ -1029,7 +1072,7 @@ defmodule EngineSystem.Engine.DiagramGenerator do
 
   @doc """
   I generate diagrams for all engines that have the generate_diagrams option enabled.
-  
+
   This function is called automatically during compilation for engines with
   `generate_diagrams: true` in their defengine declaration.
   """
@@ -1037,30 +1080,30 @@ defmodule EngineSystem.Engine.DiagramGenerator do
   def generate_compilation_diagrams do
     try do
       specs = get_all_registered_specs()
-      
+
       # Generate individual engine diagrams
       specs
       |> Enum.each(fn spec ->
         case generate_diagram(spec) do
           {:ok, file_path} ->
             IO.puts("📊 Generated diagram: #{file_path}")
-          
+
           {:error, reason} ->
             IO.warn("Failed to generate diagram for #{spec.name}: #{inspect(reason)}")
         end
       end)
-      
+
       # Generate system overview diagram if we have multiple engines
       if length(specs) > 1 do
         case generate_system_diagram() do
           {:ok, file_path} ->
             IO.puts("🗺️  Generated system diagram: #{file_path}")
-          
+
           {:error, reason} ->
             IO.warn("Failed to generate system diagram: #{inspect(reason)}")
         end
       end
-      
+
       :ok
     rescue
       error ->
@@ -1074,12 +1117,14 @@ defmodule EngineSystem.Engine.DiagramGenerator do
   @doc """
   I enrich compile-time message flows with runtime telemetry data.
   """
-  @spec enrich_flows_with_runtime_data([message_flow()], [RuntimeFlowTracker.flow_summary()]) :: [runtime_enriched_flow()]
+  @spec enrich_flows_with_runtime_data([message_flow()], [RuntimeFlowTracker.flow_summary()]) :: [
+          runtime_enriched_flow()
+        ]
   defp enrich_flows_with_runtime_data(compile_flows, runtime_flows) do
     Enum.map(compile_flows, fn flow ->
       # Find matching runtime data
       runtime_data = find_matching_runtime_flow(flow, runtime_flows)
-      
+
       Map.put(flow, :runtime_data, runtime_data)
     end)
   end
@@ -1089,11 +1134,12 @@ defmodule EngineSystem.Engine.DiagramGenerator do
       if flows_match?(compile_flow, runtime_flow) do
         %{
           total_count: runtime_flow.total_count,
-          success_rate: if runtime_flow.total_count > 0 do
-            runtime_flow.success_count / runtime_flow.total_count * 100
-          else
-            0.0
-          end,
+          success_rate:
+            if runtime_flow.total_count > 0 do
+              runtime_flow.success_count / runtime_flow.total_count * 100
+            else
+              0.0
+            end,
           avg_duration_ms: runtime_flow.avg_duration_ms,
           frequency_per_minute: runtime_flow.frequency_per_minute,
           first_seen: runtime_flow.first_seen,
@@ -1105,47 +1151,63 @@ defmodule EngineSystem.Engine.DiagramGenerator do
 
   defp flows_match?(compile_flow, runtime_flow) do
     # Normalize and match flows by source, target, and message type
-    sources_match = normalize_participant_for_matching(compile_flow.source_engine) == 
-                   normalize_participant_for_matching(runtime_flow.source_engine)
-    
-    targets_match = normalize_participant_for_matching(compile_flow.target_engine) == 
-                   normalize_participant_for_matching(runtime_flow.target_engine)
-    
+    sources_match =
+      normalize_participant_for_matching(compile_flow.source_engine) ==
+        normalize_participant_for_matching(runtime_flow.source_engine)
+
+    targets_match =
+      normalize_participant_for_matching(compile_flow.target_engine) ==
+        normalize_participant_for_matching(runtime_flow.target_engine)
+
     messages_match = compile_flow.message_type == runtime_flow.message_type
-    
+
     sources_match and targets_match and messages_match
   end
 
   defp normalize_participant_for_matching(participant) do
     case participant do
       # Client address variations
-      :client -> :client
-      {0, 0} -> :client
-      nil -> :client
-      
+      :client ->
+        :client
+
+      {0, 0} ->
+        :client
+
+      nil ->
+        :client
+
       # Sender variations  
-      :sender -> :client  # :sender typically refers back to client
-      
+      # :sender typically refers back to client
+      :sender ->
+        :client
+
       # Engine addresses - we need to resolve these by looking up the registry
-      {_node, _id} = address -> 
+      {_node, _id} = address ->
         # Try to resolve address to engine name
         case EngineSystem.System.Registry.lookup_instance(address) do
           {:ok, %{spec_key: {engine_module, _version}}} -> engine_module
-          _ -> address  # Fallback to address if lookup fails
+          # Fallback to address if lookup fails
+          _ -> address
         end
-      
+
       # Engine names
-      engine_name when is_atom(engine_name) -> engine_name
-      
+      engine_name when is_atom(engine_name) ->
+        engine_name
+
       # Everything else
-      other -> other
+      other ->
+        other
     end
   end
 
   @doc """
   I generate a runtime-enriched Mermaid sequence diagram.
   """
-  @spec generate_runtime_enriched_sequence_diagram([runtime_enriched_flow()], Spec.t(), generation_options()) :: String.t()
+  @spec generate_runtime_enriched_sequence_diagram(
+          [runtime_enriched_flow()],
+          Spec.t(),
+          generation_options()
+        ) :: String.t()
   defp generate_runtime_enriched_sequence_diagram(enriched_flows, spec, options) do
     # Generate diagram header
     header = generate_diagram_header(spec, options)
@@ -1157,11 +1219,12 @@ defmodule EngineSystem.Engine.DiagramGenerator do
     sequences = generate_runtime_message_sequences(enriched_flows)
 
     # Generate runtime metadata section
-    metadata = if options.include_metadata do
-      generate_runtime_metadata_section(enriched_flows, spec, options)
-    else
-      ""
-    end
+    metadata =
+      if options.include_metadata do
+        generate_runtime_metadata_section(enriched_flows, spec, options)
+      else
+        ""
+      end
 
     # Combine all parts
     [header, participants, sequences, metadata]
@@ -1181,22 +1244,23 @@ defmodule EngineSystem.Engine.DiagramGenerator do
     sequences = []
 
     # Generate the basic message sequence
-    basic_sequence = case flow.handler_type do
-      :effects_list when flow.source_engine == :client ->
-        source = format_participant_name(:client)
-        target = format_participant_name(flow.target_engine)
-        message = format_message_with_runtime_data(flow.message_type, flow.runtime_data)
-        "    #{source}->>#{target}: #{message}"
-      
-      _ when flow.source_engine == :client ->
-        source = format_participant_name(:client)
-        target = format_participant_name(flow.target_engine)
-        message = format_message_with_runtime_data(flow.message_type, flow.runtime_data)
-        "    #{source}->>#{target}: #{message}"
-      
-      _ ->
-        nil
-    end
+    basic_sequence =
+      case flow.handler_type do
+        :effects_list when flow.source_engine == :client ->
+          source = format_participant_name(:client)
+          target = format_participant_name(flow.target_engine)
+          message = format_message_with_runtime_data(flow.message_type, flow.runtime_data)
+          "    #{source}->>#{target}: #{message}"
+
+        _ when flow.source_engine == :client ->
+          source = format_participant_name(:client)
+          target = format_participant_name(flow.target_engine)
+          message = format_message_with_runtime_data(flow.message_type, flow.runtime_data)
+          "    #{source}->>#{target}: #{message}"
+
+        _ ->
+          nil
+      end
 
     sequences = if basic_sequence, do: [basic_sequence | sequences], else: sequences
 
@@ -1211,24 +1275,31 @@ defmodule EngineSystem.Engine.DiagramGenerator do
 
   defp format_message_with_runtime_data(message_type, runtime_data) do
     base_message = format_message_type(message_type)
-    
+
     if runtime_data do
       # Add runtime indicators
-      frequency_indicator = cond do
-        runtime_data.frequency_per_minute > 10 -> "🔥"  # Hot path
-        runtime_data.frequency_per_minute > 1 -> "⚡"   # Active
-        true -> ""                                       # Occasional
-      end
-      
-      success_indicator = if runtime_data.success_rate < 95 do
-        "⚠️"  # Low success rate
-      else
-        ""
-      end
+      frequency_indicator =
+        cond do
+          # Hot path
+          runtime_data.frequency_per_minute > 10 -> "🔥"
+          # Active
+          runtime_data.frequency_per_minute > 1 -> "⚡"
+          # Occasional
+          true -> ""
+        end
+
+      success_indicator =
+        if runtime_data.success_rate < 95 do
+          # Low success rate
+          "⚠️"
+        else
+          ""
+        end
 
       "#{base_message} #{frequency_indicator}#{success_indicator}"
     else
-      "#{base_message} (📋)"  # Compile-time only
+      # Compile-time only
+      "#{base_message} (📋)"
     end
   end
 
@@ -1237,13 +1308,14 @@ defmodule EngineSystem.Engine.DiagramGenerator do
       target = format_participant_name(flow.target_engine)
       count = flow.runtime_data.total_count
       success_rate = safe_round(flow.runtime_data.success_rate, 1)
-      
-      duration_info = if flow.runtime_data.avg_duration_ms do
-        ", #{safe_round(flow.runtime_data.avg_duration_ms, 1)}ms avg"
-      else
-        ""
-      end
-      
+
+      duration_info =
+        if flow.runtime_data.avg_duration_ms do
+          ", #{safe_round(flow.runtime_data.avg_duration_ms, 1)}ms avg"
+        else
+          ""
+        end
+
       "    Note over #{target}: #{count} calls, #{success_rate}% success#{duration_info}"
     else
       target = format_participant_name(flow.target_engine)
@@ -1252,22 +1324,26 @@ defmodule EngineSystem.Engine.DiagramGenerator do
   end
 
   defp safe_round(nil, _precision), do: "0.0"
+
   defp safe_round(value, precision) when is_integer(value) do
     Float.round(value * 1.0, precision)
   end
+
   defp safe_round(value, precision) when is_float(value) do
     Float.round(value, precision)
   end
+
   defp safe_round(value, _precision), do: inspect(value)
 
   defp generate_runtime_metadata_section(enriched_flows, spec, _options) do
     runtime_flows_count = Enum.count(enriched_flows, & &1.runtime_data)
     compile_only_count = Enum.count(enriched_flows, &is_nil(&1.runtime_data))
-    
-    total_messages = enriched_flows
-    |> Enum.filter(& &1.runtime_data)
-    |> Enum.map(& &1.runtime_data.total_count)
-    |> Enum.sum()
+
+    total_messages =
+      enriched_flows
+      |> Enum.filter(& &1.runtime_data)
+      |> Enum.map(& &1.runtime_data.total_count)
+      |> Enum.sum()
 
     """
 

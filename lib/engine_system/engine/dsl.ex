@@ -412,7 +412,8 @@ defmodule EngineSystem.Engine.DSL do
           try do
             # Generate diagram for this engine with enhanced options
             diagram_options = %{
-              output_dir: Application.get_env(:engine_system, :diagram_output_dir, "docs/diagrams"),
+              output_dir:
+                Application.get_env(:engine_system, :diagram_output_dir, "docs/diagrams"),
               include_metadata: true,
               diagram_title: "#{spec.name} Communication Flow",
               file_prefix: ""
@@ -423,9 +424,7 @@ defmodule EngineSystem.Engine.DSL do
                 IO.puts("📊 Generated diagram for #{spec.name}: #{file_path}")
 
               {:error, reason} ->
-                IO.warn(
-                  "Failed to generate diagram for #{spec.name}: #{inspect(reason)}"
-                )
+                IO.warn("Failed to generate diagram for #{spec.name}: #{inspect(reason)}")
             end
 
             # Also trigger system-wide diagram generation if this is the last engine
@@ -436,13 +435,10 @@ defmodule EngineSystem.Engine.DSL do
               Process.sleep(100)
               EngineSystem.Engine.DiagramGenerator.generate_compilation_diagrams()
             end)
-
           catch
             # Diagram generation failed, log but don't fail the build
             kind, reason ->
-              IO.warn(
-                "Failed to generate diagram for #{spec.name}: #{inspect({kind, reason})}"
-              )
+              IO.warn("Failed to generate diagram for #{spec.name}: #{inspect({kind, reason})}")
           end
         end
       end

@@ -3,7 +3,7 @@ use EngineSystem
 defengine Examples.CanonicalPongEngine, generate_diagrams: true do
   @moduledoc """
   I am a canonical Pong engine that receives pong messages.
-  
+
   This is a minimal, clean implementation for diagram generation testing.
   I only handle :pong messages and count them.
   """
@@ -28,14 +28,12 @@ defengine Examples.CanonicalPongEngine, generate_diagrams: true do
 
   behaviour do
     on_message :pong, _payload, _config, env, sender do
-      new_env = %{env | 
-        pong_count: env.pong_count + 1,
-        last_sender: sender
-      }
-      
-      {:ok, [
-        {:update_environment, new_env}
-      ]}
+      new_env = %{env | pong_count: env.pong_count + 1, last_sender: sender}
+
+      {:ok,
+       [
+         {:update_environment, new_env}
+       ]}
     end
   end
 end

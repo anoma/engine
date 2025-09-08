@@ -2,7 +2,7 @@
 
 # Load the necessary files
 Code.require_file("diagram_demo.ex", __DIR__)
-Code.require_file("relay_engine.ex", __DIR__)  
+Code.require_file("relay_engine.ex", __DIR__)
 Code.require_file("diagram_generation_demo.ex", __DIR__)
 
 # Run the demonstration

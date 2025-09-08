@@ -127,43 +127,45 @@ defmodule EngineSystem.System.Services do
   @spec send_message(State.address(), any()) :: :ok | {:error, :not_found}
   def send_message(target_address, message) do
     # Emit telemetry for runtime flow tracking
-    message_type = case message.payload do
-      {tag, _} -> tag
-      tag when is_atom(tag) -> tag
-      _ -> :unknown
-    end
+    message_type =
+      case message.payload do
+        {tag, _} -> tag
+        tag when is_atom(tag) -> tag
+        _ -> :unknown
+      end
 
     start_time = :erlang.system_time(:millisecond)
 
-    result = case Registry.lookup_instance(target_address) do
-      {:ok, %{mailbox_pid: mailbox_pid}} when not is_nil(mailbox_pid) ->
-        # Send the message to the mailbox engine using the MailboxRuntime
-        EngineSystem.Mailbox.MailboxRuntime.enqueue_message(mailbox_pid, message)
-        :ok
+    result =
+      case Registry.lookup_instance(target_address) do
+        {:ok, %{mailbox_pid: mailbox_pid}} when not is_nil(mailbox_pid) ->
+          # Send the message to the mailbox engine using the MailboxRuntime
+          EngineSystem.Mailbox.MailboxRuntime.enqueue_message(mailbox_pid, message)
+          :ok
 
-      {:ok, %{mailbox_pid: nil}} ->
-        # Engine has no mailbox, send directly to the engine process
-        case Registry.lookup_instance(target_address) do
-          {:ok, %{engine_pid: engine_pid}} ->
-            # Extract message parts
-            {message_tag, payload} =
-              case message.payload do
-                {tag, p} -> {tag, p}
-                tag when is_atom(tag) -> {tag, %{}}
-                other -> {:unknown, other}
-              end
+        {:ok, %{mailbox_pid: nil}} ->
+          # Engine has no mailbox, send directly to the engine process
+          case Registry.lookup_instance(target_address) do
+            {:ok, %{engine_pid: engine_pid}} ->
+              # Extract message parts
+              {message_tag, payload} =
+                case message.payload do
+                  {tag, p} -> {tag, p}
+                  tag when is_atom(tag) -> {tag, %{}}
+                  other -> {:unknown, other}
+                end
 
-            # Send directly to engine using GenServer call
-            GenServer.cast(engine_pid, {:message, message_tag, payload, message.header.sender})
-            :ok
+              # Send directly to engine using GenServer call
+              GenServer.cast(engine_pid, {:message, message_tag, payload, message.header.sender})
+              :ok
 
-          {:error, _} ->
-            {:error, :engine_not_found}
-        end
+            {:error, _} ->
+              {:error, :engine_not_found}
+          end
 
-      {:error, :not_found} ->
-        {:error, :not_found}
-    end
+        {:error, :not_found} ->
+          {:error, :not_found}
+      end
 
     # Emit telemetry after message sending attempt
     end_time = :erlang.system_time(:millisecond)

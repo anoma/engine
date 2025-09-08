@@ -117,11 +117,12 @@ defmodule EngineSystem.Mailbox.MailboxRuntime do
     )
 
     # Emit telemetry for runtime flow tracking
-    message_type = case message.payload do
-      {tag, _} -> tag
-      tag when is_atom(tag) -> tag
-      _ -> :unknown
-    end
+    message_type =
+      case message.payload do
+        {tag, _} -> tag
+        tag when is_atom(tag) -> tag
+        _ -> :unknown
+      end
 
     :telemetry.execute(
       [:engine_system, :message, :received],

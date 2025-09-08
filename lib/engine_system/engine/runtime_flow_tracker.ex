@@ -34,29 +34,29 @@ defmodule EngineSystem.Engine.RuntimeFlowTracker do
   alias EngineSystem.Engine.State
 
   @type flow_event :: %{
-    event_type: :message_sent | :message_received | :message_failed,
-    source_engine: State.address() | :client,
-    target_engine: State.address() | :dynamic | :sender,
-    message_type: atom(),
-    payload: any(),
-    timestamp: integer(),
-    duration_ms: non_neg_integer() | nil,
-    success: boolean(),
-    metadata: map()
-  }
+          event_type: :message_sent | :message_received | :message_failed,
+          source_engine: State.address() | :client,
+          target_engine: State.address() | :dynamic | :sender,
+          message_type: atom(),
+          payload: any(),
+          timestamp: integer(),
+          duration_ms: non_neg_integer() | nil,
+          success: boolean(),
+          metadata: map()
+        }
 
   @type flow_summary :: %{
-    source_engine: State.address() | :client,
-    target_engine: State.address() | :dynamic | :sender,
-    message_type: atom(),
-    total_count: non_neg_integer(),
-    success_count: non_neg_integer(),
-    failure_count: non_neg_integer(),
-    avg_duration_ms: float() | nil,
-    first_seen: integer(),
-    last_seen: integer(),
-    frequency_per_minute: float()
-  }
+          source_engine: State.address() | :client,
+          target_engine: State.address() | :dynamic | :sender,
+          message_type: atom(),
+          total_count: non_neg_integer(),
+          success_count: non_neg_integer(),
+          failure_count: non_neg_integer(),
+          avg_duration_ms: float() | nil,
+          first_seen: integer(),
+          last_seen: integer(),
+          frequency_per_minute: float()
+        }
 
   typedstruct do
     @typedoc "Runtime state for flow tracking"
@@ -165,7 +165,7 @@ defmodule EngineSystem.Engine.RuntimeFlowTracker do
   def detach_telemetry_handlers do
     events = [
       [:engine_system, :message, :sent],
-      [:engine_system, :message, :received], 
+      [:engine_system, :message, :received],
       [:engine_system, :message, :failed]
     ]
 
@@ -181,7 +181,7 @@ defmodule EngineSystem.Engine.RuntimeFlowTracker do
   @impl true
   def init(opts) do
     max_events = Keyword.get(opts, :max_events, 10_000)
-    
+
     state = %__MODULE__{
       max_events: max_events,
       start_time: :erlang.system_time(:millisecond)
@@ -217,11 +217,13 @@ defmodule EngineSystem.Engine.RuntimeFlowTracker do
 
   @impl true
   def handle_call(:clear_data, _from, state) do
-    new_state = %{state | 
-      events: [],
-      summaries: %{},
-      start_time: :erlang.system_time(:millisecond)
+    new_state = %{
+      state
+      | events: [],
+        summaries: %{},
+        start_time: :erlang.system_time(:millisecond)
     }
+
     {:reply, :ok, new_state}
   end
 
@@ -229,9 +231,10 @@ defmodule EngineSystem.Engine.RuntimeFlowTracker do
   def handle_call(:get_stats, _from, state) do
     current_time = :erlang.system_time(:millisecond)
     runtime_minutes = (current_time - state.start_time) / (1000 * 60)
-    
-    events_per_minute = if runtime_minutes > 0, do: length(state.events) / runtime_minutes, else: 0
-    
+
+    events_per_minute =
+      if runtime_minutes > 0, do: length(state.events) / runtime_minutes, else: 0
+
     stats = %{
       tracking_enabled: state.tracking_enabled,
       total_events: length(state.events),
@@ -254,22 +257,20 @@ defmodule EngineSystem.Engine.RuntimeFlowTracker do
   def handle_cast({:record_event, event}, state) do
     # Add event to history
     new_events = [event | state.events]
-    
+
     # Trim events if we exceed max_events
-    trimmed_events = if length(new_events) > state.max_events do
-      Enum.take(new_events, state.max_events)
-    else
-      new_events
-    end
+    trimmed_events =
+      if length(new_events) > state.max_events do
+        Enum.take(new_events, state.max_events)
+      else
+        new_events
+      end
 
     # Update summary for this flow
     flow_key = generate_flow_key(event)
     updated_summaries = update_flow_summary(state.summaries, flow_key, event)
 
-    new_state = %{state | 
-      events: trimmed_events,
-      summaries: updated_summaries
-    }
+    new_state = %{state | events: trimmed_events, summaries: updated_summaries}
 
     {:noreply, new_state}
   end
@@ -332,7 +333,7 @@ defmodule EngineSystem.Engine.RuntimeFlowTracker do
 
   defp update_flow_summary(summaries, flow_key, event) do
     current_time = :erlang.system_time(:millisecond)
-    
+
     case Map.get(summaries, flow_key) do
       nil ->
         # First occurrence of this flow
@@ -348,6 +349,7 @@ defmodule EngineSystem.Engine.RuntimeFlowTracker do
           last_seen: current_time,
           frequency_per_minute: 0.0
         }
+
         Map.put(summaries, flow_key, summary)
 
       existing_summary ->
@@ -355,31 +357,36 @@ defmodule EngineSystem.Engine.RuntimeFlowTracker do
         new_total = existing_summary.total_count + 1
         new_successes = existing_summary.success_count + if(event.success, do: 1, else: 0)
         new_failures = existing_summary.failure_count + if(event.success, do: 0, else: 1)
-        
+
         # Update average duration
-        new_avg_duration = if event.duration_ms do
-          if existing_summary.avg_duration_ms do
-            (existing_summary.avg_duration_ms * existing_summary.total_count + event.duration_ms) / new_total
+        new_avg_duration =
+          if event.duration_ms do
+            if existing_summary.avg_duration_ms do
+              (existing_summary.avg_duration_ms * existing_summary.total_count + event.duration_ms) /
+                new_total
+            else
+              event.duration_ms
+            end
           else
-            event.duration_ms
+            existing_summary.avg_duration_ms
           end
-        else
-          existing_summary.avg_duration_ms
-        end
 
         # Calculate frequency per minute
         time_span_minutes = (current_time - existing_summary.first_seen) / (1000 * 60)
-        frequency_per_minute = if time_span_minutes > 0, do: new_total / time_span_minutes, else: 0.0
 
-        updated_summary = %{existing_summary |
-          total_count: new_total,
-          success_count: new_successes,
-          failure_count: new_failures,
-          avg_duration_ms: new_avg_duration,
-          last_seen: current_time,
-          frequency_per_minute: frequency_per_minute
+        frequency_per_minute =
+          if time_span_minutes > 0, do: new_total / time_span_minutes, else: 0.0
+
+        updated_summary = %{
+          existing_summary
+          | total_count: new_total,
+            success_count: new_successes,
+            failure_count: new_failures,
+            avg_duration_ms: new_avg_duration,
+            last_seen: current_time,
+            frequency_per_minute: frequency_per_minute
         }
-        
+
         Map.put(summaries, flow_key, updated_summary)
     end
   end
