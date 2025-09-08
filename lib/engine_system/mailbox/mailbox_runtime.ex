@@ -116,6 +116,25 @@ defmodule EngineSystem.Mailbox.MailboxRuntime do
       "🔧 MailboxRuntime #{inspect(message.target)}: Message payload: #{inspect(message.payload)}"
     )
 
+    # Emit telemetry for runtime flow tracking
+    message_type = case message.payload do
+      {tag, _} -> tag
+      tag when is_atom(tag) -> tag
+      _ -> :unknown
+    end
+
+    :telemetry.execute(
+      [:engine_system, :message, :received],
+      %{count: 1},
+      %{
+        source_engine: message.sender,
+        target_engine: message.target,
+        message_type: message_type,
+        payload: message.payload,
+        mailbox_address: state.address
+      }
+    )
+
     # Check if this is an internal mailbox message that should be routed directly
     internal_mailbox_messages = [
       :check_dispatch,

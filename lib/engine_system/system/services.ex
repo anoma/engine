@@ -126,7 +126,16 @@ defmodule EngineSystem.System.Services do
   """
   @spec send_message(State.address(), any()) :: :ok | {:error, :not_found}
   def send_message(target_address, message) do
-    case Registry.lookup_instance(target_address) do
+    # Emit telemetry for runtime flow tracking
+    message_type = case message.payload do
+      {tag, _} -> tag
+      tag when is_atom(tag) -> tag
+      _ -> :unknown
+    end
+
+    start_time = :erlang.system_time(:millisecond)
+
+    result = case Registry.lookup_instance(target_address) do
       {:ok, %{mailbox_pid: mailbox_pid}} when not is_nil(mailbox_pid) ->
         # Send the message to the mailbox engine using the MailboxRuntime
         EngineSystem.Mailbox.MailboxRuntime.enqueue_message(mailbox_pid, message)
@@ -155,6 +164,41 @@ defmodule EngineSystem.System.Services do
       {:error, :not_found} ->
         {:error, :not_found}
     end
+
+    # Emit telemetry after message sending attempt
+    end_time = :erlang.system_time(:millisecond)
+    duration = end_time - start_time
+
+    case result do
+      :ok ->
+        :telemetry.execute(
+          [:engine_system, :message, :sent],
+          %{count: 1, duration: duration},
+          %{
+            source_engine: message.sender,
+            target_engine: target_address,
+            message_type: message_type,
+            payload: message.payload,
+            success: true
+          }
+        )
+
+      {:error, reason} ->
+        :telemetry.execute(
+          [:engine_system, :message, :failed],
+          %{count: 1, duration: duration},
+          %{
+            source_engine: message.sender,
+            target_engine: target_address,
+            message_type: message_type,
+            payload: message.payload,
+            success: false,
+            error_reason: reason
+          }
+        )
+    end
+
+    result
   end
 
   @doc """

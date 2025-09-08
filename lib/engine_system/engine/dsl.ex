@@ -66,18 +66,19 @@ defmodule EngineSystem.Engine.DSL do
   This macro processes the engine definition and creates a compiled EngineSpec
   that gets registered with the system.
 
-  By default, no compiled files are generated. Use the `:compile` option
+  By default, no compiled files or diagrams are generated. Use the `:compile` option
   (`defengine MyEngine, compile: true do`) or set the global `:compile_engines`
   application configuration to enable file compilation.
 
   ## Options
 
   - `:compile` - When `true`, enables compiled file generation for this engine
+  - `:generate_diagrams` - When `true`, enables Mermaid diagram generation for this engine
 
   ## Examples
 
   ```elixir
-  # Basic engine without compilation
+  # Basic engine without compilation or diagrams
   defengine MyEngine do
     version "1.0.0"
     # ... rest of definition
@@ -85,6 +86,18 @@ defmodule EngineSystem.Engine.DSL do
 
   # Engine with compilation enabled
   defengine MyEngine, compile: true do
+    version "1.0.0"
+    # ... rest of definition
+  end
+
+  # Engine with diagram generation enabled
+  defengine MyEngine, generate_diagrams: true do
+    version "1.0.0"
+    # ... rest of definition
+  end
+
+  # Engine with both compilation and diagram generation
+  defengine MyEngine, compile: true, generate_diagrams: true do
     version "1.0.0"
     # ... rest of definition
   end
@@ -276,7 +289,8 @@ defmodule EngineSystem.Engine.DSL do
   defmacro __before_compile__(env) do
     # Get the spec data at compile time
     spec_data = Module.get_attribute(env.module, :engine_spec_data)
-    # generate_compiled = Module.get_attribute(env.module, :generate_compiled)
+    generate_compiled = Module.get_attribute(env.module, :generate_compiled)
+    generate_diagrams = Module.get_attribute(env.module, :generate_diagrams)
 
     # If no mode is declared, default to :process
     # Valid modes are :process or :mailbox
@@ -369,23 +383,68 @@ defmodule EngineSystem.Engine.DSL do
 
         # Generate compiled engine file only if enabled
         # Check both local flag and global application configuration
-        # should_compile =
-        #   unquote(generate_compiled) or
-        #     Application.get_env(:engine_system, :compile_engines, false)
+        should_compile =
+          unquote(generate_compiled) or
+            Application.get_env(:engine_system, :compile_engines, false)
 
-        # if should_compile do
-        #   source_file = env.file
+        if should_compile do
+          source_file = env.file
 
-        #   try do
-        #     EngineSystem.Engine.Compiler.generate_compiled_engine(spec, source_file)
-        #   catch
-        #     # Compilation failed, log but don't fail the build
-        #     kind, reason ->
-        #       IO.warn(
-        #         "Failed to generate compiled engine for #{spec.name}: #{inspect({kind, reason})}"
-        #       )
-        #   end
-        # end
+          try do
+            # EngineSystem.Engine.Compiler.generate_compiled_engine(spec, source_file)
+            IO.puts("📝 Compilation enabled for #{spec.name} (implementation pending)")
+          catch
+            # Compilation failed, log but don't fail the build
+            kind, reason ->
+              IO.warn(
+                "Failed to generate compiled engine for #{spec.name}: #{inspect({kind, reason})}"
+              )
+          end
+        end
+
+        # Generate Mermaid diagrams only if enabled
+        # Check both local flag and global application configuration
+        should_generate_diagrams =
+          unquote(generate_diagrams) or
+            Application.get_env(:engine_system, :generate_diagrams, false)
+
+        if should_generate_diagrams do
+          try do
+            # Generate diagram for this engine with enhanced options
+            diagram_options = %{
+              output_dir: Application.get_env(:engine_system, :diagram_output_dir, "docs/diagrams"),
+              include_metadata: true,
+              diagram_title: "#{spec.name} Communication Flow",
+              file_prefix: ""
+            }
+
+            case EngineSystem.Engine.DiagramGenerator.generate_diagram(spec, nil, diagram_options) do
+              {:ok, file_path} ->
+                IO.puts("📊 Generated diagram for #{spec.name}: #{file_path}")
+
+              {:error, reason} ->
+                IO.warn(
+                  "Failed to generate diagram for #{spec.name}: #{inspect(reason)}"
+                )
+            end
+
+            # Also trigger system-wide diagram generation if this is the last engine
+            # compiled in a project (this is a heuristic approach)
+            # In a real implementation, you might want a more sophisticated trigger
+            spawn(fn ->
+              # Small delay to allow other engines to compile first
+              Process.sleep(100)
+              EngineSystem.Engine.DiagramGenerator.generate_compilation_diagrams()
+            end)
+
+          catch
+            # Diagram generation failed, log but don't fail the build
+            kind, reason ->
+              IO.warn(
+                "Failed to generate diagram for #{spec.name}: #{inspect({kind, reason})}"
+              )
+          end
+        end
       end
     end
   end
@@ -424,6 +483,7 @@ defmodule EngineSystem.Engine.DSL do
   # Common implementation for defengine with options
   defp defengine_impl(name_ast, opts, block) do
     enable_compilation = Keyword.get(opts, :compile, false)
+    enable_diagrams = Keyword.get(opts, :generate_diagrams, false)
 
     quote do
       defmodule unquote(name_ast) do
@@ -433,6 +493,8 @@ defmodule EngineSystem.Engine.DSL do
         Module.register_attribute(__MODULE__, :engine_spec_data, accumulate: false)
         # Track whether to generate compiled file (default: false)
         Module.register_attribute(__MODULE__, :generate_compiled, accumulate: false)
+        # Track whether to generate diagrams (default: false)
+        Module.register_attribute(__MODULE__, :generate_diagrams, accumulate: false)
 
         Module.put_attribute(__MODULE__, :engine_spec_data, %{
           name: unquote(name_ast),
@@ -446,6 +508,7 @@ defmodule EngineSystem.Engine.DSL do
         })
 
         Module.put_attribute(__MODULE__, :generate_compiled, unquote(enable_compilation))
+        Module.put_attribute(__MODULE__, :generate_diagrams, unquote(enable_diagrams))
 
         # Import DSL macros
         import EngineSystem.Engine.DSL,
