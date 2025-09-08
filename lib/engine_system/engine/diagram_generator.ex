@@ -1114,9 +1114,6 @@ defmodule EngineSystem.Engine.DiagramGenerator do
 
   ## Runtime Refinement Functions
 
-  @doc """
-  I enrich compile-time message flows with runtime telemetry data.
-  """
   @spec enrich_flows_with_runtime_data([message_flow()], [RuntimeFlowTracker.flow_summary()]) :: [
           runtime_enriched_flow()
         ]
@@ -1200,9 +1197,6 @@ defmodule EngineSystem.Engine.DiagramGenerator do
     end
   end
 
-  @doc """
-  I generate a runtime-enriched Mermaid sequence diagram.
-  """
   @spec generate_runtime_enriched_sequence_diagram(
           [runtime_enriched_flow()],
           Spec.t(),
@@ -1265,9 +1259,11 @@ defmodule EngineSystem.Engine.DiagramGenerator do
     sequences = if basic_sequence, do: [basic_sequence | sequences], else: sequences
 
     # Add runtime statistics as notes
-    if flow.runtime_data do
+    sequences = if flow.runtime_data do
       runtime_note = generate_runtime_note(flow)
-      sequences = sequences ++ [runtime_note]
+      sequences ++ [runtime_note]
+    else
+      sequences
     end
 
     sequences

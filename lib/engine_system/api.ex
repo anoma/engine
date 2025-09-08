@@ -1,4 +1,6 @@
 defmodule EngineSystem.API do
+  require Logger
+
   @moduledoc """
   I provide the core API functions for the EngineSystem.
 

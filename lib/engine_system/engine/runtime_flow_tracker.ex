@@ -248,7 +248,7 @@ defmodule EngineSystem.Engine.RuntimeFlowTracker do
   end
 
   @impl true
-  def handle_cast({:record_event, event}, %{tracking_enabled: false} = state) do
+  def handle_cast({:record_event, _event}, %{tracking_enabled: false} = state) do
     # Ignore events when tracking is disabled
     {:noreply, state}
   end

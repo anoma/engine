@@ -373,41 +373,7 @@ defmodule EngineSystem.Mailbox.MailboxRuntime do
     _ -> %{behaviour: :unknown, args: nil}
   end
 
-  defp format_behaviour_error({:behaviour_exception, exception, stacktrace, meta}) do
-    op = Map.get(meta, :behaviour, :unknown)
-    args = Map.get(meta, :args)
+  # Unused function removed to fix compiler warning
 
-    location =
-      case stacktrace do
-        [top | _] -> Exception.format_stacktrace_entry(top)
-        _ -> "unknown"
-      end
-
-    "- behaviour=#{inspect(op)}\n" <>
-      "  - args=#{inspect(args)}\n" <>
-      "  - error=#{Exception.message(exception)}\n" <>
-      "  - at=#{location}\n" <>
-      "  - meta=#{inspect(meta)}\n" <>
-      Exception.format_stacktrace(stacktrace)
-  end
-
-  defp format_behaviour_error({:dsl_evaluation_error, inner, meta}) do
-    op = Map.get(meta, :behaviour, :unknown)
-    args = Map.get(meta, :args)
-
-    "- behaviour=#{inspect(op)}\n" <>
-      "  - args=#{inspect(args)}\n" <>
-      "  - reason=#{inspect(inner)}\n" <>
-      "  - meta=#{inspect(meta)}\n"
-  end
-
-  defp format_behaviour_error({:apply_effects_error, inner, meta}) do
-    op = Map.get(meta, :behaviour, :unknown)
-    args = Map.get(meta, :args)
-
-    "- behaviour=#{inspect(op)}\n" <>
-      "  - args=#{inspect(args)}\n" <>
-      "  - apply_effects_error=#{inspect(inner)}\n" <>
-      "  - meta=#{inspect(meta)}\n"
-  end
+  # Unused format_behaviour_error functions removed to fix compiler warnings
 end

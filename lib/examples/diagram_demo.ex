@@ -104,7 +104,7 @@ defengine Examples.DiagramDemoEngine, generate_diagrams: true do
     end
 
     # Handle pong responses
-    on_message :pong, _msg_payload, _config, env, sender do
+    on_message :pong, _msg_payload, _config, _env, sender do
       IO.puts("🎉 DiagramDemo: Received pong from #{inspect(sender)}")
       {:ok, []}
     end
