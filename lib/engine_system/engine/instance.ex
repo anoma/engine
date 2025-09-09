@@ -24,7 +24,7 @@ defmodule EngineSystem.Engine.Instance do
   ## Client API
 
   @doc """
-  I start an engine instance GenServer.
+  I start an engine instance.
   """
   @spec start_link(map()) :: GenServer.on_start()
   def start_link(init_data) do
@@ -32,7 +32,7 @@ defmodule EngineSystem.Engine.Instance do
   end
 
   @doc """
-  I get the current state of the engine.
+  I get the engine's current state.
   """
   @spec get_state(pid()) :: t()
   def get_state(pid) do
@@ -178,25 +178,25 @@ defmodule EngineSystem.Engine.Instance do
 
   @spec execute_effects([Effect.t()], t()) :: {:ok, t()} | {:error, any()}
   defp execute_effects(effects, state) do
-    IO.puts("🎭 Instance: Executing #{length(effects)} effects: #{inspect(effects)}")
+    IO.puts("Instance: Executing #{length(effects)} effects: #{inspect(effects)}")
 
     # Execute effects sequentially
     result =
       Enum.reduce_while(effects, {:ok, state}, fn effect, {:ok, current_state} ->
-        IO.puts("🎭 Instance: Executing effect: #{inspect(effect)}")
+        IO.puts("Instance: Executing effect: #{inspect(effect)}")
 
         case Effect.execute(effect, current_state) do
           {:ok, updated_state} ->
-            IO.puts("🎭 Instance: Effect executed successfully")
+            IO.puts("Instance: Effect executed successfully")
             {:cont, {:ok, updated_state}}
 
           {:error, reason} ->
-            IO.puts("🎭 Instance: Effect execution failed: #{inspect(reason)}")
+            IO.puts("Instance: Effect execution failed: #{inspect(reason)}")
             {:halt, {:error, reason}}
         end
       end)
 
-    IO.puts("🎭 Instance: Effects execution result: #{inspect(result)}")
+    IO.puts("Instance: Effects execution result: #{inspect(result)}")
     result
   end
 

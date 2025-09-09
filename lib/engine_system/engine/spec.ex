@@ -70,7 +70,7 @@ defmodule EngineSystem.Engine.Spec do
   end
 
   @doc """
-  I create a new EngineSpec with sensible defaults.
+  I create a new EngineSpec with defaults.
   """
   @spec new(atom(), keyword()) :: t()
   def new(name, opts \\ []) do
@@ -86,7 +86,7 @@ defmodule EngineSystem.Engine.Spec do
   end
 
   @doc """
-  I create a new EngineSpec with all parameters explicitly provided.
+  I create a new EngineSpec with explicit parameters.
   """
   @spec new(
           atom(),
@@ -110,7 +110,7 @@ defmodule EngineSystem.Engine.Spec do
   end
 
   @doc """
-  I validate that a message conforms to this engine's interface.
+  I validate a message against the engine interface.
   """
   @spec validate_message(t(), {message_tag(), any()}) :: :ok | {:error, any()}
   def validate_message(%__MODULE__{interface: interface}, {tag, _payload}) do
@@ -122,7 +122,7 @@ defmodule EngineSystem.Engine.Spec do
   end
 
   @doc """
-  I get the default configuration for this engine type.
+  I get the engine's default configuration.
   """
   @spec default_config(t()) :: any()
   def default_config(%__MODULE__{config_spec: config_spec}) do
@@ -130,7 +130,7 @@ defmodule EngineSystem.Engine.Spec do
   end
 
   @doc """
-  I get the default environment for this engine type.
+  I get the engine's default environment.
   """
   @spec default_environment(t()) :: any()
   def default_environment(%__MODULE__{env_spec: env_spec}) do
@@ -138,7 +138,7 @@ defmodule EngineSystem.Engine.Spec do
   end
 
   @doc """
-  I get the message filter function for this engine type.
+  I get the engine's message filter function.
   """
   @spec get_message_filter(t()) :: function()
   def get_message_filter(%__MODULE__{message_filter: {:default_filter, []}}) do
@@ -152,7 +152,7 @@ defmodule EngineSystem.Engine.Spec do
   end
 
   @doc """
-  I find a behaviour rule for the given message tag.
+  I find a behavior rule for the message tag.
   """
   @spec find_behaviour_rule(t(), message_tag()) :: {:ok, behaviour_rule()} | :not_found
   def find_behaviour_rule(%__MODULE__{behaviour_rules: rules}, tag) do
@@ -163,7 +163,7 @@ defmodule EngineSystem.Engine.Spec do
   end
 
   @doc """
-  I get a unique identifier for this engine spec.
+  I get the engine spec's unique identifier.
   """
   @spec spec_id(t()) :: String.t()
   def spec_id(%__MODULE__{name: name, version: version}) do
@@ -171,7 +171,7 @@ defmodule EngineSystem.Engine.Spec do
   end
 
   @doc """
-  I check if an interface contains a specific message tag.
+  I check if the interface has a message tag.
   """
   @spec has_message?(t(), message_tag()) :: boolean()
   def has_message?(%__MODULE__{interface: interface}, tag) do
@@ -179,7 +179,7 @@ defmodule EngineSystem.Engine.Spec do
   end
 
   @doc """
-  I get the field specification for a message tag.
+  I get the field specification for a message.
   """
   @spec get_message_fields(t(), message_tag()) :: {:ok, message_fields()} | {:error, :not_found}
   def get_message_fields(%__MODULE__{interface: interface}, tag) do
@@ -190,7 +190,7 @@ defmodule EngineSystem.Engine.Spec do
   end
 
   @doc """
-  I get all message tags supported by this engine specification.
+  I get all message tags in the specification.
   """
   @spec get_message_tags(t()) :: [message_tag()]
   def get_message_tags(%__MODULE__{interface: interface}) do

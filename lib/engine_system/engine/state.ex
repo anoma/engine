@@ -36,14 +36,14 @@ defmodule EngineSystem.Engine.State do
     end
 
     @doc """
-    I check if this is a processing engine configuration.
+    I check if this is a processing engine.
     """
     @spec process?(t()) :: boolean()
     def process?(%__MODULE__{mode: :process}), do: true
     def process?(_), do: false
 
     @doc """
-    I check if this is a mailbox engine configuration.
+    I check if this is a mailbox engine.
     """
     @spec mailbox?(t()) :: boolean()
     def mailbox?(%__MODULE__{mode: :mail}), do: true
@@ -121,7 +121,7 @@ defmodule EngineSystem.Engine.State do
             | :terminated
 
     @doc """
-    I create a ready status with a message filter.
+    I create a ready status with filter.
     """
     @spec ready(message_filter()) :: {:ready, message_filter()}
     def ready(filter) do
@@ -129,7 +129,7 @@ defmodule EngineSystem.Engine.State do
     end
 
     @doc """
-    I create a busy status with the current message.
+    I create a busy status with message.
     """
     @spec busy(message()) :: {:busy, message()}
     def busy(message) do
@@ -166,14 +166,14 @@ defmodule EngineSystem.Engine.State do
     def terminated?(_), do: false
 
     @doc """
-    I get the message filter from a ready status.
+    I get the filter from ready status.
     """
     @spec get_filter(t()) :: {:ok, message_filter()} | :not_ready
     def get_filter({:ready, filter}), do: {:ok, filter}
     def get_filter(_), do: :not_ready
 
     @doc """
-    I get the current message from a busy status.
+    I get the message from busy status.
     """
     @spec get_current_message(t()) :: {:ok, message()} | :not_busy
     def get_current_message({:busy, message}), do: {:ok, message}

@@ -27,16 +27,6 @@ defmodule EngineSystem.System.Message do
 
   @doc """
   I create a new message.
-
-  ## Parameters
-
-  - `sender` - The sender's address (optional)
-  - `target` - The target engine's address
-  - `payload` - The message payload
-
-  ## Returns
-
-  A new Message struct.
   """
   @spec new(State.address() | nil, State.address(), any()) :: t()
   def new(sender, target, payload) do
@@ -49,15 +39,6 @@ defmodule EngineSystem.System.Message do
 
   @doc """
   I extract the message tag from the payload.
-
-  ## Parameters
-
-  - `message` - The message
-
-  ## Returns
-
-  - `{:ok, tag}` if the payload has a tag
-  - `:no_tag` if the payload doesn't have a recognizable tag format
   """
   @spec get_tag(t()) :: {:ok, atom()} | :no_tag
   def get_tag(%__MODULE__{payload: {tag, _payload}}) when is_atom(tag) do
@@ -74,14 +55,6 @@ defmodule EngineSystem.System.Message do
 
   @doc """
   I extract the payload data from the message.
-
-  ## Parameters
-
-  - `message` - The message
-
-  ## Returns
-
-  The payload data (without the tag if it's a tagged tuple).
   """
   @spec get_payload_data(t()) :: any()
   def get_payload_data(%__MODULE__{payload: {_tag, data}}) do
@@ -94,15 +67,6 @@ defmodule EngineSystem.System.Message do
 
   @doc """
   I check if this message matches a given tag.
-
-  ## Parameters
-
-  - `message` - The message
-  - `tag` - The tag to match against
-
-  ## Returns
-
-  `true` if the message has the given tag, `false` otherwise.
   """
   @spec matches_tag?(t(), atom()) :: boolean()
   def matches_tag?(%__MODULE__{payload: {tag, _data}}, tag) when is_atom(tag), do: true
@@ -111,15 +75,6 @@ defmodule EngineSystem.System.Message do
 
   @doc """
   I validate that a message is well-formed.
-
-  ## Parameters
-
-  - `message` - The message to validate
-
-  ## Returns
-
-  - `:ok` if the message is valid
-  - `{:error, reason}` if the message is invalid
   """
   @spec validate(t()) :: :ok | {:error, any()}
   def validate(%__MODULE__{target: target, payload: payload})

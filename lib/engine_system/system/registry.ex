@@ -52,15 +52,6 @@ defmodule EngineSystem.System.Registry do
 
   @doc """
   I register an engine specification.
-
-  ## Parameters
-
-  - `spec` - The engine specification to register
-
-  ## Returns
-
-  - `:ok` if registration succeeded
-  - `{:error, reason}` if registration failed
   """
   @spec register_spec(Spec.t()) :: :ok | {:error, any()}
   def register_spec(spec) do
@@ -69,16 +60,6 @@ defmodule EngineSystem.System.Registry do
 
   @doc """
   I look up an engine specification by name and version.
-
-  ## Parameters
-
-  - `name` - The engine type name
-  - `version` - The engine type version (nil for latest)
-
-  ## Returns
-
-  - `{:ok, spec}` if found
-  - `{:error, :not_found}` if not found
   """
   @spec lookup_spec(atom() | String.t(), String.t() | nil) ::
           {:ok, Spec.t()} | {:error, :not_found}
@@ -88,19 +69,6 @@ defmodule EngineSystem.System.Registry do
 
   @doc """
   I register a running engine instance.
-
-  ## Parameters
-
-  - `address` - The engine's address
-  - `spec_key` - The spec key {name, version}
-  - `engine_pid` - The engine's PID
-  - `mailbox_pid` - The mailbox's PID (optional)
-  - `name` - Optional name for the instance
-
-  ## Returns
-
-  - `:ok` if registration succeeded
-  - `{:error, reason}` if registration failed
   """
   @spec register_instance(State.address(), spec_key(), pid(), pid() | nil, atom() | nil) ::
           :ok | {:error, any()}
@@ -113,15 +81,6 @@ defmodule EngineSystem.System.Registry do
 
   @doc """
   I look up information about a running engine instance.
-
-  ## Parameters
-
-  - `address` - The engine's address
-
-  ## Returns
-
-  - `{:ok, info}` if the engine exists
-  - `{:error, :not_found}` if the engine doesn't exist
   """
   @spec lookup_instance(State.address()) :: {:ok, instance_info()} | {:error, :not_found}
   def lookup_instance(address) do
@@ -130,15 +89,6 @@ defmodule EngineSystem.System.Registry do
 
   @doc """
   I look up an engine address by name.
-
-  ## Parameters
-
-  - `name` - The engine's name
-
-  ## Returns
-
-  - `{:ok, address}` if found
-  - `{:error, :not_found}` if not found
   """
   @spec lookup_address_by_name(atom()) :: {:ok, State.address()} | {:error, :not_found}
   def lookup_address_by_name(name) do
@@ -147,15 +97,6 @@ defmodule EngineSystem.System.Registry do
 
   @doc """
   I unregister an engine instance.
-
-  ## Parameters
-
-  - `address` - The engine's address
-
-  ## Returns
-
-  - `:ok` if unregistration succeeded
-  - `{:error, :not_found}` if the engine wasn't found
   """
   @spec unregister_instance(State.address()) :: :ok | {:error, :not_found}
   def unregister_instance(address) do
@@ -164,10 +105,6 @@ defmodule EngineSystem.System.Registry do
 
   @doc """
   I list all running engine instances.
-
-  ## Returns
-
-  A list of instance information maps.
   """
   @spec list_instances() :: [instance_info()]
   def list_instances do
@@ -176,10 +113,6 @@ defmodule EngineSystem.System.Registry do
 
   @doc """
   I list all registered engine specifications.
-
-  ## Returns
-
-  A list of engine specifications.
   """
   @spec list_specs() :: [Spec.t()]
   def list_specs do
@@ -188,10 +121,6 @@ defmodule EngineSystem.System.Registry do
 
   @doc """
   I generate a fresh unique ID.
-
-  ## Returns
-
-  A unique integer ID.
   """
   @spec fresh_id() :: non_neg_integer()
   def fresh_id do

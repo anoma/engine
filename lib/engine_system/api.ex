@@ -10,7 +10,7 @@ defmodule EngineSystem.API do
   alias EngineSystem.System.{Registry, Services, Spawner}
 
   @doc """
-  I start the EngineSystem application with all necessary supervisors and services.
+  I start the EngineSystem application.
   """
   @spec start_system() :: {:ok, [atom()]} | {:error, any()}
   def start_system do
@@ -18,7 +18,7 @@ defmodule EngineSystem.API do
   end
 
   @doc """
-  I stop the EngineSystem application gracefully with coordinated shutdown.
+  I stop the EngineSystem application.
   """
   @spec stop_system() :: :ok
   def stop_system do
@@ -26,7 +26,7 @@ defmodule EngineSystem.API do
   end
 
   @doc """
-  I spawn a new engine instance with optional configuration and mailbox setup.
+  I spawn a new engine instance.
   """
   @spec spawn_engine(module(), any(), any(), atom() | nil, module() | nil, any() | nil) ::
           {:ok, State.address()} | {:error, any()}
@@ -49,7 +49,7 @@ defmodule EngineSystem.API do
   end
 
   @doc """
-  I spawn a new engine instance with explicit mailbox configuration from keyword options.
+  I spawn an engine with mailbox configuration.
   """
   @spec spawn_engine_with_mailbox(keyword()) :: {:ok, State.address()} | {:error, any()}
   def spawn_engine_with_mailbox(opts) do
@@ -57,7 +57,7 @@ defmodule EngineSystem.API do
   end
 
   @doc """
-  I send a message payload to a target engine with optional sender address.
+  I send a message to a target engine.
   """
   @spec send_message(State.address(), any(), State.address() | nil) :: :ok | {:error, :not_found}
   def send_message(target_address, message_payload, sender_address \\ nil) do
@@ -72,7 +72,7 @@ defmodule EngineSystem.API do
   end
 
   @doc """
-  I terminate an engine instance gracefully and clean up its resources.
+  I terminate an engine instance.
   """
   @spec terminate_engine(State.address()) :: :ok | {:error, :engine_not_found}
   def terminate_engine(address) do
@@ -80,7 +80,7 @@ defmodule EngineSystem.API do
   end
 
   @doc """
-  I register an engine specification with the system registry.
+  I register an engine specification.
   """
   @spec register_spec(Spec.t()) :: :ok | {:error, any()}
   def register_spec(spec) do
@@ -88,7 +88,7 @@ defmodule EngineSystem.API do
   end
 
   @doc """
-  I look up an engine specification by name and version.
+  I look up an engine specification.
   """
   @spec lookup_spec(atom() | String.t(), String.t() | nil) ::
           {:ok, Spec.t()} | {:error, :not_found}
@@ -113,7 +113,7 @@ defmodule EngineSystem.API do
   end
 
   @doc """
-  I look up information about a running engine instance by address.
+  I look up engine instance information.
   """
   @spec lookup_instance(State.address()) :: {:ok, Registry.instance_info()} | {:error, :not_found}
   def lookup_instance(address) do
@@ -129,7 +129,7 @@ defmodule EngineSystem.API do
   end
 
   @doc """
-  I get system-wide information and statistics.
+  I get system information.
   """
   @spec get_system_info() :: %{
           library_version: any(),
@@ -151,7 +151,7 @@ defmodule EngineSystem.API do
   end
 
   @doc """
-  I validate that a message conforms to an engine's interface.
+  I validate message compatibility.
   """
   @spec validate_message(State.address(), any()) ::
           :ok
@@ -164,7 +164,7 @@ defmodule EngineSystem.API do
   end
 
   @doc """
-  I clean up terminated engines from the system registry.
+  I clean up terminated engines.
   """
   @spec clean_terminated_engines() :: non_neg_integer()
   def clean_terminated_engines do
@@ -172,7 +172,7 @@ defmodule EngineSystem.API do
   end
 
   @doc """
-  I check if an engine specification supports a specific message tag.
+  I check if a spec supports a message tag.
   """
   @spec has_message?(atom() | String.t(), String.t() | nil, atom()) ::
           {:ok, boolean()} | {:error, :not_found}
@@ -184,7 +184,7 @@ defmodule EngineSystem.API do
   end
 
   @doc """
-  I get the field specification for a message tag from an engine specification.
+  I get message field specifications.
   """
   @spec get_message_fields(atom() | String.t(), String.t() | nil, atom()) ::
           {:ok, Spec.message_fields()} | {:error, :not_found}
@@ -196,7 +196,7 @@ defmodule EngineSystem.API do
   end
 
   @doc """
-  I get all message tags supported by an engine specification.
+  I get supported message tags.
   """
   @spec get_message_tags(atom() | String.t(), String.t() | nil) ::
           {:ok, [atom()]} | {:error, :not_found}
@@ -208,7 +208,7 @@ defmodule EngineSystem.API do
   end
 
   @doc """
-  I get all message tags supported by a running engine instance.
+  I get message tags for a running instance.
   """
   @spec get_instance_message_tags(State.address()) ::
           {:ok, [atom()]} | {:error, :not_found}

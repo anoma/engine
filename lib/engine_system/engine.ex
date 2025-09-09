@@ -1,6 +1,6 @@
 defmodule EngineSystem.Engine do
   @moduledoc """
-  I provide DSL and utility functions for engine development including message validation, filtering, and address management.
+  I provide DSL and utility functions for engine development.
   """
 
   @doc false
@@ -23,7 +23,7 @@ defmodule EngineSystem.Engine do
   end
 
   @doc """
-  I validate a message against a processing engine specification.
+  I validate a message against an engine spec.
   """
   @spec validate_message_for_pe(map(), map()) :: :ok | {:error, atom()}
   def validate_message_for_pe(message, pe_spec) do
@@ -50,7 +50,7 @@ defmodule EngineSystem.Engine do
   end
 
   @doc """
-  I extract the message tag from a payload.
+  I extract the message tag.
   """
   @spec extract_message_tag(any()) :: {:ok, atom()} | {:error, String.t()}
   def extract_message_tag({tag, _data}) when is_atom(tag), do: {:ok, tag}
@@ -58,7 +58,7 @@ defmodule EngineSystem.Engine do
   def extract_message_tag(_), do: {:error, "Cannot extract message tag"}
 
   @doc """
-  I validate an engine address format.
+  I validate an address format.
   """
   @spec validate_address(any()) :: :ok | {:error, String.t()}
   def validate_address({node_id, engine_id})
@@ -70,7 +70,7 @@ defmodule EngineSystem.Engine do
   def validate_address(_), do: {:error, "Invalid address format"}
 
   @doc """
-  I generate a unique identifier for engine instances and messages.
+  I generate a unique identifier.
   """
   @spec fresh_id() :: non_neg_integer()
   def fresh_id do
@@ -78,7 +78,7 @@ defmodule EngineSystem.Engine do
   end
 
   @doc """
-  I extract messages from a queue with demand limiting and filtering.
+  I extract messages from a queue.
   """
   @spec extract_messages(:queue.queue(), non_neg_integer(), function() | nil) ::
           {[any()], :queue.queue()}
@@ -87,7 +87,7 @@ defmodule EngineSystem.Engine do
   end
 
   @doc """
-  I safely apply a filter function to a message with error handling.
+  I apply a filter function to a message.
   """
   @spec apply_filter(function() | nil, any()) :: boolean()
   def apply_filter(nil, _message), do: true
