@@ -32,3 +32,6 @@ _build/
 .engine/
 **_compiled.ex
 assets/docs.css
+
+# Generated diagrams
+/docs/diagrams/
