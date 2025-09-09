@@ -4,7 +4,7 @@ import Config
 config :logger,
   level: :debug
 
-# Enable diagram generation in development
+# Development environment settings
 config :engine_system,
-  generate_diagrams: true,
+  generate_diagrams: false,
   diagram_output_dir: "docs/diagrams"
