@@ -428,7 +428,7 @@ defmodule EngineSystem.Engine.DSL.BehaviorBuilder do
 
       # Find the message type being currently defined
       current_msg_type =
-        EngineSystem.Engine.DSL.BehaviorBuilder.get_current_message_type(current_patterns)
+        __MODULE__.get_current_message_type(current_patterns)
 
       if current_msg_type do
         msg_data = Map.get(current_patterns, current_msg_type)
@@ -458,7 +458,7 @@ defmodule EngineSystem.Engine.DSL.BehaviorBuilder do
       current_patterns = Module.get_attribute(__MODULE__, :current_message_patterns)
 
       current_msg_type =
-        EngineSystem.Engine.DSL.BehaviorBuilder.get_current_message_type(current_patterns)
+        __MODULE__.get_current_message_type(current_patterns)
 
       if current_msg_type do
         msg_data = Map.get(current_patterns, current_msg_type)

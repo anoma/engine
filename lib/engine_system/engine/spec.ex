@@ -1,44 +1,6 @@
 defmodule EngineSystem.Engine.Spec do
   @moduledoc """
-  I provide a struct that represents the static type information for an engine,
-  corresponding to the formal model.
-
-  ## Paper References
-
-  - **Def. 2.15 (Engine)**: Engine type structure
-  - **Def. 2.3 (Message Interface)**: Message interface specification
-  - **Def. 2.6 (Engine Configuration)**: Configuration type specification
-  - **Def. 2.7 (Engine Environment)**: Environment type specification
-  - **Def. 2.14 (Engine Behaviour)**: Behaviour specification
-
-  ## Components
-
-  - `interface`: MsgType_i (message interface from §2.3)
-  - `behaviour_rules`: BehaviourType_i (guarded actions from §2.14)
-  - `config_spec`: Configuration type specification (Def. 2.6)
-  - `env_spec`: Environment type specification (Def. 2.7)
-  - `message_filter`: Message filter predicate (Def. 2.5)
-
-  This represents the persistent EngineSpec from the formal model.
-
-  ## Public API
-
-  ### Spec Creation
-  - `new/2` - Create a new EngineSpec with sensible defaults
-  - `new/7` - Create a new EngineSpec with all parameters explicitly provided
-
-  ### Validation
-  - `validate_message/2` - Validate that a message conforms to this engine's interface
-
-  ### Configuration Access
-  - `default_config/1` - Get the default configuration for this engine type
-  - `default_environment/1` - Get the default environment for this engine type
-  - `get_message_filter/1` - Get the message filter function for this engine type
-
-  ### Interface Utilities
-  - `has_message?/2` - Check if this engine supports a specific message tag
-  - `get_message_fields/2` - Get the field specification for a message tag
-  - `get_message_tags/1` - Get all message tags supported by this engine
+  I represent static type information for an engine specification, including interface, behavior, and configuration details.
   """
 
   @type message_tag :: atom()
@@ -96,18 +58,6 @@ defmodule EngineSystem.Engine.Spec do
   typedstruct do
     @typedoc """
     I define the structure for an engine specification.
-
-    ### Fields
-
-    - `:name` - The engine type name. Enforced: true.
-    - `:version` - The engine type version. Enforced: true.
-    - `:interface` - The message interface definition. Enforced: true.
-    - `:config_spec` - The configuration specification. Enforced: true.
-    - `:env_spec` - The environment specification. Enforced: true.
-    - `:behaviour_rules` - The behaviour rules. Enforced: true.
-    - `:message_filter` - The message filter function. Enforced: true.
-    - `:mode` - The engine mode: `:process` or `:mailbox`. Enforced: false, default: `:process`.
-    - `:producer_config` - GenStage producer configuration for mailbox engines. Enforced: false.
     """
     field(:name, atom(), enforce: true)
     field(:version, String.t(), enforce: true)
@@ -120,27 +70,7 @@ defmodule EngineSystem.Engine.Spec do
   end
 
   @doc """
-  I create a new EngineSpec with sensible defaults and only required name.
-
-  ## Parameters
-
-  - `name` - The engine type name
-  - `opts` - Optional keyword list with overrides:
-    - `:version` - Engine version (default: "1.0.0")
-    - `:interface` - Message interface (default: basic ping/pong interface)
-    - `:config_spec` - Configuration spec (default: empty config)
-    - `:env_spec` - Environment spec (default: empty environment)
-    - `:behaviour_rules` - Behaviour rules (default: basic ping/pong rules)
-    - `:message_filter` - Message filter (default: accept all)
-
-  ## Returns
-
-  A new EngineSpec struct with sensible defaults.
-
-  ## Examples
-
-      iex> EngineSystem.Engine.Spec.new(:my_engine)
-      %EngineSystem.Engine.Spec{name: :my_engine, version: "1.0.0", ...}
+  I create a new EngineSpec with defaults.
   """
   @spec new(atom(), keyword()) :: t()
   def new(name, opts \\ []) do
@@ -156,21 +86,7 @@ defmodule EngineSystem.Engine.Spec do
   end
 
   @doc """
-  I create a new EngineSpec with all parameters explicitly provided.
-
-  ## Parameters
-
-  - `name` - The engine type name
-  - `version` - The engine type version
-  - `interface` - The message interface definition
-  - `config_spec` - The configuration specification
-  - `env_spec` - The environment specification
-  - `behaviour_rules` - The behaviour rules
-  - `message_filter` - The message filter function
-
-  ## Returns
-
-  A new EngineSpec struct.
+  I create a new EngineSpec with explicit parameters.
   """
   @spec new(
           atom(),
@@ -194,17 +110,7 @@ defmodule EngineSystem.Engine.Spec do
   end
 
   @doc """
-  I validate that a message conforms to this engine's interface.
-
-  ## Parameters
-
-  - `spec` - The engine specification
-  - `message` - The message to validate as `{tag, payload}`
-
-  ## Returns
-
-  - `:ok` if the message is valid
-  - `{:error, reason}` if the message is invalid
+  I validate a message against the engine interface.
   """
   @spec validate_message(t(), {message_tag(), any()}) :: :ok | {:error, any()}
   def validate_message(%__MODULE__{interface: interface}, {tag, _payload}) do
@@ -216,15 +122,7 @@ defmodule EngineSystem.Engine.Spec do
   end
 
   @doc """
-  I get the default configuration for this engine type.
-
-  ## Parameters
-
-  - `spec` - The engine specification
-
-  ## Returns
-
-  The default configuration value.
+  I get the engine's default configuration.
   """
   @spec default_config(t()) :: any()
   def default_config(%__MODULE__{config_spec: config_spec}) do
@@ -232,15 +130,7 @@ defmodule EngineSystem.Engine.Spec do
   end
 
   @doc """
-  I get the default environment for this engine type.
-
-  ## Parameters
-
-  - `spec` - The engine specification
-
-  ## Returns
-
-  The default environment value.
+  I get the engine's default environment.
   """
   @spec default_environment(t()) :: any()
   def default_environment(%__MODULE__{env_spec: env_spec}) do
@@ -248,15 +138,7 @@ defmodule EngineSystem.Engine.Spec do
   end
 
   @doc """
-  I get the message filter function for this engine type.
-
-  ## Parameters
-
-  - `spec` - The engine specification
-
-  ## Returns
-
-  The message filter function.
+  I get the engine's message filter function.
   """
   @spec get_message_filter(t()) :: function()
   def get_message_filter(%__MODULE__{message_filter: {:default_filter, []}}) do
@@ -270,17 +152,7 @@ defmodule EngineSystem.Engine.Spec do
   end
 
   @doc """
-  I find a behaviour rule for the given message tag.
-
-  ## Parameters
-
-  - `spec` - The engine specification
-  - `tag` - The message tag to find a rule for
-
-  ## Returns
-
-  - `{:ok, rule}` if a rule is found
-  - `:not_found` if no rule is found
+  I find a behavior rule for the message tag.
   """
   @spec find_behaviour_rule(t(), message_tag()) :: {:ok, behaviour_rule()} | :not_found
   def find_behaviour_rule(%__MODULE__{behaviour_rules: rules}, tag) do
@@ -291,15 +163,7 @@ defmodule EngineSystem.Engine.Spec do
   end
 
   @doc """
-  I get a unique identifier for this engine spec.
-
-  ## Parameters
-
-  - `spec` - The engine specification
-
-  ## Returns
-
-  A unique identifier string.
+  I get the engine spec's unique identifier.
   """
   @spec spec_id(t()) :: String.t()
   def spec_id(%__MODULE__{name: name, version: version}) do
@@ -307,24 +171,7 @@ defmodule EngineSystem.Engine.Spec do
   end
 
   @doc """
-  I check if an interface contains a specific message tag.
-
-  ## Parameters
-
-  - `spec` - The engine specification
-  - `tag` - Message tag to check
-
-  ## Returns
-
-  `true` if tag exists, `false` otherwise
-
-  ## Examples
-
-      iex> spec = EngineSystem.Engine.Spec.new(:my_engine)
-      iex> EngineSystem.Engine.Spec.has_message?(spec, :ping)
-      true
-      iex> EngineSystem.Engine.Spec.has_message?(spec, :unknown)
-      false
+  I check if the interface has a message tag.
   """
   @spec has_message?(t(), message_tag()) :: boolean()
   def has_message?(%__MODULE__{interface: interface}, tag) do
@@ -332,25 +179,7 @@ defmodule EngineSystem.Engine.Spec do
   end
 
   @doc """
-  I get the field specification for a message tag.
-
-  ## Parameters
-
-  - `spec` - The engine specification
-  - `tag` - Message tag to find
-
-  ## Returns
-
-  - `{:ok, fields}` if found
-  - `{:error, :not_found}` if not found
-
-  ## Examples
-
-      iex> spec = EngineSystem.Engine.Spec.new(:my_engine)
-      iex> EngineSystem.Engine.Spec.get_message_fields(spec, :ping)
-      {:ok, []}
-      iex> EngineSystem.Engine.Spec.get_message_fields(spec, :unknown)
-      {:error, :not_found}
+  I get the field specification for a message.
   """
   @spec get_message_fields(t(), message_tag()) :: {:ok, message_fields()} | {:error, :not_found}
   def get_message_fields(%__MODULE__{interface: interface}, tag) do
@@ -361,21 +190,7 @@ defmodule EngineSystem.Engine.Spec do
   end
 
   @doc """
-  I get all message tags supported by this engine specification.
-
-  ## Parameters
-
-  - `spec` - The engine specification
-
-  ## Returns
-
-  A list of message tags (atoms) that this engine supports.
-
-  ## Examples
-
-      iex> spec = EngineSystem.Engine.Spec.new(:my_engine)
-      iex> EngineSystem.Engine.Spec.get_message_tags(spec)
-      [:init, :terminate, :ping, :pong]
+  I get all message tags in the specification.
   """
   @spec get_message_tags(t()) :: [message_tag()]
   def get_message_tags(%__MODULE__{interface: interface}) do

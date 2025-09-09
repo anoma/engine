@@ -87,6 +87,9 @@ defmodule Examples.InteractiveDemo do
   use GenServer
   require Logger
 
+  alias EngineSystem.API
+  alias Examples.{EnhancedEchoEngine, PingEngine, PongEngine}
+
   # State for the demo GenServer
   defstruct [:ping_engine_address, :pong_engine_address, :echo_engine_address, :messages_received]
 
@@ -96,7 +99,7 @@ defmodule Examples.InteractiveDemo do
     IO.puts("\n🚀 Starting EngineSystem Interactive Demo...")
 
     # Start the EngineSystem if not already started
-    case EngineSystem.API.start_system() do
+    case API.start_system() do
       {:ok, _} ->
         IO.puts("✅ EngineSystem started successfully")
 
@@ -134,7 +137,7 @@ defmodule Examples.InteractiveDemo do
 
       # Send ping message to the PongEngine
       result =
-        EngineSystem.API.send_message(
+        API.send_message(
           state.pong_engine_address,
           :ping,
           state.ping_engine_address
@@ -163,7 +166,7 @@ defmodule Examples.InteractiveDemo do
 
       # Send echo message from this GenServer to the EchoEngine
       result =
-        EngineSystem.API.send_message(
+        API.send_message(
           state.echo_engine_address,
           {:echo, "Hello from GenServer!"},
           # System address instead of GenServer format
@@ -194,7 +197,7 @@ defmodule Examples.InteractiveDemo do
 
       # Send a special message that will cause the engine to send back to this GenServer
       result =
-        EngineSystem.API.send_message(
+        API.send_message(
           state.echo_engine_address,
           {:notify_genserver, "Engine says hello!"},
           # System address instead of GenServer format
@@ -225,7 +228,7 @@ defmodule Examples.InteractiveDemo do
     IO.puts("  📨 Messages Received: #{state.messages_received}")
 
     # Get system info - it returns a map directly, not {:ok, map}
-    system_info = EngineSystem.API.get_system_info()
+    system_info = API.get_system_info()
     IO.puts("  🔧 Running Engines: #{system_info.running_instances}")
     IO.puts("  🏗️  Total Instances: #{system_info.total_instances}")
   end
@@ -285,14 +288,14 @@ defmodule Examples.InteractiveDemo do
     IO.puts("\n🏗️  Spawning demo engines...")
 
     # Spawn PingEngine
-    ping_result = EngineSystem.API.spawn_engine(Examples.PingEngine, %{}, %{}, :ping_engine)
+    ping_result = API.spawn_engine(PingEngine, %{}, %{}, :ping_engine)
 
     # Spawn PongEngine
-    pong_result = EngineSystem.API.spawn_engine(Examples.PongEngine, %{}, %{}, :pong_engine)
+    pong_result = API.spawn_engine(PongEngine, %{}, %{}, :pong_engine)
 
     # Spawn Enhanced EchoEngine
     echo_result =
-      EngineSystem.API.spawn_engine(Examples.EnhancedEchoEngine, %{}, %{}, :echo_engine)
+      API.spawn_engine(EnhancedEchoEngine, %{}, %{}, :echo_engine)
 
     case {ping_result, pong_result, echo_result} do
       {{:ok, ping_addr}, {:ok, pong_addr}, {:ok, echo_addr}} ->
@@ -330,7 +333,7 @@ defmodule Examples.InteractiveDemo do
 
   defp update_ping_target(ping_addr, pong_addr) do
     # Send a configuration update to set the target
-    EngineSystem.API.send_message(ping_addr, {:set_target, pong_addr}, {0, 0})
+    API.send_message(ping_addr, {:set_target, pong_addr}, {0, 0})
   end
 
   defp wait_for_echo_response do

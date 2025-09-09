@@ -2,45 +2,16 @@ defmodule EngineSystem.System.Spawner do
   @moduledoc """
   I am responsible for creating new engine instances along with their dedicated
   mailboxes.
-
-  I implement the s-EngineSpawn operational rule from the formal model. The
-  process involves fetching the Engine.Spec, starting a
-  Mailbox.DefaultMailboxEngine, starting the Engine.Instance GenServer, and
-  registering both with the System.Registry.
-
-  ## Public API
-
-  - `spawn_engine/4` - Spawn a new engine instance with optional config,
-    environment and name
   """
 
   alias EngineSystem.Engine.{Instance, Spec, State}
-  alias EngineSystem.Mailbox.DefaultMailboxEngine
+  alias EngineSystem.Engine.State.{Configuration, Environment, Status}
+  alias EngineSystem.Mailbox.{DefaultMailboxEngine, MailboxRuntime}
   alias EngineSystem.System.{Registry, Services}
   alias EngineSystem.System.Spawner.{Logger, Validator}
 
   @doc """
   I spawn a new engine instance of the given type.
-
-  This implements the complete s-EngineSpawn process:
-  1. Fetch the Engine.Spec for the requested processing engine type
-  2. Start an instance of the specified Mailbox Engine (or DefaultMailboxEngine) with the Engine.Spec
-  3. Start the Engine.Instance GenServer with its spec and mailbox PID
-  4. Register both with the System.Registry
-
-  ## Parameters
-
-  - `engine_module` - The module that defines the engine using the DSL
-  - `config` - Initial configuration for the engine (optional)
-  - `environment` - Initial environment/local state for the engine (optional)
-  - `name` - Optional name for the instance
-  - `mailbox_engine_module` - Optional mailbox engine module (defaults to DefaultMailboxEngine)
-  - `mailbox_config` - Optional mailbox engine configuration
-
-  ## Returns
-
-  - `{:ok, address}` if the engine was spawned successfully
-  - `{:error, reason}` if spawning failed
   """
   @spec spawn_engine(module(), any(), any(), atom() | nil, module() | nil, any() | nil) ::
           {:ok, State.address()} | {:error, any()}
@@ -69,23 +40,6 @@ defmodule EngineSystem.System.Spawner do
 
   @doc """
   I spawn a new engine instance with full mailbox configuration.
-
-  This provides explicit control over both processing and mailbox engines.
-
-  ## Parameters
-
-  - `opts` - Keyword list with:
-    - `:processing_engine` - Processing engine module
-    - `:processing_config` - Processing engine configuration
-    - `:processing_env` - Processing engine environment
-    - `:mailbox_engine` - Mailbox engine module
-    - `:mailbox_config` - Mailbox engine configuration
-    - `:name` - Optional instance name
-
-  ## Returns
-
-  - `{:ok, address}` if spawning succeeded
-  - `{:error, reason}` if spawning failed
   """
   @spec spawn_engine_with_mailbox(keyword()) :: {:ok, State.address()} | {:error, any()}
   def spawn_engine_with_mailbox(opts) do
@@ -167,7 +121,7 @@ defmodule EngineSystem.System.Spawner do
       # Start the mailbox using the core runtime implementation
       case DynamicSupervisor.start_child(
              EngineSystem.Engine.DynamicSupervisor,
-             {EngineSystem.Mailbox.MailboxRuntime, mailbox_init_data}
+             {MailboxRuntime, mailbox_init_data}
            ) do
         {:ok, pid} -> {:ok, pid}
         {:error, reason} -> {:error, {:mailbox_start_failed, reason}}
@@ -206,7 +160,7 @@ defmodule EngineSystem.System.Spawner do
     # Start using the core MailboxRuntime implementation
     case DynamicSupervisor.start_child(
            EngineSystem.Engine.DynamicSupervisor,
-           {EngineSystem.Mailbox.MailboxRuntime, mailbox_init_data}
+           {MailboxRuntime, mailbox_init_data}
          ) do
       {:ok, pid} -> {:ok, pid}
       {:error, reason} -> {:error, {:mailbox_engine_start_failed, reason}}
@@ -221,15 +175,15 @@ defmodule EngineSystem.System.Spawner do
     # Convert mailbox_pid to a proper address format if needed
     # For now, we'll use nil as parent since the pid format doesn't match address type
     parent_address = nil
-    engine_config = State.Configuration.new(parent_address, :process, final_config)
+    engine_config = Configuration.new(parent_address, :process, final_config)
 
     # Prepare the environment
     final_environment = environment || Spec.default_environment(spec)
-    engine_env = State.Environment.new(final_environment, %{self: address})
+    engine_env = Environment.new(final_environment, %{self: address})
 
     # Prepare the initial status
     message_filter = Spec.get_message_filter(spec)
-    initial_status = State.Status.ready(message_filter)
+    initial_status = Status.ready(message_filter)
 
     engine_init_data = %{
       address: address,
@@ -275,15 +229,6 @@ defmodule EngineSystem.System.Spawner do
 
   @doc """
   I terminate an engine instance and its associated mailbox.
-
-  ## Parameters
-
-  - `address` - The address of the engine to terminate
-
-  ## Returns
-
-  - `:ok` if termination succeeded
-  - `{:error, reason}` if termination failed
   """
   @spec terminate_engine(State.address()) :: :ok | {:error, :engine_not_found}
   def terminate_engine(address) do
@@ -311,10 +256,6 @@ defmodule EngineSystem.System.Spawner do
 
   @doc """
   I get information about the spawning capabilities and current state.
-
-  ## Returns
-
-  A map with spawning statistics and capabilities.
   """
   @spec get_spawner_info() :: %{
           active_engines: non_neg_integer(),

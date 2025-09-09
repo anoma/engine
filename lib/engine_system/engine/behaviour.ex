@@ -1,20 +1,6 @@
 defmodule EngineSystem.Engine.Behaviour do
   @moduledoc """
-  I contain functions for evaluating an engine's behaviour against an incoming message.
-
-  I implement guard matching and action selection strategies, taking an Engine.Spec,
-  current Engine.State, and a System.Message as input, and returning the list of
-  Engine.Effects to be executed.
-
-  This implements the logic of behaviourtype and b-rules (guard evaluation) from
-  the formal model.
-
-  ## Public API
-
-  ### Behaviour Evaluation
-  - `evaluate/4` - Evaluate an engine's behaviour against an incoming message
-  - `find_matching_rule/4` - Find the first behaviour rule that matches the given message
-  - `execute_rule/4` - Execute a behaviour rule to produce effects
+  I evaluate engine behavior against incoming messages.
   """
 
   alias EngineSystem.Engine.{Effect, Spec, State}
@@ -23,22 +9,7 @@ defmodule EngineSystem.Engine.Behaviour do
   @type evaluation_result :: {:ok, [Effect.t()]} | {:error, any()}
 
   @doc """
-  I evaluate the behaviour of an engine for a given message.
-
-  This is the main entry point for behaviour evaluation. I find the appropriate
-  behaviour rule for the message and execute it to produce effects.
-
-  ## Parameters
-
-  - `spec` - The engine specification containing behaviour rules
-  - `message` - The message to process
-  - `configuration` - The engine's configuration
-  - `environment` - The engine's environment
-
-  ## Returns
-
-  - `{:ok, effects}` if evaluation succeeded
-  - `{:error, reason}` if evaluation failed
+  I evaluate engine behavior for a message.
   """
   @spec evaluate(Spec.t(), Message.t(), State.Configuration.t(), State.Environment.t()) ::
           evaluation_result()
@@ -58,23 +29,7 @@ defmodule EngineSystem.Engine.Behaviour do
   end
 
   @doc """
-  I find the first behaviour rule that matches the given message.
-
-  This implements the guard selection strategy. For simplicity, I use a
-  first-match strategy where I execute the first rule whose guard is satisfied.
-
-  ## Parameters
-
-  - `rules` - The list of behaviour rules from the engine spec
-  - `message` - The message to match against
-  - `configuration` - The engine's configuration
-  - `environment` - The engine's environment
-
-  ## Returns
-
-  - `{:ok, rule}` if a matching rule is found
-  - `:no_match` if no rule matches
-  - `{:error, reason}` if evaluation fails
+  I find the first matching behavior rule.
   """
   @spec find_matching_rule(
           [Spec.behaviour_rule()],
@@ -108,19 +63,7 @@ defmodule EngineSystem.Engine.Behaviour do
   end
 
   @doc """
-  I execute a behaviour rule to produce effects.
-
-  ## Parameters
-
-  - `rule` - The behaviour rule to execute
-  - `message` - The message being processed
-  - `configuration` - The engine's configuration
-  - `environment` - The engine's environment
-
-  ## Returns
-
-  - `{:ok, effects}` if execution succeeded
-  - `{:error, reason}` if execution failed
+  I execute a behavior rule to produce effects.
   """
   @spec execute_rule(
           Spec.behaviour_rule(),
@@ -297,16 +240,7 @@ defmodule EngineSystem.Engine.Behaviour do
   end
 
   @doc """
-  I validate that a behaviour rule is well-formed.
-
-  ## Parameters
-
-  - `rule` - The behaviour rule to validate
-
-  ## Returns
-
-  - `:ok` if the rule is valid
-  - `{:error, reason}` if the rule is invalid
+  I validate that a behavior rule is well-formed.
   """
   @spec validate_rule(Spec.behaviour_rule()) :: :ok | {:error, any()}
   def validate_rule({tag, _action}) when is_atom(tag) do
@@ -318,16 +252,7 @@ defmodule EngineSystem.Engine.Behaviour do
   end
 
   @doc """
-  I validate that all behaviour rules in a spec are well-formed.
-
-  ## Parameters
-
-  - `spec` - The engine specification
-
-  ## Returns
-
-  - `:ok` if all rules are valid
-  - `{:error, reason}` if any rule is invalid
+  I validate all behavior rules in a spec.
   """
   @spec validate_behaviour(Spec.t()) :: :ok | {:error, any()}
   def validate_behaviour(%Spec{behaviour_rules: rules}) do

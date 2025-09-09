@@ -1,31 +1,20 @@
 defmodule EngineSystem.Mailbox.MailboxRuntime do
   @moduledoc """
-  I am the core runtime GenStage producer implementation for DSL-defined mailbox engines.
-
-  This module provides the bridge between the DSL-defined mailbox behaviors and
-  actual GenStage producer functionality. When you define an engine with `mode :mailbox`,
-  this module provides the runtime execution environment.
-
-  ## Core Functions
-
-  - Implements GenStage Producer callbacks (`handle_demand`, `handle_cast`, etc.)
-  - Executes DSL-defined behaviors for mailbox operations
-  - Manages the producer-consumer pattern for message delivery
-  - Provides the actual `handle_demand` implementation
-
+  I provide the core runtime GenStage producer implementation bridging DSL-defined mailbox behaviors with actual producer functionality.
   """
 
   use GenStage
   use TypedStruct
 
   alias EngineSystem.Engine.{Behaviour, Spec, State}
+  alias EngineSystem.Engine.State.{Configuration, Environment}
   alias EngineSystem.System.Message
 
   @behaviour EngineSystem.Mailbox.Behaviour
 
   typedstruct do
     @typedoc """
-    Runtime state for a DSL-defined mailbox engine.
+    I define runtime state for a DSL-defined mailbox engine.
     """
     field(:address, State.address(), enforce: true)
     field(:spec, Spec.t(), enforce: true)
@@ -266,13 +255,13 @@ defmodule EngineSystem.Mailbox.MailboxRuntime do
     # Create proper State.Configuration and State.Environment structures
     # The behavior evaluation expects these to have local_state fields
     config_struct =
-      State.Configuration.new(
+      Configuration.new(
         Map.get(state.configuration, :parent),
         Map.get(state.configuration, :mode, :mailbox),
         state.configuration
       )
 
-    env_struct = State.Environment.new(state.environment, %{})
+    env_struct = Environment.new(state.environment, %{})
 
     case Behaviour.evaluate(state.spec, message, config_struct, env_struct) do
       {:ok, effects} ->
@@ -353,41 +342,7 @@ defmodule EngineSystem.Mailbox.MailboxRuntime do
     _ -> %{behaviour: :unknown, args: nil}
   end
 
-  defp format_behaviour_error({:behaviour_exception, exception, stacktrace, meta}) do
-    op = Map.get(meta, :behaviour, :unknown)
-    args = Map.get(meta, :args)
+  # Unused function removed to fix compiler warning
 
-    location =
-      case stacktrace do
-        [top | _] -> Exception.format_stacktrace_entry(top)
-        _ -> "unknown"
-      end
-
-    "- behaviour=#{inspect(op)}\n" <>
-      "  - args=#{inspect(args)}\n" <>
-      "  - error=#{Exception.message(exception)}\n" <>
-      "  - at=#{location}\n" <>
-      "  - meta=#{inspect(meta)}\n" <>
-      Exception.format_stacktrace(stacktrace)
-  end
-
-  defp format_behaviour_error({:dsl_evaluation_error, inner, meta}) do
-    op = Map.get(meta, :behaviour, :unknown)
-    args = Map.get(meta, :args)
-
-    "- behaviour=#{inspect(op)}\n" <>
-      "  - args=#{inspect(args)}\n" <>
-      "  - reason=#{inspect(inner)}\n" <>
-      "  - meta=#{inspect(meta)}\n"
-  end
-
-  defp format_behaviour_error({:apply_effects_error, inner, meta}) do
-    op = Map.get(meta, :behaviour, :unknown)
-    args = Map.get(meta, :args)
-
-    "- behaviour=#{inspect(op)}\n" <>
-      "  - args=#{inspect(args)}\n" <>
-      "  - apply_effects_error=#{inspect(inner)}\n" <>
-      "  - meta=#{inspect(meta)}\n"
-  end
+  # Unused format_behaviour_error functions removed to fix compiler warnings
 end

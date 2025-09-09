@@ -1,16 +1,6 @@
 defmodule EngineSystem.System.Utilities do
   @moduledoc """
   I provide utility functions for system-level operations.
-
-  This module contains common functionality used across system modules
-  to improve code organization and reduce duplication.
-
-  ## Public API
-
-  ### Address Management
-  - `generate_address/2` - Generate a unique engine address
-  - `validate_address/1` - Validate an engine address format
-  - `extract_ids/1` - Extract node and engine IDs from an address
   """
 
   alias EngineSystem.Engine.Spec
@@ -19,15 +9,6 @@ defmodule EngineSystem.System.Utilities do
 
   @doc """
   I generate a unique address for an engine.
-
-  ## Parameters
-
-  - `node_id` - The node identifier (defaults to 0 for single-node systems)
-  - `engine_id` - The engine identifier (optional, will be generated if nil)
-
-  ## Returns
-
-  A unique engine address tuple.
   """
   @spec generate_address(non_neg_integer(), non_neg_integer() | nil) :: State.address()
   def generate_address(node_id \\ 0, engine_id \\ nil) do
@@ -37,15 +18,6 @@ defmodule EngineSystem.System.Utilities do
 
   @doc """
   I validate an engine address format.
-
-  ## Parameters
-
-  - `address` - The address to validate
-
-  ## Returns
-
-  - `:ok` if the address is valid
-  - `{:error, reason}` if the address is invalid
   """
   @spec validate_address(any()) :: :ok | {:error, String.t()}
   def validate_address({node_id, engine_id})
@@ -58,15 +30,6 @@ defmodule EngineSystem.System.Utilities do
 
   @doc """
   I extract node and engine IDs from an address.
-
-  ## Parameters
-
-  - `address` - The address to decompose
-
-  ## Returns
-
-  - `{:ok, {node_id, engine_id}}` if successful
-  - `{:error, reason}` if the address is invalid
   """
   @spec decompose_address(State.address()) ::
           {:ok, {non_neg_integer(), non_neg_integer()}} | {:error, String.t()}
@@ -79,16 +42,6 @@ defmodule EngineSystem.System.Utilities do
 
   @doc """
   I check if two addresses are on the same node.
-
-  ## Parameters
-
-  - `address1` - First address
-  - `address2` - Second address
-
-  ## Returns
-
-  - `true` if both addresses are on the same node
-  - `false` otherwise
   """
   @spec same_node?(State.address(), State.address()) :: boolean()
   def same_node?({node_id, _}, {node_id, _}), do: true
@@ -96,14 +49,6 @@ defmodule EngineSystem.System.Utilities do
 
   @doc """
   I format an address for display purposes.
-
-  ## Parameters
-
-  - `address` - The address to format
-
-  ## Returns
-
-  A formatted string representation of the address.
   """
   @spec format_address(State.address()) :: String.t()
   def format_address({node_id, engine_id}) do
@@ -112,15 +57,6 @@ defmodule EngineSystem.System.Utilities do
 
   @doc """
   I parse an address from a string format.
-
-  ## Parameters
-
-  - `address_string` - String in format "node_id:engine_id"
-
-  ## Returns
-
-  - `{:ok, address}` if parsing succeeded
-  - `{:error, reason}` if parsing failed
   """
   @spec parse_address(String.t()) :: {:ok, State.address()} | {:error, String.t()}
   def parse_address(address_string) when is_binary(address_string) do
@@ -143,15 +79,6 @@ defmodule EngineSystem.System.Utilities do
 
   @doc """
   I generate system-wide statistics.
-
-  ## Parameters
-
-  - `instances` - List of instance information
-  - `specs` - List of registered specs
-
-  ## Returns
-
-  A map with system statistics.
   """
   @spec generate_system_stats([any()], [any()]) :: %{
           instances_by_spec: map(),
@@ -211,16 +138,6 @@ defmodule EngineSystem.System.Utilities do
 
   @doc """
   I validate a message against a message interface.
-
-  ## Parameters
-
-  - `message` - The message to validate
-  - `interface` - The message interface specification
-
-  ## Returns
-
-  - `:ok` if the message is valid
-  - `{:error, reason}` if the message is invalid
   """
   @spec validate_message_interface(Message.t(), Spec.message_interface()) ::
           :ok | {:error, String.t()}
@@ -233,15 +150,6 @@ defmodule EngineSystem.System.Utilities do
 
   @doc """
   I extract the message tag from a payload.
-
-  ## Parameters
-
-  - `payload` - The message payload
-
-  ## Returns
-
-  - `{:ok, tag}` if a tag can be extracted
-  - `{:error, reason}` if no tag can be extracted
   """
   @spec extract_message_tag(any()) :: {:ok, atom()} | {:error, String.t()}
   def extract_message_tag({tag, _data}) when is_atom(tag), do: {:ok, tag}
@@ -250,16 +158,6 @@ defmodule EngineSystem.System.Utilities do
 
   @doc """
   I validate that a tag exists in the message interface.
-
-  ## Parameters
-
-  - `tag` - The message tag to validate
-  - `interface` - The message interface specification
-
-  ## Returns
-
-  - `:ok` if the tag is valid
-  - `{:error, reason}` if the tag is invalid
   """
   @spec validate_tag_in_interface(atom(), Spec.message_interface()) ::
           :ok | {:error, String.t()}
@@ -275,18 +173,6 @@ defmodule EngineSystem.System.Utilities do
 
   @doc """
   I apply a message filter to determine if a message should be processed.
-
-  ## Parameters
-
-  - `message` - The message to filter
-  - `filter_func` - The filter function
-  - `config` - Engine configuration (optional)
-  - `env` - Engine environment (optional)
-
-  ## Returns
-
-  - `true` if the message should be processed
-  - `false` if the message should be filtered out
   """
   @spec apply_message_filter(Message.t(), function(), any(), any()) :: boolean()
   def apply_message_filter(message, filter_func, config \\ nil, env \\ nil) do

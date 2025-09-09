@@ -52,6 +52,7 @@ defmodule EngineSystem.MixProject do
       {:typed_struct, "~> 0.3.0"},
       {:uuid, "~> 1.1.8"},
       {:gen_stage, "~> 1.2.1"},
+      {:telemetry, "~> 1.0"},
       {:ex_doc, "~> 0.38.0", only: :dev, runtime: false},
       {:credo, "~> 1.7.12", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 1.4.5", only: [:dev, :test], runtime: false}

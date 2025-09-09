@@ -1,46 +1,6 @@
 defmodule EngineSystem.Engine do
   @moduledoc """
   I provide DSL and utility functions for engine development.
-
-  **Note**: This module is primarily used internally by the EngineSystem library.
-  For end users, the recommended approach is to use `use EngineSystem` which
-  provides access to all functionality including DSL macros, utilities, and API functions.
-
-  ```elixir
-  use EngineSystem
-
-  defengine MyEngine do
-    version "1.0.0"
-    # ... rest of engine definition
-  end
-  ```
-
-  If you specifically need only the utilities from this module without the DSL
-  or API functions, you can still use `use EngineSystem.Engine`:
-
-  ```elixir
-  use EngineSystem.Engine
-
-  # This gives you access to:
-  # - DSL macros (defengine, version, etc.)
-  # - Utility functions (validate_message_for_pe, extract_messages, etc.)
-  # But NOT the API functions (spawn_engine, send_message, etc.)
-  ```
-
-  However, the `use EngineSystem` approach is preferred as it provides the complete
-  interface in a single import, following Elixir library conventions.
-
-  ## Exported Functions
-
-  This module provides utility functions that are commonly needed
-  across different engine implementations:
-
-  - `validate_message_for_pe/2` - Validate messages against processing engine specs
-  - `extract_messages/3` - Extract messages from queues with filtering
-  - `apply_filter/2` - Apply message filters safely
-  - `extract_message_tag/1` - Extract message tags from payloads
-  - `validate_address/1` - Validate engine address format
-  - `fresh_id/0` - Generate unique identifiers
   """
 
   @doc false
@@ -63,25 +23,7 @@ defmodule EngineSystem.Engine do
   end
 
   @doc """
-  I validate a message against a processing engine specification.
-
-  ## Parameters
-
-  - `message` - The message to validate (should have a payload field)
-  - `pe_spec` - The processing engine specification
-
-  ## Returns
-
-  - `:ok` if the message is valid
-  - `{:error, reason}` if the message is invalid
-
-  ## Examples
-
-      iex> message = %{payload: {:get, %{key: "test"}}}
-      iex> pe_spec = %{interface: [get: [:key], put: [:key, :value]]}
-      iex> EngineSystem.Engine.validate_message_for_pe(message, pe_spec)
-      :ok
-
+  I validate a message against an engine spec.
   """
   @spec validate_message_for_pe(map(), map()) :: :ok | {:error, atom()}
   def validate_message_for_pe(message, pe_spec) do
@@ -108,28 +50,7 @@ defmodule EngineSystem.Engine do
   end
 
   @doc """
-  I extract the message tag from a payload.
-
-  ## Parameters
-
-  - `payload` - The message payload
-
-  ## Returns
-
-  - `{:ok, tag}` if a tag can be extracted
-  - `{:error, reason}` if no tag can be extracted
-
-  ## Examples
-
-      iex> EngineSystem.Engine.extract_message_tag({:get, %{key: "test"}})
-      {:ok, :get}
-
-      iex> EngineSystem.Engine.extract_message_tag(:ping)
-      {:ok, :ping}
-
-      iex> EngineSystem.Engine.extract_message_tag("invalid")
-      {:error, "Cannot extract message tag"}
-
+  I extract the message tag.
   """
   @spec extract_message_tag(any()) :: {:ok, atom()} | {:error, String.t()}
   def extract_message_tag({tag, _data}) when is_atom(tag), do: {:ok, tag}
@@ -137,25 +58,7 @@ defmodule EngineSystem.Engine do
   def extract_message_tag(_), do: {:error, "Cannot extract message tag"}
 
   @doc """
-  I validate an engine address format.
-
-  ## Parameters
-
-  - `address` - The address to validate
-
-  ## Returns
-
-  - `:ok` if the address is valid
-  - `{:error, reason}` if the address is invalid
-
-  ## Examples
-
-      iex> EngineSystem.Engine.validate_address({0, 123})
-      :ok
-
-      iex> EngineSystem.Engine.validate_address("invalid")
-      {:error, "Invalid address format"}
-
+  I validate an address format.
   """
   @spec validate_address(any()) :: :ok | {:error, String.t()}
   def validate_address({node_id, engine_id})
@@ -167,21 +70,7 @@ defmodule EngineSystem.Engine do
   def validate_address(_), do: {:error, "Invalid address format"}
 
   @doc """
-  I generate a unique identifier for engine instances, messages, etc.
-
-  This delegates to the system services for ID generation.
-
-  ## Returns
-
-  A unique integer identifier.
-
-  ## Examples
-
-      iex> id1 = EngineSystem.Engine.fresh_id()
-      iex> id2 = EngineSystem.Engine.fresh_id()
-      iex> id1 != id2
-      true
-
+  I generate a unique identifier.
   """
   @spec fresh_id() :: non_neg_integer()
   def fresh_id do
@@ -189,41 +78,7 @@ defmodule EngineSystem.Engine do
   end
 
   @doc """
-  I extract messages from a queue with demand limiting and filtering.
-
-  ## Parameters
-
-  - `queue` - The Erlang queue to extract from
-  - `demand` - The maximum number of messages to extract
-  - `filter` - The filter function to apply (can be nil)
-
-  ## Returns
-
-  A tuple `{extracted_messages, remaining_queue}` where:
-  - `extracted_messages` - List of messages that passed the filter (up to demand limit)
-  - `remaining_queue` - The queue with extracted messages removed
-
-  ## Examples
-
-      # Extract up to 5 messages without filtering
-      iex> queue = :queue.from_list([{:msg, 1}, {:msg, 2}, {:msg, 3}])
-      iex> {messages, remaining} = EngineSystem.Engine.extract_messages(queue, 5, nil)
-      iex> length(messages)
-      3
-
-      # Extract with filtering - only even numbers
-      iex> queue = :queue.from_list([{:msg, 1}, {:msg, 2}, {:msg, 3}, {:msg, 4}])
-      iex> filter = fn {_, n} -> rem(n, 2) == 0 end
-      iex> {messages, _} = EngineSystem.Engine.extract_messages(queue, 10, filter)
-      iex> messages
-      [{:msg, 2}, {:msg, 4}]
-
-      # Extract with demand limit
-      iex> queue = :queue.from_list([{:msg, 1}, {:msg, 2}, {:msg, 3}, {:msg, 4}])
-      iex> {messages, _} = EngineSystem.Engine.extract_messages(queue, 2, nil)
-      iex> length(messages)
-      2
-
+  I extract messages from a queue.
   """
   @spec extract_messages(:queue.queue(), non_neg_integer(), function() | nil) ::
           {[any()], :queue.queue()}
@@ -232,60 +87,44 @@ defmodule EngineSystem.Engine do
   end
 
   @doc """
-  I safely apply a filter function to a message.
-
-  This function handles potential errors in filter functions gracefully,
-  ensuring that a misbehaving filter doesn't crash the system.
-
-  ## Parameters
-
-  - `filter` - The filter function to apply (can be nil)
-  - `message` - The message to filter
-
-  ## Returns
-
-  - `true` if the message passes the filter or if no filter is provided
-  - `false` if the message fails the filter or if the filter function crashes
-
-  ## Examples
-
-      # No filter provided - always passes
-      iex> EngineSystem.Engine.apply_filter(nil, {:any, :message})
-      true
-
-      # Simple filter function
-      iex> filter = fn {:msg, n} -> n > 5 end
-      iex> EngineSystem.Engine.apply_filter(filter, {:msg, 10})
-      true
-      iex> EngineSystem.Engine.apply_filter(filter, {:msg, 3})
-      false
-
-      # Filter that crashes - safely returns false
-      iex> bad_filter = fn _ -> raise "oops" end
-      iex> EngineSystem.Engine.apply_filter(bad_filter, {:msg, 1})
-      false
-
-      # Complex filter with pattern matching
-      iex> priority_filter = fn
-      ...>   {:priority, level} when level >= 3 -> true
-      ...>   {:normal, _} -> false
-      ...>   _ -> false
-      ...> end
-      iex> EngineSystem.Engine.apply_filter(priority_filter, {:priority, 5})
-      true
-      iex> EngineSystem.Engine.apply_filter(priority_filter, {:normal, "test"})
-      false
-
+  I apply a filter function to a message.
   """
   @spec apply_filter(function() | nil, any()) :: boolean()
   def apply_filter(nil, _message), do: true
 
   def apply_filter(filter, message) do
-    filter.(message)
-  rescue
-    _ -> false
-  catch
-    _ -> false
+    # Check function arity to determine how to call it
+    info = :erlang.fun_info(filter, :arity)
+
+    case info do
+      {:arity, 1} ->
+        try do
+          filter.(message)
+        rescue
+          _ -> false
+        catch
+          _ -> false
+        end
+
+      {:arity, 3} ->
+        try do
+          filter.(message, nil, nil)
+        rescue
+          _ -> false
+        catch
+          _ -> false
+        end
+
+      _ ->
+        # Default to 1-arity for backward compatibility
+        try do
+          filter.(message)
+        rescue
+          _ -> false
+        catch
+          _ -> false
+        end
+    end
   end
 
   # Private helper functions

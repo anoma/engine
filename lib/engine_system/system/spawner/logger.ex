@@ -1,46 +1,6 @@
 defmodule EngineSystem.System.Spawner.Logger do
   @moduledoc """
   I provide structured logging for engine spawning operations.
-
-  This module centralizes all logging related to the s-EngineSpawn operational rule,
-  providing consistent, readable, and structured log messages for debugging and
-  monitoring engine lifecycle events.
-
-  ## Logging Categories
-
-  - **Registration Events**: Success and failure of engine instance registration
-  - **Spawning Events**: Engine and mailbox creation events
-  - **Validation Events**: Input validation failures
-  - **System Events**: General spawner state and statistics
-
-  ## Log Levels
-
-  - **Info**: Successful operations and normal system events
-  - **Error**: Failed operations with detailed context
-  - **Debug**: Detailed operational information (when enabled)
-  - **Warn**: Non-fatal issues that should be monitored
-
-  ## Public API
-
-  - `log_successful_registration/5` - Log successful engine registration
-  - `log_registration_failure/6` - Log failed engine registration
-  - `log_spawn_failure/2` - Log engine spawn failure
-  - `log_validation_failure/3` - Log validation failure
-  - `log_spawner_stats/1` - Log spawner statistics
-
-  ## Usage
-
-      iex> alias EngineSystem.System.Spawner.Logger, as: SpawnerLogger
-      iex> SpawnerLogger.log_successful_registration(address, spec, engine_pid, mailbox_pid, name)
-      :ok
-
-  ## Log Format
-
-  All logs follow a structured format with:
-  - Clear operation description
-  - Formatted addresses (node:X/engine:Y)
-  - Relevant context (PIDs, specs, names)
-  - Human-readable error descriptions
   """
 
   alias EngineSystem.Engine.{Spec, State}
@@ -50,19 +10,6 @@ defmodule EngineSystem.System.Spawner.Logger do
 
   @doc """
   I log successful engine instance registration.
-
-  ## Parameters
-
-  - `address` - The engine's address
-  - `spec` - The engine specification
-  - `engine_pid` - The engine process PID
-  - `mailbox_pid` - The mailbox process PID
-  - `name` - Optional instance name
-
-  ## Examples
-
-      iex> SpawnerLogger.log_successful_registration({1, 123}, spec, pid1, pid2, :my_engine)
-      :ok
   """
   @spec log_successful_registration(State.address(), Spec.t(), pid(), pid(), atom() | nil) :: :ok
   def log_successful_registration(address, spec, engine_pid, mailbox_pid, name) do
@@ -80,20 +27,6 @@ defmodule EngineSystem.System.Spawner.Logger do
 
   @doc """
   I log failed engine instance registration with detailed context.
-
-  ## Parameters
-
-  - `address` - The engine's address
-  - `spec` - The engine specification
-  - `engine_pid` - The engine process PID
-  - `mailbox_pid` - The mailbox process PID
-  - `name` - Optional instance name
-  - `reason` - The failure reason
-
-  ## Examples
-
-      iex> SpawnerLogger.log_registration_failure(address, spec, pid1, pid2, :my_engine, :name_already_taken)
-      :ok
   """
   @spec log_registration_failure(State.address(), Spec.t(), pid(), pid(), atom() | nil, atom()) ::
           :ok
@@ -115,18 +48,6 @@ defmodule EngineSystem.System.Spawner.Logger do
 
   @doc """
   I log the start of an engine spawning operation.
-
-  ## Parameters
-
-  - `engine_module` - The engine module being spawned
-  - `config` - The engine configuration
-  - `environment` - The engine environment
-  - `name` - Optional instance name
-
-  ## Examples
-
-      iex> SpawnerLogger.log_spawn_start(MyEngine, %{}, %{}, :my_instance)
-      :ok
   """
   @spec log_spawn_start(module(), any(), any(), atom() | nil) :: :ok
   def log_spawn_start(engine_module, config, environment, name) do
@@ -144,17 +65,6 @@ defmodule EngineSystem.System.Spawner.Logger do
 
   @doc """
   I log successful completion of an engine spawning operation.
-
-  ## Parameters
-
-  - `address` - The newly created engine's address
-  - `engine_module` - The engine module that was spawned
-  - `name` - Optional instance name
-
-  ## Examples
-
-      iex> SpawnerLogger.log_spawn_success({1, 123}, MyEngine, :my_instance)
-      :ok
   """
   @spec log_spawn_success(State.address(), module(), atom() | nil) :: :ok
   def log_spawn_success(address, engine_module, name) do
@@ -170,17 +80,6 @@ defmodule EngineSystem.System.Spawner.Logger do
 
   @doc """
   I log failed engine spawning operation.
-
-  ## Parameters
-
-  - `engine_module` - The engine module that failed to spawn
-  - `reason` - The failure reason
-  - `name` - Optional instance name
-
-  ## Examples
-
-      iex> SpawnerLogger.log_spawn_failure(MyEngine, :invalid_spec, :my_instance)
-      :ok
   """
   @spec log_spawn_failure(module(), any(), atom() | nil) :: :ok
   def log_spawn_failure(engine_module, reason, name) do
@@ -196,17 +95,6 @@ defmodule EngineSystem.System.Spawner.Logger do
 
   @doc """
   I log validation failures with detailed context.
-
-  ## Parameters
-
-  - `validation_type` - The type of validation that failed
-  - `reason` - The validation failure reason
-  - `context` - Additional context about the failure
-
-  ## Examples
-
-      iex> SpawnerLogger.log_validation_failure(:address, :invalid_format, %{address: "bad"})
-      :ok
   """
   @spec log_validation_failure(atom(), atom(), map()) :: :ok
   def log_validation_failure(validation_type, reason, context \\ %{}) do
@@ -223,16 +111,6 @@ defmodule EngineSystem.System.Spawner.Logger do
 
   @doc """
   I log spawner statistics and system information.
-
-  ## Parameters
-
-  - `stats` - A map containing spawner statistics
-
-  ## Examples
-
-      iex> stats = %{active_engines: 5, total_spawned: 10, failures: 1}
-      iex> SpawnerLogger.log_spawner_stats(stats)
-      :ok
   """
   @spec log_spawner_stats(map()) :: :ok
   def log_spawner_stats(stats) do
