@@ -42,81 +42,101 @@ defmodule EngineSystem.System.Services do
   """
   @spec send_message(State.address(), any()) :: :ok | {:error, :not_found}
   def send_message(target_address, message) do
-    # Emit telemetry for runtime flow tracking
-    message_type =
-      case message.payload do
-        {tag, _} -> tag
-        tag when is_atom(tag) -> tag
-        _ -> :unknown
-      end
-
+    message_type = extract_message_type(message.payload)
     start_time = :erlang.system_time(:millisecond)
 
-    result =
-      case Registry.lookup_instance(target_address) do
-        {:ok, %{mailbox_pid: mailbox_pid}} when not is_nil(mailbox_pid) ->
-          # Send the message to the mailbox engine using the MailboxRuntime
-          MailboxRuntime.enqueue_message(mailbox_pid, message)
-          :ok
+    result = dispatch_message(target_address, message)
 
-        {:ok, %{mailbox_pid: nil}} ->
-          # Engine has no mailbox, send directly to the engine process
-          case Registry.lookup_instance(target_address) do
-            {:ok, %{engine_pid: engine_pid}} ->
-              # Extract message parts
-              {message_tag, payload} =
-                case message.payload do
-                  {tag, p} -> {tag, p}
-                  tag when is_atom(tag) -> {tag, %{}}
-                  other -> {:unknown, other}
-                end
+    emit_telemetry(result, message, target_address, message_type, start_time)
+    result
+  end
 
-              # Send directly to engine using GenServer call
-              GenServer.cast(engine_pid, {:message, message_tag, payload, message.header.sender})
-              :ok
+  defp extract_message_type(payload) do
+    case payload do
+      {tag, _} -> tag
+      tag when is_atom(tag) -> tag
+      _ -> :unknown
+    end
+  end
 
-            {:error, _} ->
-              {:error, :engine_not_found}
-          end
+  defp dispatch_message(target_address, message) do
+    case Registry.lookup_instance(target_address) do
+      {:ok, %{mailbox_pid: mailbox_pid}} when not is_nil(mailbox_pid) ->
+        send_to_mailbox(mailbox_pid, message)
 
-        {:error, :not_found} ->
-          {:error, :not_found}
-      end
+      {:ok, %{mailbox_pid: nil}} ->
+        send_directly_to_engine(target_address, message)
 
-    # Emit telemetry after message sending attempt
+      {:error, :not_found} ->
+        {:error, :not_found}
+    end
+  end
+
+  defp send_to_mailbox(mailbox_pid, message) do
+    MailboxRuntime.enqueue_message(mailbox_pid, message)
+    :ok
+  end
+
+  defp send_directly_to_engine(target_address, message) do
+    case Registry.lookup_instance(target_address) do
+      {:ok, %{engine_pid: engine_pid}} ->
+        {message_tag, payload} = extract_message_parts(message.payload)
+        GenServer.cast(engine_pid, {:message, message_tag, payload, message.sender})
+        :ok
+
+      {:error, _} ->
+        {:error, :engine_not_found}
+    end
+  end
+
+  defp extract_message_parts(payload) do
+    case payload do
+      {tag, p} -> {tag, p}
+      tag when is_atom(tag) -> {tag, %{}}
+      other -> {:unknown, other}
+    end
+  end
+
+  defp emit_telemetry(result, message, target_address, message_type, start_time) do
     end_time = :erlang.system_time(:millisecond)
     duration = end_time - start_time
 
     case result do
       :ok ->
-        :telemetry.execute(
-          [:engine_system, :message, :sent],
-          %{count: 1, duration: duration},
-          %{
-            source_engine: message.sender,
-            target_engine: target_address,
-            message_type: message_type,
-            payload: message.payload,
-            success: true
-          }
-        )
+        emit_success_telemetry(message, target_address, message_type, duration)
 
       {:error, reason} ->
-        :telemetry.execute(
-          [:engine_system, :message, :failed],
-          %{count: 1, duration: duration},
-          %{
-            source_engine: message.sender,
-            target_engine: target_address,
-            message_type: message_type,
-            payload: message.payload,
-            success: false,
-            error_reason: reason
-          }
-        )
+        emit_failure_telemetry(message, target_address, message_type, duration, reason)
     end
+  end
 
-    result
+  defp emit_success_telemetry(message, target_address, message_type, duration) do
+    :telemetry.execute(
+      [:engine_system, :message, :sent],
+      %{count: 1, duration: duration},
+      %{
+        source_engine: message.sender,
+        target_engine: target_address,
+        message_type: message_type,
+        payload: message.payload,
+        success: true
+      }
+    )
+  end
+
+  defp emit_failure_telemetry(message, target_address, message_type, duration, reason) do
+    :telemetry.execute(
+      [:engine_system, :message, :failed],
+      %{count: 1, duration: duration},
+      %{
+        source_engine: message.sender,
+        target_engine: target_address,
+        message_type: message_type,
+        payload: message.payload,
+        success: false,
+        error_reason: reason
+      }
+    )
   end
 
   @doc """

@@ -114,11 +114,14 @@ defmodule Examples.TestDemo do
   learning to build distributed systems with engines.
   """
 
+  alias EngineSystem.API
+  alias Examples.{EnhancedEchoEngine, InteractiveDemo, PingEngine, PongEngine}
+
   def run_test do
     IO.puts("\n🧪 Running EngineSystem Test Demo...")
 
     # Start the demo
-    case Examples.InteractiveDemo.start_demo() do
+    case InteractiveDemo.start_demo() do
       {:error, reason} ->
         IO.puts("❌ Failed to start demo: #{inspect(reason)}")
 
@@ -129,32 +132,32 @@ defmodule Examples.TestDemo do
         Process.sleep(1000)
 
         # Check status
-        Examples.InteractiveDemo.status()
+        InteractiveDemo.status()
 
         # Test Engine-to-Engine communication
         IO.puts("\n🧪 Testing Engine-to-Engine Communication...")
-        Examples.InteractiveDemo.test_engine_to_engine()
+        InteractiveDemo.test_engine_to_engine()
 
         # Wait a bit
         Process.sleep(2000)
 
         # Test GenServer-to-Engine communication
         IO.puts("\n🧪 Testing GenServer-to-Engine Communication...")
-        Examples.InteractiveDemo.test_genserver_to_engine()
+        InteractiveDemo.test_genserver_to_engine()
 
         # Wait a bit
         Process.sleep(2000)
 
         # Test Engine-to-GenServer communication
         IO.puts("\n🧪 Testing Engine-to-GenServer Communication...")
-        Examples.InteractiveDemo.test_engine_to_genserver()
+        InteractiveDemo.test_engine_to_genserver()
 
         # Wait a bit
         Process.sleep(2000)
 
         # Final status
         IO.puts("\n🏁 Final Status:")
-        Examples.InteractiveDemo.status()
+        InteractiveDemo.status()
 
         IO.puts("\n✅ Test Demo Complete!")
     end
@@ -164,20 +167,20 @@ defmodule Examples.TestDemo do
     IO.puts("\n🏓 Quick Ping Test...")
 
     # Start system
-    EngineSystem.API.start_system()
+    API.start_system()
 
     # Spawn two engines
-    {:ok, ping_addr} = EngineSystem.API.spawn_engine(Examples.PingEngine, %{}, %{})
-    {:ok, pong_addr} = EngineSystem.API.spawn_engine(Examples.PongEngine, %{}, %{})
+    {:ok, ping_addr} = API.spawn_engine(PingEngine, %{}, %{})
+    {:ok, pong_addr} = API.spawn_engine(PongEngine, %{}, %{})
 
     IO.puts("🎯 PingEngine: #{inspect(ping_addr)}")
     IO.puts("🏓 PongEngine: #{inspect(pong_addr)}")
 
     # Create target relationship
-    EngineSystem.API.send_message(ping_addr, {:set_target, pong_addr}, {0, 0})
+    API.send_message(ping_addr, {:set_target, pong_addr}, {0, 0})
 
     # Send a ping to start the demo
-    EngineSystem.API.send_message(ping_addr, :send_ping, {0, 0})
+    API.send_message(ping_addr, :send_ping, {0, 0})
 
     IO.puts("👀 Watch the output for ping-pong messages!")
 
@@ -189,15 +192,15 @@ defmodule Examples.TestDemo do
     IO.puts("\n📢 Echo Test...")
 
     # Start system
-    EngineSystem.API.start_system()
+    API.start_system()
 
     # Spawn echo engine
-    {:ok, echo_addr} = EngineSystem.API.spawn_engine(Examples.EnhancedEchoEngine, %{}, %{})
+    {:ok, echo_addr} = API.spawn_engine(EnhancedEchoEngine, %{}, %{})
 
     IO.puts("📢 EchoEngine: #{inspect(echo_addr)}")
 
     # Send an echo request
-    EngineSystem.API.send_message(echo_addr, {:echo, "Hello Engine World!"}, {0, 0})
+    API.send_message(echo_addr, {:echo, "Hello Engine World!"}, {0, 0})
 
     Process.sleep(1000)
     IO.puts("✅ Echo test complete!")

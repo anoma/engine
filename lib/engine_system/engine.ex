@@ -93,11 +93,36 @@ defmodule EngineSystem.Engine do
   def apply_filter(nil, _message), do: true
 
   def apply_filter(filter, message) do
-    filter.(message)
-  rescue
-    _ -> false
-  catch
-    _ -> false
+    # Check function arity to determine how to call it
+    info = :erlang.fun_info(filter, :arity)
+
+    case info do
+      {:arity, 1} ->
+        try do
+          filter.(message)
+        rescue
+          _ -> false
+        catch
+          _ -> false
+        end
+      {:arity, 3} ->
+        try do
+          filter.(message, nil, nil)
+        rescue
+          _ -> false
+        catch
+          _ -> false
+        end
+      _ ->
+        # Default to 1-arity for backward compatibility
+        try do
+          filter.(message)
+        rescue
+          _ -> false
+        catch
+          _ -> false
+        end
+    end
   end
 
   # Private helper functions

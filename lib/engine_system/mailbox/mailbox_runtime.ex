@@ -7,6 +7,7 @@ defmodule EngineSystem.Mailbox.MailboxRuntime do
   use TypedStruct
 
   alias EngineSystem.Engine.{Behaviour, Spec, State}
+  alias EngineSystem.Engine.State.{Configuration, Environment}
   alias EngineSystem.System.Message
 
   @behaviour EngineSystem.Mailbox.Behaviour
@@ -274,13 +275,13 @@ defmodule EngineSystem.Mailbox.MailboxRuntime do
     # Create proper State.Configuration and State.Environment structures
     # The behavior evaluation expects these to have local_state fields
     config_struct =
-      State.Configuration.new(
+      Configuration.new(
         Map.get(state.configuration, :parent),
         Map.get(state.configuration, :mode, :mailbox),
         state.configuration
       )
 
-    env_struct = State.Environment.new(state.environment, %{})
+    env_struct = Environment.new(state.environment, %{})
 
     case Behaviour.evaluate(state.spec, message, config_struct, env_struct) do
       {:ok, effects} ->

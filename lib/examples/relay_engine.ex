@@ -169,7 +169,11 @@ defengine Examples.RelayEngine do
     end
 
     # Handle collected responses
-    on_message :response_collected, %{source: source, response: response}, _config, _env, sender do
+    on_message :response_collected,
+               %{source: source, response: response},
+               _config,
+               _env,
+               sender do
       # This would be called by targets responding to gather_responses
       # In practice, this is a simplified version - real implementation would
       # match request IDs and aggregate properly

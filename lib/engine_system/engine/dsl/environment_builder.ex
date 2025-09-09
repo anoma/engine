@@ -35,7 +35,7 @@ defmodule EngineSystem.Engine.DSL.EnvironmentBuilder do
       fields = Module.get_attribute(__MODULE__, :current_env_fields) |> Enum.reverse()
 
       env_spec =
-        EngineSystem.Engine.DSL.EnvironmentBuilder.create_env_spec_public(
+        __MODULE__.create_env_spec_public(
           unquote(name_spec),
           fields
         )
@@ -123,7 +123,7 @@ defmodule EngineSystem.Engine.DSL.EnvironmentBuilder do
       current_fields = Module.get_attribute(__MODULE__, :current_env_fields)
 
       field_entry =
-        EngineSystem.Engine.DSL.EnvironmentBuilder.create_field_entry(
+        __MODULE__.create_field_entry(
           unquote(field_def),
           unquote(options)
         )

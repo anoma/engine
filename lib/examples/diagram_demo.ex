@@ -1,6 +1,6 @@
 use EngineSystem
 
-defengine Examples.DiagramDemoEngine, generate_diagrams: true do
+defengine Examples.DiagramDemoEngine do
   @moduledoc """
   I am a demonstration engine that showcases automatic Mermaid diagram generation.
 

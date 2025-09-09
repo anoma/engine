@@ -86,50 +86,70 @@ defmodule EngineSystem.Engine.DSL do
     generate_compiled = Module.get_attribute(env.module, :generate_compiled)
     generate_diagrams = Module.get_attribute(env.module, :generate_diagrams)
 
-    # If no mode is declared, default to :process
-    # Valid modes are :process or :mailbox
-    spec_data =
-      if is_nil(spec_data.mode) do
-        %{spec_data | mode: :process}
-      else
-        # Ensure the mode is valid
-        unless spec_data.mode in [:process, :mailbox] do
-          raise CompileError,
-            file: env.file,
-            line: env.line,
-            description:
-              "Invalid engine mode: #{inspect(spec_data.mode)}. Mode must be :process or :mailbox"
-        end
+    # Process and validate the spec data
+    final_spec = build_final_spec(spec_data, env)
 
-        spec_data
+    generate_engine_functions(final_spec, generate_compiled, generate_diagrams)
+  end
+
+  defp build_final_spec(spec_data, env) do
+    # Set default mode and validate
+    validated_spec_data = validate_and_set_mode(spec_data, env)
+
+    # Set default specs
+    final_config_spec = get_final_config_spec(validated_spec_data)
+    final_env_spec = get_final_env_spec(validated_spec_data)
+
+    # Create the final EngineSpec struct
+    final_spec = create_final_spec(validated_spec_data, final_config_spec, final_env_spec)
+
+    # Validate the final spec
+    validate_final_spec(final_spec, env)
+
+    final_spec
+  end
+
+  defp validate_and_set_mode(spec_data, env) do
+    if is_nil(spec_data.mode) do
+      %{spec_data | mode: :process}
+    else
+      unless spec_data.mode in [:process, :mailbox] do
+        raise CompileError,
+          file: env.file,
+          line: env.line,
+          description:
+            "Invalid engine mode: #{inspect(spec_data.mode)}. Mode must be :process or :mailbox"
       end
+      spec_data
+    end
+  end
 
-    # Provide default config_spec if none was defined
-    final_config_spec =
-      if spec_data.config_spec == %{} do
-        %{
-          name: :default_config,
-          default: default_config_for_mode(spec_data.mode),
-          fields: []
-        }
-      else
-        spec_data.config_spec
-      end
+  defp get_final_config_spec(spec_data) do
+    if spec_data.config_spec == %{} do
+      %{
+        name: :default_config,
+        default: default_config_for_mode(spec_data.mode),
+        fields: []
+      }
+    else
+      spec_data.config_spec
+    end
+  end
 
-    # Provide default env_spec if none was defined (stateless engine)
-    final_env_spec =
-      if spec_data.env_spec == %{} do
-        %{
-          name: :stateless_env,
-          default: default_environment_for_mode(spec_data.mode),
-          fields: []
-        }
-      else
-        spec_data.env_spec
-      end
+  defp get_final_env_spec(spec_data) do
+    if spec_data.env_spec == %{} do
+      %{
+        name: :stateless_env,
+        default: default_environment_for_mode(spec_data.mode),
+        fields: []
+      }
+    else
+      spec_data.env_spec
+    end
+  end
 
-    # Create the final EngineSpec struct at compile time
-    final_spec = %Spec{
+  defp create_final_spec(spec_data, final_config_spec, final_env_spec) do
+    %Spec{
       name: spec_data.name,
       version: spec_data.version,
       interface: spec_data.interface,
@@ -139,8 +159,9 @@ defmodule EngineSystem.Engine.DSL do
       message_filter: spec_data.message_filter,
       mode: spec_data.mode
     }
+  end
 
-    # Validate the spec at compile time
+  defp validate_final_spec(final_spec, env) do
     case Validation.validate_engine_spec(final_spec) do
       :ok ->
         :ok
@@ -151,7 +172,9 @@ defmodule EngineSystem.Engine.DSL do
           line: env.line,
           description: "Invalid engine specification: #{inspect(reason)}"
     end
+  end
 
+  defp generate_engine_functions(final_spec, generate_compiled, generate_diagrams) do
     quote do
       def __engine_spec__ do
         unquote(Macro.escape(final_spec))
@@ -166,75 +189,71 @@ defmodule EngineSystem.Engine.DSL do
 
       def __after_compile__(env, _bytecode) do
         spec = __engine_spec__()
+        register_spec(spec)
+        handle_post_compilation(spec, env.file, unquote(generate_compiled), unquote(generate_diagrams))
+      end
 
-        # Register spec (existing functionality)
-        try do
-          Registry.register_spec(spec)
-        catch
-          # System not running, that's fine
-          :exit, _ -> :ok
+      defp register_spec(spec) do
+        Registry.register_spec(spec)
+      catch
+        :exit, _ -> :ok
+      end
+
+      defp handle_post_compilation(spec, source_file, generate_compiled, generate_diagrams) do
+        if should_compile?(generate_compiled) do
+          handle_compilation(spec, source_file)
         end
 
-        # Generate compiled engine file only if enabled
-        # Check both local flag and global application configuration
-        should_compile =
-          unquote(generate_compiled) or
-            Application.get_env(:engine_system, :compile_engines, false)
-
-        if should_compile do
-          source_file = env.file
-
-          try do
-            # EngineSystem.Engine.Compiler.generate_compiled_engine(spec, source_file)
-            IO.puts("📝 Compilation enabled for #{spec.name} (implementation pending)")
-          catch
-            # Compilation failed, log but don't fail the build
-            kind, reason ->
-              IO.warn(
-                "Failed to generate compiled engine for #{spec.name}: #{inspect({kind, reason})}"
-              )
-          end
+        if should_generate_diagrams?(generate_diagrams) do
+          handle_diagram_generation(spec)
         end
+      end
 
-        # Generate Mermaid diagrams only if enabled
-        # Check both local flag and global application configuration
-        should_generate_diagrams =
-          unquote(generate_diagrams) or
-            Application.get_env(:engine_system, :generate_diagrams, false)
+      defp should_compile?(local_flag) do
+        local_flag or Application.get_env(:engine_system, :compile_engines, false)
+      end
 
-        if should_generate_diagrams do
-          try do
-            # Generate diagram for this engine with enhanced options
-            diagram_options = %{
-              output_dir:
-                Application.get_env(:engine_system, :diagram_output_dir, "docs/diagrams"),
-              include_metadata: true,
-              diagram_title: "#{spec.name} Communication Flow",
-              file_prefix: ""
-            }
+      defp should_generate_diagrams?(local_flag) do
+        local_flag or Application.get_env(:engine_system, :generate_diagrams, false)
+      end
 
-            case DiagramGenerator.generate_diagram(spec, nil, diagram_options) do
-              {:ok, file_path} ->
-                IO.puts("📊 Generated diagram for #{spec.name}: #{file_path}")
+      defp handle_compilation(spec, source_file) do
+        IO.puts("📝 Compilation enabled for #{spec.name} (implementation pending)")
+      catch
+        kind, reason ->
+          IO.warn("Failed to generate compiled engine for #{spec.name}: #{inspect({kind, reason})}")
+      end
 
-              {:error, reason} ->
-                IO.warn("Failed to generate diagram for #{spec.name}: #{inspect(reason)}")
-            end
+      defp handle_diagram_generation(spec) do
+        generate_single_diagram(spec)
+        schedule_compilation_diagrams()
+      catch
+        kind, reason ->
+          IO.warn("Failed to generate diagram for #{spec.name}: #{inspect({kind, reason})}")
+      end
 
-            # Also trigger system-wide diagram generation if this is the last engine
-            # compiled in a project (this is a heuristic approach)
-            # In a real implementation, you might want a more sophisticated trigger
-            spawn(fn ->
-              # Small delay to allow other engines to compile first
-              Process.sleep(100)
-              DiagramGenerator.generate_compilation_diagrams()
-            end)
-          catch
-            # Diagram generation failed, log but don't fail the build
-            kind, reason ->
-              IO.warn("Failed to generate diagram for #{spec.name}: #{inspect({kind, reason})}")
-          end
+      defp generate_single_diagram(spec) do
+        diagram_options = %{
+          output_dir: Application.get_env(:engine_system, :diagram_output_dir, "docs/diagrams"),
+          include_metadata: true,
+          diagram_title: "#{spec.name} Communication Flow",
+          file_prefix: ""
+        }
+
+        case DiagramGenerator.generate_diagram(spec, nil, diagram_options) do
+          {:ok, file_path} ->
+            IO.puts("📊 Generated diagram for #{spec.name}: #{file_path}")
+
+          {:error, reason} ->
+            IO.warn("Failed to generate diagram for #{spec.name}: #{inspect(reason)}")
         end
+      end
+
+      defp schedule_compilation_diagrams do
+        spawn(fn ->
+          Process.sleep(100)
+          DiagramGenerator.generate_compilation_diagrams()
+        end)
       end
     end
   end

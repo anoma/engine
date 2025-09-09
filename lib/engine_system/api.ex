@@ -7,7 +7,7 @@ defmodule EngineSystem.API do
 
   alias EngineSystem.Engine.{Spec, State}
   alias EngineSystem.Lifecycle
-  alias EngineSystem.System.{Registry, Services, Spawner}
+  alias EngineSystem.System.{Message, Registry, Services, Spawner}
 
   @doc """
   I start the EngineSystem application.
@@ -65,7 +65,7 @@ defmodule EngineSystem.API do
     # Use proper address format: {node_id, engine_id} where both are non_neg_integer
     # System address using proper format
     sender_addr = sender_address || {0, 0}
-    message = EngineSystem.System.Message.new(sender_addr, target_address, message_payload)
+    message = Message.new(sender_addr, target_address, message_payload)
 
     # Use the Services.send_message function for actual sending
     Services.send_message(target_address, message)

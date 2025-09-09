@@ -5,6 +5,7 @@ defmodule EngineSystem.System.Spawner do
   """
 
   alias EngineSystem.Engine.{Instance, Spec, State}
+  alias EngineSystem.Engine.State.{Configuration, Environment, Status}
   alias EngineSystem.Mailbox.{DefaultMailboxEngine, MailboxRuntime}
   alias EngineSystem.System.{Registry, Services}
   alias EngineSystem.System.Spawner.{Logger, Validator}
@@ -174,15 +175,15 @@ defmodule EngineSystem.System.Spawner do
     # Convert mailbox_pid to a proper address format if needed
     # For now, we'll use nil as parent since the pid format doesn't match address type
     parent_address = nil
-    engine_config = State.Configuration.new(parent_address, :process, final_config)
+    engine_config = Configuration.new(parent_address, :process, final_config)
 
     # Prepare the environment
     final_environment = environment || Spec.default_environment(spec)
-    engine_env = State.Environment.new(final_environment, %{self: address})
+    engine_env = Environment.new(final_environment, %{self: address})
 
     # Prepare the initial status
     message_filter = Spec.get_message_filter(spec)
-    initial_status = State.Status.ready(message_filter)
+    initial_status = Status.ready(message_filter)
 
     engine_init_data = %{
       address: address,

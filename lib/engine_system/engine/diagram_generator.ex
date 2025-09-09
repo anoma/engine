@@ -56,7 +56,7 @@ defmodule EngineSystem.Engine.DiagramGenerator do
   - `:diagram_title` - Custom title for generated diagrams
   """
 
-  alias EngineSystem.Engine.{Effect, Spec, RuntimeFlowTracker}
+  alias EngineSystem.Engine.{Effect, RuntimeFlowTracker, Spec}
 
   @type message_flow :: %{
           source_engine: atom(),
@@ -136,29 +136,27 @@ defmodule EngineSystem.Engine.DiagramGenerator do
   @spec generate_diagram(Spec.t(), String.t() | nil, generation_options() | nil) ::
           {:ok, String.t()} | {:error, any()}
   def generate_diagram(spec, output_dir \\ nil, opts \\ nil) do
-    try do
-      options = merge_options(opts, output_dir)
+    options = merge_options(opts, output_dir)
 
-      # Analyze message flows from the engine specification
-      flows = analyze_message_flows(spec)
+    # Analyze message flows from the engine specification
+    flows = analyze_message_flows(spec)
 
-      # Generate Mermaid diagram syntax
-      mermaid_content = generate_sequence_diagram(flows, spec, options)
+    # Generate Mermaid diagram syntax
+    mermaid_content = generate_sequence_diagram(flows, spec, options)
 
-      # Create output directory if it doesn't exist
-      ensure_output_directory(options.output_dir)
+    # Create output directory if it doesn't exist
+    ensure_output_directory(options.output_dir)
 
-      # Generate file path
-      file_path = generate_file_path(spec, options)
+    # Generate file path
+    file_path = generate_file_path(spec, options)
 
-      # Write diagram to file
-      write_diagram_file(file_path, mermaid_content, options)
+    # Write diagram to file
+    write_diagram_file(file_path, mermaid_content, options)
 
-      {:ok, file_path}
-    rescue
-      error ->
-        {:error, {:generation_failed, error}}
-    end
+    {:ok, file_path}
+  rescue
+    error ->
+      {:error, {:generation_failed, error}}
   end
 
   @doc """
@@ -187,38 +185,36 @@ defmodule EngineSystem.Engine.DiagramGenerator do
   @spec generate_runtime_refined_diagram(Spec.t(), String.t() | nil, generation_options() | nil) ::
           {:ok, String.t()} | {:error, any()}
   def generate_runtime_refined_diagram(spec, output_dir \\ nil, opts \\ nil) do
-    try do
-      options = merge_options(opts, output_dir)
+    options = merge_options(opts, output_dir)
 
-      # Get compile-time flows
-      compile_flows = analyze_message_flows(spec)
+    # Get compile-time flows
+    compile_flows = analyze_message_flows(spec)
 
-      # Get runtime flow data
-      runtime_flows = RuntimeFlowTracker.get_flow_data()
+    # Get runtime flow data
+    runtime_flows = RuntimeFlowTracker.get_flow_data()
 
-      # Merge compile-time and runtime data
-      enriched_flows = enrich_flows_with_runtime_data(compile_flows, runtime_flows)
+    # Merge compile-time and runtime data
+    enriched_flows = enrich_flows_with_runtime_data(compile_flows, runtime_flows)
 
-      # Generate runtime-enhanced Mermaid diagram
-      mermaid_content = generate_runtime_enriched_sequence_diagram(enriched_flows, spec, options)
+    # Generate runtime-enhanced Mermaid diagram
+    mermaid_content = generate_runtime_enriched_sequence_diagram(enriched_flows, spec, options)
 
-      # Create output directory
-      ensure_output_directory(options.output_dir)
+    # Create output directory
+    ensure_output_directory(options.output_dir)
 
-      # Generate file path with runtime suffix
-      file_path = generate_runtime_file_path(spec, options)
+    # Generate file path with runtime suffix
+    file_path = generate_runtime_file_path(spec, options)
 
-      # Write diagram to file
-      write_diagram_file(file_path, mermaid_content, options)
+    # Write diagram to file
+    write_diagram_file(file_path, mermaid_content, options)
 
-      {:ok, file_path}
-    rescue
-      error ->
-        IO.puts("🐞 Error in generate_runtime_refined_diagram: #{inspect(error)}")
-        IO.puts("🐞 Stacktrace:")
-        IO.puts(Exception.format_stacktrace(__STACKTRACE__))
-        {:error, {:generation_failed, error}}
-    end
+    {:ok, file_path}
+  rescue
+    error ->
+      IO.puts("🐞 Error in generate_runtime_refined_diagram: #{inspect(error)}")
+      IO.puts("🐞 Stacktrace:")
+      IO.puts(Exception.format_stacktrace(__STACKTRACE__))
+      {:error, {:generation_failed, error}}
   end
 
   @doc """
@@ -245,19 +241,17 @@ defmodule EngineSystem.Engine.DiagramGenerator do
   @spec generate_system_diagram(String.t() | nil, generation_options() | nil) ::
           {:ok, String.t()} | {:error, any()}
   def generate_system_diagram(output_dir \\ nil, opts \\ nil) do
-    try do
-      # Get all registered engine specs
-      specs = get_all_registered_specs()
+    # Get all registered engine specs
+    specs = get_all_registered_specs()
 
-      if specs == [] do
-        {:error, :no_engines_registered}
-      else
-        generate_multi_engine_diagram(specs, output_dir, opts)
-      end
-    rescue
-      error ->
-        {:error, {:system_diagram_failed, error}}
+    if specs == [] do
+      {:error, :no_engines_registered}
+    else
+      generate_multi_engine_diagram(specs, output_dir, opts)
     end
+  rescue
+    error ->
+      {:error, {:system_diagram_failed, error}}
   end
 
   @doc """
@@ -283,32 +277,30 @@ defmodule EngineSystem.Engine.DiagramGenerator do
   @spec generate_multi_engine_diagram([Spec.t()], String.t() | nil, generation_options() | nil) ::
           {:ok, String.t()} | {:error, any()}
   def generate_multi_engine_diagram(specs, output_dir \\ nil, opts \\ nil) do
-    try do
-      options = merge_options(opts, output_dir)
+    options = merge_options(opts, output_dir)
 
-      # Analyze message flows across all engines
-      all_flows = Enum.flat_map(specs, &analyze_message_flows/1)
+    # Analyze message flows across all engines
+    all_flows = Enum.flat_map(specs, &analyze_message_flows/1)
 
-      # Filter flows that show interactions between engines
-      interaction_flows = filter_interaction_flows(all_flows, specs)
+    # Filter flows that show interactions between engines
+    interaction_flows = filter_interaction_flows(all_flows, specs)
 
-      # Generate Mermaid diagram syntax
-      mermaid_content = generate_multi_engine_sequence_diagram(interaction_flows, specs, options)
+    # Generate Mermaid diagram syntax
+    mermaid_content = generate_multi_engine_sequence_diagram(interaction_flows, specs, options)
 
-      # Create output directory if it doesn't exist
-      ensure_output_directory(options.output_dir)
+    # Create output directory if it doesn't exist
+    ensure_output_directory(options.output_dir)
 
-      # Generate file path
-      file_path = generate_multi_engine_file_path(specs, options)
+    # Generate file path
+    file_path = generate_multi_engine_file_path(specs, options)
 
-      # Write diagram to file
-      write_diagram_file(file_path, mermaid_content, options)
+    # Write diagram to file
+    write_diagram_file(file_path, mermaid_content, options)
 
-      {:ok, file_path}
-    rescue
-      error ->
-        {:error, {:generation_failed, error}}
-    end
+    {:ok, file_path}
+  rescue
+    error ->
+      {:error, {:generation_failed, error}}
   end
 
   @doc """
@@ -540,7 +532,8 @@ defmodule EngineSystem.Engine.DiagramGenerator do
       payload_pattern: Map.get(pattern_data, :payload_pattern, :any),
       conditions: Map.get(pattern_data, :guards, []),
       effects: [],
-      handler_type: :complex_pattern
+      handler_type: :complex_pattern,
+      metadata: %{}
     }
 
     # Extract effects from the pattern data
@@ -549,7 +542,7 @@ defmodule EngineSystem.Engine.DiagramGenerator do
     if effects == [] do
       [base_flow]
     else
-      # Create flows for each effect  
+      # Create flows for each effect
       effects
       |> Enum.map(fn effect ->
         case effect do
@@ -797,14 +790,12 @@ defmodule EngineSystem.Engine.DiagramGenerator do
     all_participants = [:client | participants]
 
     # Generate participant declarations
-    all_participants
-    |> Enum.map(fn participant ->
+    Enum.map_join(all_participants, "\n", fn participant ->
       case participant do
         :client -> "    participant Client"
         engine_name -> "    participant #{engine_name} as #{format_engine_name(engine_name)}"
       end
     end)
-    |> Enum.join("\n")
   end
 
   defp generate_message_sequences(flows) do
@@ -817,66 +808,84 @@ defmodule EngineSystem.Engine.DiagramGenerator do
 
   defp generate_sequences_for_flow(flow) do
     sequences = []
+    |> add_initial_sequence(flow)
+    |> add_note_sequence(flow)
+    |> add_effect_sequences(flow)
 
-    # Add the initial message flow
-    initial_sequence =
-      case flow.handler_type do
-        :effects_list when flow.source_engine == :client ->
-          # This is a message received by the engine from client
-          "    #{format_participant_name(:client)}->>#{format_participant_name(flow.target_engine)}: #{format_message_type(flow.message_type)}"
+    sequences
+  end
 
-        handler_type
-        when handler_type in [:effect_tuple, :inferred_response] and flow.source_engine != :client ->
-          # This is an effect sending a message from the engine
-          source = format_participant_name(flow.source_engine)
-          target = format_participant_name(flow.target_engine)
-          "    #{source}->>#{target}: #{format_message_payload(flow.payload_pattern)}"
+  defp add_initial_sequence(sequences, flow) do
+    initial_sequence = generate_initial_sequence(flow)
+    if initial_sequence, do: [initial_sequence | sequences], else: sequences
+  end
 
-        _ when flow.source_engine == :client ->
-          # Default: show client sending to engine
-          "    #{format_participant_name(:client)}->>#{format_participant_name(flow.target_engine)}: #{format_message_type(flow.message_type)}"
+  defp generate_initial_sequence(flow) do
+    case flow.handler_type do
+      :effects_list when flow.source_engine == :client ->
+        generate_client_to_engine_sequence(flow)
 
-        _ ->
-          nil
-      end
+      handler_type when handler_type in [:effect_tuple, :inferred_response] and flow.source_engine != :client ->
+        generate_engine_to_engine_sequence(flow)
 
-    sequences = if initial_sequence, do: [initial_sequence | sequences], else: sequences
+      _ when flow.source_engine == :client ->
+        generate_client_to_engine_sequence(flow)
 
-    # Add note about handler type if it's interesting
-    note_sequence =
-      case flow.handler_type do
-        :function ->
-          metadata = Map.get(flow, :metadata, %{})
+      _ ->
+        nil
+    end
+  end
 
-          if function = Map.get(metadata, :function) do
-            "    Note over #{format_participant_name(flow.target_engine)}: Handled by #{function}/#{Map.get(metadata, :arity, "?")}"
-          else
-            nil
-          end
+  defp generate_client_to_engine_sequence(flow) do
+    "    #{format_participant_name(:client)}->>#{format_participant_name(flow.target_engine)}: #{format_message_type(flow.message_type)}"
+  end
 
-        :complex_pattern when flow.conditions != [] ->
-          "    Note over #{format_participant_name(flow.target_engine)}: With guards: #{inspect(flow.conditions)}"
+  defp generate_engine_to_engine_sequence(flow) do
+    source = format_participant_name(flow.source_engine)
+    target = format_participant_name(flow.target_engine)
+    "    #{source}->>#{target}: #{format_message_payload(flow.payload_pattern)}"
+  end
 
-        _ ->
-          nil
-      end
+  defp add_note_sequence(sequences, flow) do
+    note_sequence = generate_note_sequence(flow)
+    if note_sequence, do: sequences ++ [note_sequence], else: sequences
+  end
 
-    sequences = if note_sequence, do: sequences ++ [note_sequence], else: sequences
+  defp generate_note_sequence(flow) do
+    case flow.handler_type do
+      :function ->
+        generate_function_note(flow)
 
-    # Add effects as additional sequences
-    # Skip effects for inferred_response flows since they're already represented
-    effect_sequences =
-      if flow.handler_type == :inferred_response do
-        []
-      else
-        flow.effects
-        |> Enum.map(fn effect ->
-          generate_sequence_from_effect(effect, flow)
-        end)
-        |> Enum.filter(&(&1 != nil))
-      end
+      :complex_pattern when flow.conditions != [] ->
+        "    Note over #{format_participant_name(flow.target_engine)}: With guards: #{inspect(flow.conditions)}"
 
+      _ ->
+        nil
+    end
+  end
+
+  defp generate_function_note(flow) do
+    metadata = Map.get(flow, :metadata, %{})
+    if function = Map.get(metadata, :function) do
+      "    Note over #{format_participant_name(flow.target_engine)}: Handled by #{function}/#{Map.get(metadata, :arity, "?")}"
+    else
+      nil
+    end
+  end
+
+  defp add_effect_sequences(sequences, flow) do
+    effect_sequences = generate_effect_sequences(flow)
     sequences ++ effect_sequences
+  end
+
+  defp generate_effect_sequences(flow) do
+    if flow.handler_type == :inferred_response do
+      []
+    else
+      flow.effects
+      |> Enum.map(&generate_sequence_from_effect(&1, flow))
+      |> Enum.filter(&(&1 != nil))
+    end
   end
 
   defp generate_sequence_from_effect(effect, flow) do
@@ -950,14 +959,12 @@ defmodule EngineSystem.Engine.DiagramGenerator do
     # Add client as default participant
     participants = [:client | Enum.map(specs, & &1.name)]
 
-    participants
-    |> Enum.map(fn participant ->
+    Enum.map_join(participants, "\n", fn participant ->
       case participant do
         :client -> "    participant Client"
         engine_name -> "    participant #{engine_name} as #{format_engine_name(engine_name)}"
       end
     end)
-    |> Enum.join("\n")
   end
 
   defp format_engine_name(engine_name) do
@@ -990,10 +997,7 @@ defmodule EngineSystem.Engine.DiagramGenerator do
   end
 
   defp generate_multi_engine_file_path(specs, options) do
-    engine_names =
-      specs
-      |> Enum.map(&format_engine_name(&1.name))
-      |> Enum.join("_")
+    engine_names = Enum.map_join(specs, "_", &format_engine_name(&1.name))
 
     filename = "#{options.file_prefix}#{engine_names}_interaction.md"
     Path.join(options.output_dir, filename)
@@ -1044,7 +1048,7 @@ defmodule EngineSystem.Engine.DiagramGenerator do
   end
 
   defp generate_multi_engine_metadata_section(specs, _options) do
-    engine_names = specs |> Enum.map(& &1.name) |> Enum.join(", ")
+    engine_names = Enum.map_join(specs, ", ", & &1.name)
 
     """
 
@@ -1055,19 +1059,17 @@ defmodule EngineSystem.Engine.DiagramGenerator do
 
   # Get all registered engine specs from the system registry
   defp get_all_registered_specs do
-    try do
-      # Attempt to get registered specs from the registry
-      case EngineSystem.System.Registry.list_specs() do
-        specs when is_list(specs) -> specs
-        _ -> []
-      end
-    rescue
-      # Registry might not be available at compile time
+    # Attempt to get registered specs from the registry
+    case EngineSystem.System.Registry.list_specs() do
+      specs when is_list(specs) -> specs
       _ -> []
-    catch
-      # System not running
-      :exit, _ -> []
     end
+  rescue
+    # Registry might not be available at compile time
+    _ -> []
+  catch
+    # System not running
+    :exit, _ -> []
   end
 
   @doc """
@@ -1078,38 +1080,36 @@ defmodule EngineSystem.Engine.DiagramGenerator do
   """
   @spec generate_compilation_diagrams() :: :ok
   def generate_compilation_diagrams do
-    try do
-      specs = get_all_registered_specs()
+    specs = get_all_registered_specs()
 
-      # Generate individual engine diagrams
-      specs
-      |> Enum.each(fn spec ->
-        case generate_diagram(spec) do
-          {:ok, file_path} ->
-            IO.puts("📊 Generated diagram: #{file_path}")
+    # Generate individual engine diagrams
+    specs
+    |> Enum.each(fn spec ->
+      case generate_diagram(spec) do
+        {:ok, file_path} ->
+          IO.puts("📊 Generated diagram: #{file_path}")
 
-          {:error, reason} ->
-            IO.warn("Failed to generate diagram for #{spec.name}: #{inspect(reason)}")
-        end
-      end)
-
-      # Generate system overview diagram if we have multiple engines
-      if length(specs) > 1 do
-        case generate_system_diagram() do
-          {:ok, file_path} ->
-            IO.puts("🗺️  Generated system diagram: #{file_path}")
-
-          {:error, reason} ->
-            IO.warn("Failed to generate system diagram: #{inspect(reason)}")
-        end
+        {:error, reason} ->
+          IO.warn("Failed to generate diagram for #{spec.name}: #{inspect(reason)}")
       end
+    end)
 
-      :ok
-    rescue
-      error ->
-        IO.warn("Error during compilation diagram generation: #{inspect(error)}")
-        :ok
+    # Generate system overview diagram if we have multiple engines
+    if length(specs) > 1 do
+      case generate_system_diagram() do
+        {:ok, file_path} ->
+          IO.puts("🗺️  Generated system diagram: #{file_path}")
+
+        {:error, reason} ->
+          IO.warn("Failed to generate system diagram: #{inspect(reason)}")
+      end
     end
+
+    :ok
+  rescue
+    error ->
+      IO.warn("Error during compilation diagram generation: #{inspect(error)}")
+      :ok
   end
 
   ## Runtime Refinement Functions
@@ -1173,7 +1173,7 @@ defmodule EngineSystem.Engine.DiagramGenerator do
       nil ->
         :client
 
-      # Sender variations  
+      # Sender variations
       # :sender typically refers back to client
       :sender ->
         :client
@@ -1259,12 +1259,13 @@ defmodule EngineSystem.Engine.DiagramGenerator do
     sequences = if basic_sequence, do: [basic_sequence | sequences], else: sequences
 
     # Add runtime statistics as notes
-    sequences = if flow.runtime_data do
-      runtime_note = generate_runtime_note(flow)
-      sequences ++ [runtime_note]
-    else
-      sequences
-    end
+    sequences =
+      if flow.runtime_data do
+        runtime_note = generate_runtime_note(flow)
+        sequences ++ [runtime_note]
+      else
+        sequences
+      end
 
     sequences
   end

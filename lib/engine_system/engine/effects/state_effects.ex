@@ -9,6 +9,7 @@ defmodule EngineSystem.Engine.Effects.StateEffects do
   """
 
   alias EngineSystem.Engine.{Instance, State}
+  alias EngineSystem.Engine.State.Status
 
   @doc """
   I execute an update_environment effect.
@@ -45,7 +46,7 @@ defmodule EngineSystem.Engine.Effects.StateEffects do
 
   @spec execute_mfilter(function(), Instance.t()) :: {:ok, Instance.t()} | {:error, any()}
   def execute_mfilter(new_filter, engine_state) do
-    new_status = State.Status.ready(new_filter)
+    new_status = Status.ready(new_filter)
     updated_state = %{engine_state | status: new_status}
 
     if engine_state.mailbox_pid do
@@ -72,7 +73,7 @@ defmodule EngineSystem.Engine.Effects.StateEffects do
   @spec execute_terminate(Instance.t()) :: {:ok, Instance.t()}
   def execute_terminate(engine_state) do
     # Update status to terminated
-    new_status = State.Status.terminated()
+    new_status = Status.terminated()
     updated_state = %{engine_state | status: new_status}
     {:ok, updated_state}
   end

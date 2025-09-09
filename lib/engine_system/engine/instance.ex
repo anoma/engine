@@ -7,6 +7,7 @@ defmodule EngineSystem.Engine.Instance do
   use TypedStruct
 
   alias EngineSystem.Engine.{Behaviour, Effect, Spec, State}
+  alias EngineSystem.Engine.State.{Configuration, Environment, Status}
   alias EngineSystem.System.Message
 
   typedstruct do
@@ -15,9 +16,9 @@ defmodule EngineSystem.Engine.Instance do
     """
     field(:address, State.address(), enforce: true)
     field(:spec, Spec.t(), enforce: true)
-    field(:configuration, State.Configuration.t(), enforce: true)
-    field(:environment, State.Environment.t(), enforce: true)
-    field(:status, State.Status.t(), enforce: true)
+    field(:configuration, Configuration.t(), enforce: true)
+    field(:environment, Environment.t(), enforce: true)
+    field(:status, Status.t(), enforce: true)
     field(:mailbox_pid, pid(), enforce: true)
   end
 
@@ -98,7 +99,7 @@ defmodule EngineSystem.Engine.Instance do
   @impl true
   def handle_call({:update_message_filter, new_filter}, _from, state) do
     # Update our status with the new filter
-    new_status = State.Status.ready(new_filter)
+    new_status = Status.ready(new_filter)
     new_state = %{state | status: new_status}
 
     # Notify the mailbox of the filter change
@@ -111,7 +112,7 @@ defmodule EngineSystem.Engine.Instance do
 
   @impl true
   def handle_call(:terminate, _from, state) do
-    new_status = State.Status.terminated()
+    new_status = Status.terminated()
     new_state = %{state | status: new_status}
     {:stop, :normal, :ok, new_state}
   end
@@ -137,7 +138,7 @@ defmodule EngineSystem.Engine.Instance do
     )
 
     # Transition to busy state
-    busy_status = State.Status.busy(message)
+    busy_status = Status.busy(message)
     busy_state = %{state | status: busy_status}
 
     # Create proper State.Environment struct with local_state field
@@ -163,15 +164,15 @@ defmodule EngineSystem.Engine.Instance do
   end
 
   defp return_to_ready_state(current_state, original_state) do
-    case State.Status.get_filter(original_state.status) do
+    case Status.get_filter(original_state.status) do
       {:ok, filter} ->
-        ready_status = State.Status.ready(filter)
+        ready_status = Status.ready(filter)
         %{current_state | status: ready_status}
 
       :not_ready ->
         # Use default filter if we can't get the previous one
         default_filter = fn _msg, _config, _env -> true end
-        ready_status = State.Status.ready(default_filter)
+        ready_status = Status.ready(default_filter)
         %{current_state | status: ready_status}
     end
   end

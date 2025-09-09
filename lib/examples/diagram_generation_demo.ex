@@ -8,7 +8,7 @@ defmodule Examples.DiagramGenerationDemo do
   ## Features Demonstrated
 
   1. **Single Engine Diagrams**: Individual communication patterns
-  2. **Multi-Engine Diagrams**: Inter-engine communication flows  
+  2. **Multi-Engine Diagrams**: Inter-engine communication flows
   3. **Message Flow Analysis**: Detailed flow extraction and analysis
   4. **Various Handler Types**: Function, complex patterns, effects
   5. **Error Handling**: Graceful handling of generation failures
@@ -17,18 +17,16 @@ defmodule Examples.DiagramGenerationDemo do
 
       # Run all demonstrations
       Examples.DiagramGenerationDemo.run_full_demo()
-      
       # Generate individual diagrams
       Examples.DiagramGenerationDemo.generate_demo_diagrams()
-      
       # Analyze message flows
       Examples.DiagramGenerationDemo.analyze_engine_flows()
-      
       # Test multi-engine interactions
       Examples.DiagramGenerationDemo.test_multi_engine_diagram()
   """
 
   alias EngineSystem.Engine.DiagramGenerator
+  alias Examples.{DiagramDemoEngine, RelayEngine}
   require Logger
 
   @demo_output_dir "docs/diagrams/demo"
@@ -62,7 +60,7 @@ defmodule Examples.DiagramGenerationDemo do
 
     Files generated:
     - DiagramDemo.md (individual engine diagram)
-    - RelayEngine.md (relay engine diagram)  
+    - RelayEngine.md (relay engine diagram)
     - demo_interaction.md (multi-engine interaction)
     - system_overview.md (complete system diagram)
 
@@ -77,45 +75,54 @@ defmodule Examples.DiagramGenerationDemo do
     IO.puts("=" <> String.duplicate("=", 33))
 
     engines = [
-      {Examples.DiagramDemoEngine, "DiagramDemo"},
-      {Examples.RelayEngine, "Relay"}
+      {DiagramDemoEngine, "DiagramDemo"},
+      {RelayEngine, "Relay"}
     ]
 
-    engines
-    |> Enum.each(fn {engine_module, name} ->
-      IO.puts("\n📊 #{name} Engine Message Flows:")
+    Enum.each(engines, &analyze_engine_flows_for/1)
+  end
 
-      spec = engine_module.__engine_spec__()
-      flows = DiagramGenerator.analyze_message_flows(spec)
+  defp analyze_engine_flows_for({engine_module, name}) do
+    IO.puts("\n📊 #{name} Engine Message Flows:")
 
-      if flows == [] do
-        IO.puts("  ⚠️  No message flows detected")
-      else
-        flows
-        |> Enum.with_index(1)
-        |> Enum.each(fn {flow, index} ->
-          source = format_participant(flow.source_engine)
-          target = format_participant(flow.target_engine)
+    spec = engine_module.__engine_spec__()
+    flows = DiagramGenerator.analyze_message_flows(spec)
 
-          IO.puts("  #{index}. #{source} → #{target} : #{flow.message_type}")
-          IO.puts("     Type: #{flow.handler_type}, Effects: #{length(flow.effects)}")
+    display_flows(flows)
+  end
 
-          # Show effects if any
-          if flow.effects != [] do
-            flow.effects
-            # Show first 2 effects
-            |> Enum.take(2)
-            |> Enum.each(fn effect ->
-              IO.puts("     └─ #{format_effect(effect)}")
-            end)
+  defp display_flows([]) do
+    IO.puts("  ⚠️  No message flows detected")
+  end
 
-            if length(flow.effects) > 2 do
-              IO.puts("     └─ ... and #{length(flow.effects) - 2} more")
-            end
-          end
-        end)
-      end
+  defp display_flows(flows) do
+    flows
+    |> Enum.with_index(1)
+    |> Enum.each(&display_flow/1)
+  end
+
+  defp display_flow({flow, index}) do
+    source = format_participant(flow.source_engine)
+    target = format_participant(flow.target_engine)
+
+    IO.puts("  #{index}. #{source} → #{target} : #{flow.message_type}")
+    IO.puts("     Type: #{flow.handler_type}, Effects: #{length(flow.effects)}")
+
+    display_effects(flow.effects)
+  end
+
+  defp display_effects([]), do: :ok
+
+  defp display_effects(effects) do
+    effects
+    |> Enum.take(2)
+    |> Enum.each(fn effect ->
+      IO.puts("     └─ #{format_effect(effect)}")
     end)
+
+    if length(effects) > 2 do
+      IO.puts("     └─ ... and #{length(effects) - 2} more")
+    end
   end
 
   def generate_demo_diagrams do
@@ -123,8 +130,8 @@ defmodule Examples.DiagramGenerationDemo do
     IO.puts("=" <> String.duplicate("=", 45))
 
     engines = [
-      Examples.DiagramDemoEngine,
-      Examples.RelayEngine
+      DiagramDemoEngine,
+      RelayEngine
     ]
 
     engines
@@ -164,12 +171,12 @@ defmodule Examples.DiagramGenerationDemo do
     IO.puts("=" <> String.duplicate("=", 49))
 
     specs = [
-      Examples.DiagramDemoEngine.__engine_spec__(),
-      Examples.RelayEngine.__engine_spec__()
+      DiagramDemoEngine.__engine_spec__(),
+      RelayEngine.__engine_spec__()
     ]
 
     IO.puts("\n🌐 Generating multi-engine interaction diagram...")
-    IO.puts("   Engines: #{specs |> Enum.map(& &1.name) |> Enum.join(", ")}")
+    IO.puts("   Engines: #{Enum.map_join(specs, ", ", & &1.name)}")
 
     diagram_options = %{
       output_dir: @demo_output_dir,
@@ -232,8 +239,8 @@ defmodule Examples.DiagramGenerationDemo do
     IO.puts("=" <> String.duplicate("=", 23))
 
     engines_to_check = [
-      Examples.DiagramDemoEngine,
-      Examples.RelayEngine
+      DiagramDemoEngine,
+      RelayEngine
     ]
 
     engines_to_check

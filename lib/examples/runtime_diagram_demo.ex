@@ -19,8 +19,9 @@ defmodule Examples.RuntimeDiagramDemo do
       # - Show the differences between spec-based and actual flows
   """
 
-  alias EngineSystem.Engine.{DiagramGenerator, RuntimeFlowTracker}
   alias EngineSystem.API
+  alias EngineSystem.Engine.{DiagramGenerator, RuntimeFlowTracker}
+  alias Examples.DiagramDemoEngine
 
   @doc """
   Run the complete runtime diagram generation demo.
@@ -76,23 +77,21 @@ defmodule Examples.RuntimeDiagramDemo do
   Generate baseline compile-time diagrams.
   """
   def generate_baseline_diagrams do
-    try do
-      # Generate diagram for DiagramDemoEngine
-      demo_spec = Examples.DiagramDemoEngine.__engine_spec__()
+    # Generate diagram for DiagramDemoEngine
+    demo_spec = DiagramDemoEngine.__engine_spec__()
 
-      case DiagramGenerator.generate_diagram(demo_spec, "docs/diagrams", %{
-             file_prefix: "baseline_"
-           }) do
-        {:ok, file_path} ->
-          IO.puts("✅ Generated baseline diagram: #{file_path}")
+    case DiagramGenerator.generate_diagram(demo_spec, "docs/diagrams", %{
+           file_prefix: "baseline_"
+         }) do
+      {:ok, file_path} ->
+        IO.puts("✅ Generated baseline diagram: #{file_path}")
 
-        {:error, reason} ->
-          IO.puts("❌ Failed to generate baseline diagram: #{inspect(reason)}")
-      end
-    rescue
-      error ->
-        IO.puts("❌ Error generating baseline diagrams: #{inspect(error)}")
+      {:error, reason} ->
+        IO.puts("❌ Failed to generate baseline diagram: #{inspect(reason)}")
     end
+  rescue
+    error ->
+      IO.puts("❌ Error generating baseline diagrams: #{inspect(error)}")
   end
 
   @doc """
@@ -102,7 +101,7 @@ defmodule Examples.RuntimeDiagramDemo do
     IO.puts("🎯 Spawning demo engines...")
 
     # Spawn demo engine
-    case API.spawn_engine(Examples.DiagramDemoEngine) do
+    case API.spawn_engine(DiagramDemoEngine) do
       {:ok, demo_address} ->
         IO.puts("✅ Spawned DiagramDemoEngine at #{inspect(demo_address)}")
 
@@ -166,21 +165,19 @@ defmodule Examples.RuntimeDiagramDemo do
   Generate runtime-refined diagrams using collected telemetry data.
   """
   def generate_runtime_diagrams do
-    try do
-      # Generate runtime-refined diagram for DiagramDemoEngine
-      demo_spec = Examples.DiagramDemoEngine.__engine_spec__()
+    # Generate runtime-refined diagram for DiagramDemoEngine
+    demo_spec = DiagramDemoEngine.__engine_spec__()
 
-      case DiagramGenerator.generate_runtime_refined_diagram(demo_spec, "docs/diagrams") do
-        {:ok, file_path} ->
-          IO.puts("✅ Generated runtime-refined diagram: #{file_path}")
+    case DiagramGenerator.generate_runtime_refined_diagram(demo_spec, "docs/diagrams") do
+      {:ok, file_path} ->
+        IO.puts("✅ Generated runtime-refined diagram: #{file_path}")
 
-        {:error, reason} ->
-          IO.puts("❌ Failed to generate runtime-refined diagram: #{inspect(reason)}")
-      end
-    rescue
-      error ->
-        IO.puts("❌ Error generating runtime diagrams: #{inspect(error)}")
+      {:error, reason} ->
+        IO.puts("❌ Failed to generate runtime-refined diagram: #{inspect(reason)}")
     end
+  rescue
+    error ->
+      IO.puts("❌ Error generating runtime diagrams: #{inspect(error)}")
   end
 
   @doc """
@@ -221,7 +218,7 @@ defmodule Examples.RuntimeDiagramDemo do
 
     # Show comparison with compile-time expectations
     IO.puts("\n📋 Compile-time vs Runtime Comparison:")
-    demo_spec = Examples.DiagramDemoEngine.__engine_spec__()
+    demo_spec = DiagramDemoEngine.__engine_spec__()
     compile_flows = DiagramGenerator.analyze_message_flows(demo_spec)
 
     compile_flow_types = Enum.map(compile_flows, & &1.message_type) |> Enum.uniq()
@@ -257,7 +254,7 @@ defmodule Examples.RuntimeDiagramDemo do
     IO.puts("📊 Generating Comparison Report")
     IO.puts("=" |> String.duplicate(40))
 
-    demo_spec = Examples.DiagramDemoEngine.__engine_spec__()
+    demo_spec = DiagramDemoEngine.__engine_spec__()
     compile_flows = DiagramGenerator.analyze_message_flows(demo_spec)
     runtime_flows = RuntimeFlowTracker.get_flow_data()
 
