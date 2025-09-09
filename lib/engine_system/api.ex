@@ -144,6 +144,7 @@ defmodule EngineSystem.API do
   - Registry services are available immediately
 
   """
+  @doc "Starts the EngineSystem application and all required dependencies."
   @spec start_system() :: {:ok, [atom()]} | {:error, any()}
   def start_system do
     Lifecycle.start()
@@ -368,6 +369,7 @@ defmodule EngineSystem.API do
         name: :enterprise_kv_store
       )
   """
+  @doc "Spawns an engine with explicit mailbox configuration options."
   @spec spawn_engine_with_mailbox(keyword()) :: {:ok, State.address()} | {:error, any()}
   def spawn_engine_with_mailbox(opts) do
     Spawner.spawn_engine_with_mailbox(opts)
@@ -480,6 +482,7 @@ defmodule EngineSystem.API do
   - The engine address becomes invalid after termination
 
   """
+  @doc "Terminates an engine instance gracefully and cleans up its resources."
   @spec terminate_engine(State.address()) :: :ok | {:error, :engine_not_found}
   def terminate_engine(address) do
     Spawner.terminate_engine(address)
@@ -536,6 +539,7 @@ defmodule EngineSystem.API do
       end
 
   """
+  @doc "Registers an engine specification with the system for spawning instances."
   @spec register_spec(Spec.t()) :: :ok | {:error, any()}
   def register_spec(spec) do
     Registry.register_spec(spec)
@@ -554,6 +558,7 @@ defmodule EngineSystem.API do
   - `{:ok, spec}` if found
   - `{:error, :not_found}` if not found
   """
+  @doc "Looks up an engine specification by name and optional version."
   @spec lookup_spec(atom() | String.t(), String.t() | nil) ::
           {:ok, Spec.t()} | {:error, :not_found}
   def lookup_spec(name, version \\ nil) do
@@ -567,6 +572,7 @@ defmodule EngineSystem.API do
 
   A list of instance information maps.
   """
+  @doc "Lists all running engine instances with their status information."
   @spec list_instances() :: [Registry.instance_info()]
   def list_instances do
     Registry.list_instances()
@@ -579,6 +585,7 @@ defmodule EngineSystem.API do
 
   A list of engine specifications.
   """
+  @doc "Lists all registered engine specifications available for spawning."
   @spec list_specs() :: [Spec.t()]
   def list_specs do
     Registry.list_specs()
@@ -695,6 +702,7 @@ defmodule EngineSystem.API do
   - The engine must be registered to be found
 
   """
+  @doc "Looks up a running engine instance by its address."
   @spec lookup_instance(State.address()) :: {:ok, Registry.instance_info()} | {:error, :not_found}
   def lookup_instance(address) do
     Registry.lookup_instance(address)
@@ -712,6 +720,7 @@ defmodule EngineSystem.API do
   - `{:ok, address}` if found
   - `{:error, :not_found}` if not found
   """
+  @doc "Looks up an engine's address by its registered name."
   @spec lookup_address_by_name(atom()) :: {:ok, State.address()} | {:error, :not_found}
   def lookup_address_by_name(name) do
     Registry.lookup_address_by_name(name)
@@ -846,6 +855,7 @@ defmodule EngineSystem.API do
 
   A unique integer identifier.
   """
+  @doc "Generates a unique identifier for engine operations."
   @spec fresh_id() :: non_neg_integer()
   def fresh_id do
     Services.fresh_id()
@@ -1001,6 +1011,7 @@ defmodule EngineSystem.API do
   - Cleanup is atomic and thread-safe
 
   """
+  @doc "Removes terminated engine instances from the system registry."
   @spec clean_terminated_engines() :: non_neg_integer()
   def clean_terminated_engines do
     Services.clean_terminated_engines()

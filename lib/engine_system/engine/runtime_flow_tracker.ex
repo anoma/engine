@@ -69,9 +69,7 @@ defmodule EngineSystem.Engine.RuntimeFlowTracker do
 
   ## Client API
 
-  @doc """
-  Start the runtime flow tracker.
-  """
+  @doc "Starts the runtime flow tracker GenServer process."
   @spec start_link(keyword()) :: GenServer.on_start()
   def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
