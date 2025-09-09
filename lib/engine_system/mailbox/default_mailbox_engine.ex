@@ -1,17 +1,6 @@
 defmodule EngineSystem.Mailbox.DefaultMailboxEngine do
   @moduledoc """
-  I am the default mailbox engine implementation using the DSL.
-
-  I provide basic FIFO message queuing functionality when no custom mailbox
-  is specified for a processing engine. I implement the mailbox-as-actors
-  pattern with:
-
-  - Message validation against processing engine interface
-  - FIFO message queuing
-  - Message filtering based on processing engine status
-  - GenStage producer functionality for backpressure control
-
-  This module is defined using the engine DSL and compiles to a GenStage producer.
+  I am the default mailbox engine providing FIFO message queuing with validation and GenStage producer functionality.
   """
 
   use EngineSystem

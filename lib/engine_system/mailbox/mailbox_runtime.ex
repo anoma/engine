@@ -1,18 +1,6 @@
 defmodule EngineSystem.Mailbox.MailboxRuntime do
   @moduledoc """
-  I am the core runtime GenStage producer implementation for DSL-defined mailbox engines.
-
-  This module provides the bridge between the DSL-defined mailbox behaviors and
-  actual GenStage producer functionality. When you define an engine with `mode :mailbox`,
-  this module provides the runtime execution environment.
-
-  ## Core Functions
-
-  - Implements GenStage Producer callbacks (`handle_demand`, `handle_cast`, etc.)
-  - Executes DSL-defined behaviors for mailbox operations
-  - Manages the producer-consumer pattern for message delivery
-  - Provides the actual `handle_demand` implementation
-
+  I provide the core runtime GenStage producer implementation bridging DSL-defined mailbox behaviors with actual producer functionality.
   """
 
   use GenStage
@@ -25,7 +13,7 @@ defmodule EngineSystem.Mailbox.MailboxRuntime do
 
   typedstruct do
     @typedoc """
-    Runtime state for a DSL-defined mailbox engine.
+    I define runtime state for a DSL-defined mailbox engine.
     """
     field(:address, State.address(), enforce: true)
     field(:spec, Spec.t(), enforce: true)

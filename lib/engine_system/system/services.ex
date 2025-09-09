@@ -1,38 +1,13 @@
 defmodule EngineSystem.System.Services do
   @moduledoc """
-  I provide miscellaneous system-wide services and functions.
-
-  This module implements system services like unique identifier generation
-  and mailbox address lookup as specified in the formal model.
-
-  ## Public API
-
-  ### System Services
-  - `fresh_id/0` - Generate a unique identifier for engine instances, messages, etc.
-  - `mailbox_of_name/1` - Get the mailbox address for a given processing engine
-  - `send_message/2` - Send a message to an engine (convenience function)
-  - `get_system_info/0` - Get system-wide information and statistics
-
-  ### Node Management
-  - `create_node/1` - Create a new node in the system
-  - `current_node_id/0` - Get the current node ID
-
-  ### Validation and Cleanup
-  - `validate_message/2` - Validate that a message conforms to an engine's interface
-  - `clean_terminated_engines/0` - Clean up terminated engines from the system
+  I provide system-wide services including unique ID generation, mailbox lookup, and message validation.
   """
 
   alias EngineSystem.Engine.State
   alias EngineSystem.System.Registry
 
   @doc """
-  I generate a unique identifier for engine instances, messages, etc.
-
-  This implements the `freshid` function from the formal model.
-
-  ## Returns
-
-  A unique integer identifier.
+  I generate a unique identifier for engine instances and messages.
   """
   @spec fresh_id() :: non_neg_integer()
   def fresh_id do

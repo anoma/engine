@@ -1,44 +1,17 @@
 defmodule EngineSystem.Mailbox.Behaviour do
   @moduledoc """
-  I define the standard behaviour interface for all mailbox engines.
-
-  Both custom mailbox engines (defined with DSL) and the default mailbox engine
-  must implement this behaviour to ensure consistent interaction with processing engines.
-
-  This implements the mailbox-as-actors pattern where mailboxes are first-class
-  actors that handle message validation, filtering, and delivery.
+  I define the standard behaviour interface for all mailbox engines in the mailbox-as-actors pattern.
   """
 
   alias EngineSystem.System.Message
 
   @doc """
   I start a mailbox engine instance.
-
-  ## Parameters
-
-  - `mailbox_spec` - Map containing mailbox initialization data
-
-  ## Returns
-
-  GenServer start result.
   """
   @callback start_link(map()) :: GenServer.on_start()
 
   @doc """
-  I enqueue a message according to the formal m-Enqueue rule.
-
-  This validates the message against the processing engine's interface
-  and stores it if valid.
-
-  ## Parameters
-
-  - `mailbox_pid` - The mailbox engine PID
-  - `message` - The message to enqueue
-
-  ## Returns
-
-  - `:ok` if the message was enqueued successfully
-  - `{:error, reason}` if the message could not be enqueued
+  I enqueue a message with validation against the processing engine's interface.
   """
   @callback enqueue_message(pid(), Message.t()) :: :ok | {:error, any()}
 

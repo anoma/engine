@@ -1,30 +1,6 @@
 defmodule EngineSystem.Engine.Instance do
   @moduledoc """
-  Processing engine implementing the s-Process rule from the formal paper.
-
-  This GenStage consumer processes messages following Def. 3.5 from
-  "ART-Mailboxes-actors/main.tex", executing guarded actions and effects.
-
-  ## Paper References
-
-  - **Def. 3.5 (s-Process)**: Core message processing rule
-  - **Def. 2.15 (Engine)**: Engine structure and components
-  - **Section 3.3**: Behaviour evaluation rules (b-GuardedActionEval, b-GuardStrategy)
-  - **Section 3.4**: Effect execution rules (e-Send, e-Update, etc.)
-  - **Def. 2.5**: Engine lifecycle (ready ⟷ busy → terminated)
-
-  ## Processing Flow
-
-  Following the s-Process rule semantics:
-  1. Receive message from mailbox (m-Dequeue)
-  2. Transition to busy state with message
-  3. Evaluate behaviour using guarded actions
-  4. Execute resulting effects
-  5. Return to ready state
-
-  This implements the core processing logic for engines in the mailbox-as-actors pattern,
-  where processing engines focus solely on business logic while mailbox engines handle
-  message management.
+  I implement processing engine logic as a GenStage consumer, handling message processing, behavior evaluation, and effect execution.
   """
 
   use GenStage
@@ -36,15 +12,6 @@ defmodule EngineSystem.Engine.Instance do
   typedstruct do
     @typedoc """
     I define the structure for a processing engine instance.
-
-    ### Fields
-
-    - `:address` - The engine's address. Enforced: true.
-    - `:spec` - The engine specification. Enforced: true.
-    - `:configuration` - The engine configuration. Enforced: true.
-    - `:environment` - The engine environment. Enforced: true.
-    - `:status` - The engine status. Enforced: true.
-    - `:mailbox_pid` - The associated mailbox PID. Enforced: true.
     """
     field(:address, State.address(), enforce: true)
     field(:spec, Spec.t(), enforce: true)
@@ -58,20 +25,6 @@ defmodule EngineSystem.Engine.Instance do
 
   @doc """
   I start an engine instance GenServer.
-
-  ## Parameters
-
-  - `init_data` - Map containing initialization data:
-    - `:address` - The engine's address
-    - `:spec` - The engine specification
-    - `:configuration` - The engine configuration
-    - `:environment` - The engine environment
-    - `:status` - The initial status
-    - `:mailbox_pid` - The associated mailbox PID
-
-  ## Returns
-
-  GenServer start result.
   """
   @spec start_link(map()) :: GenServer.on_start()
   def start_link(init_data) do
@@ -80,14 +33,6 @@ defmodule EngineSystem.Engine.Instance do
 
   @doc """
   I get the current state of the engine.
-
-  ## Parameters
-
-  - `pid` - The engine instance PID
-
-  ## Returns
-
-  The current engine state.
   """
   @spec get_state(pid()) :: t()
   def get_state(pid) do
@@ -96,15 +41,6 @@ defmodule EngineSystem.Engine.Instance do
 
   @doc """
   I update the engine's message filter.
-
-  ## Parameters
-
-  - `pid` - The engine instance PID
-  - `new_filter` - The new message filter function
-
-  ## Returns
-
-  `:ok` if the filter was updated successfully.
   """
   @spec update_message_filter(pid(), function()) :: :ok
   def update_message_filter(pid, new_filter) do
@@ -113,14 +49,6 @@ defmodule EngineSystem.Engine.Instance do
 
   @doc """
   I terminate the engine instance.
-
-  ## Parameters
-
-  - `pid` - The engine instance PID
-
-  ## Returns
-
-  `:ok` if termination was initiated successfully.
   """
   @spec terminate_engine(pid()) :: :ok
   def terminate_engine(pid) do
