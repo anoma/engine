@@ -62,15 +62,15 @@
         {Credo.Check.Readability.TrailingWhiteSpace, []},
         {Credo.Check.Readability.VariableNames, []},
 
-        # Refactoring checks - disabled for now to pass the lint task
-        {Credo.Check.Refactor.CyclomaticComplexity, false},
+        # Refactoring checks - re-enabled with reasonable limits
+        {Credo.Check.Refactor.CyclomaticComplexity, [max_complexity: 12]},
         {Credo.Check.Refactor.NegatedConditionsInUnless, []},
         {Credo.Check.Refactor.NegatedConditionsWithElse, []},
-        {Credo.Check.Refactor.Nesting, false}, # Disabled due to deeply nested functions
+        {Credo.Check.Refactor.Nesting, [max_nesting: 4]},
         {Credo.Check.Refactor.UnlessWithElse, []},
 
-        # Design checks - disabled for now to pass the lint task
-        {Credo.Check.Design.AliasUsage, false},
+        # Design checks - re-enabled with reasonable limits
+        {Credo.Check.Design.AliasUsage, []},
         {Credo.Check.Design.DuplicatedCode, []},
 
         # Warnings
