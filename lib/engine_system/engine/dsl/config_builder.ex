@@ -314,7 +314,7 @@ defmodule EngineSystem.Engine.DSL.ConfigBuilder do
       config_map = unquote(config_map_ast)
 
       # Generate field definitions from the map automatically
-      fields = __MODULE__.generate_fields_from_map(config_map)
+      fields = EngineSystem.Engine.DSL.ConfigBuilder.generate_fields_from_map(config_map)
 
       spec_data = Module.get_attribute(__MODULE__, :engine_spec_data)
 

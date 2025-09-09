@@ -189,11 +189,11 @@ defmodule EngineSystem.Engine.DSL do
 
       def __after_compile__(env, _bytecode) do
         spec = __engine_spec__()
-        register_spec(spec)
+        do_register_spec(spec)
         handle_post_compilation(spec, env.file, unquote(generate_compiled), unquote(generate_diagrams))
       end
 
-      defp register_spec(spec) do
+      defp do_register_spec(spec) do
         Registry.register_spec(spec)
       catch
         :exit, _ -> :ok

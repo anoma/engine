@@ -84,7 +84,7 @@ defmodule EngineSystem.Engine.DSL.InterfaceBuilder do
 
       current_interface = Module.get_attribute(__MODULE__, :current_interface)
 
-      case __MODULE__.validate_duplicate_tags(all_definitions) do
+      case EngineSystem.Engine.DSL.InterfaceBuilder.validate_duplicate_tags(all_definitions) do
         :ok ->
           :ok
 
