@@ -1,6 +1,6 @@
 use EngineSystem
 
-defengine Examples.CanonicalPingEngine, generate_diagrams: true do
+defengine Examples.CanonicalPingEngine do
   @moduledoc """
   I am a canonical Ping engine that sends pong responses.
 

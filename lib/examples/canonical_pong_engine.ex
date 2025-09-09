@@ -1,6 +1,6 @@
 use EngineSystem
 
-defengine Examples.CanonicalPongEngine, generate_diagrams: true do
+defengine Examples.CanonicalPongEngine do
   @moduledoc """
   I am a canonical Pong engine that receives pong messages.
 

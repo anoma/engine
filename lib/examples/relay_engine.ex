@@ -1,6 +1,6 @@
 use EngineSystem
 
-defengine Examples.RelayEngine, generate_diagrams: true do
+defengine Examples.RelayEngine do
   @moduledoc """
   I am a relay engine that works with DiagramDemoEngine to demonstrate
   inter-engine communication patterns in generated Mermaid diagrams.
@@ -9,30 +9,6 @@ defengine Examples.RelayEngine, generate_diagrams: true do
   - Relay messages between engines
   - Aggregate responses from multiple engines
   - Demonstrate complex multi-hop communication patterns
-
-  ## Communication Patterns
-
-  ### Relay Pattern
-  - Receives messages and forwards them to configured destinations
-  - Shows intermediate processing in communication chains
-
-  ### Aggregation Pattern
-  - Collects responses from multiple engines
-  - Demonstrates scatter-gather communication
-
-  ### Echo Enhancement Pattern
-  - Enhances simple echo with additional metadata
-  - Shows how engines can add value in communication chains
-
-  ## Integration with DiagramDemoEngine
-
-  This engine is designed to work together with DiagramDemoEngine to create
-  rich interaction diagrams showing:
-
-  1. Client → RelayEngine → DiagramDemoEngine flows
-  2. Bidirectional communication patterns
-  3. State synchronization between engines
-  4. Error handling and fallback patterns
   """
 
   version("1.0.0")
