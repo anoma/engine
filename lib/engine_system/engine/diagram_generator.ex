@@ -807,10 +807,11 @@ defmodule EngineSystem.Engine.DiagramGenerator do
   end
 
   defp generate_sequences_for_flow(flow) do
-    sequences = []
-    |> add_initial_sequence(flow)
-    |> add_note_sequence(flow)
-    |> add_effect_sequences(flow)
+    sequences =
+      []
+      |> add_initial_sequence(flow)
+      |> add_note_sequence(flow)
+      |> add_effect_sequences(flow)
 
     sequences
   end
@@ -825,7 +826,8 @@ defmodule EngineSystem.Engine.DiagramGenerator do
       :effects_list when flow.source_engine == :client ->
         generate_client_to_engine_sequence(flow)
 
-      handler_type when handler_type in [:effect_tuple, :inferred_response] and flow.source_engine != :client ->
+      handler_type
+      when handler_type in [:effect_tuple, :inferred_response] and flow.source_engine != :client ->
         generate_engine_to_engine_sequence(flow)
 
       _ when flow.source_engine == :client ->
@@ -866,6 +868,7 @@ defmodule EngineSystem.Engine.DiagramGenerator do
 
   defp generate_function_note(flow) do
     metadata = Map.get(flow, :metadata, %{})
+
     if function = Map.get(metadata, :function) do
       "    Note over #{format_participant_name(flow.target_engine)}: Handled by #{function}/#{Map.get(metadata, :arity, "?")}"
     else
@@ -1060,10 +1063,7 @@ defmodule EngineSystem.Engine.DiagramGenerator do
   # Get all registered engine specs from the system registry
   defp get_all_registered_specs do
     # Attempt to get registered specs from the registry
-    case EngineSystem.System.Registry.list_specs() do
-      specs when is_list(specs) -> specs
-      _ -> []
-    end
+    EngineSystem.System.Registry.list_specs()
   rescue
     # Registry might not be available at compile time
     _ -> []

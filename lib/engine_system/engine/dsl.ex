@@ -120,6 +120,7 @@ defmodule EngineSystem.Engine.DSL do
           description:
             "Invalid engine mode: #{inspect(spec_data.mode)}. Mode must be :process or :mailbox"
       end
+
       spec_data
     end
   end
@@ -190,9 +191,29 @@ defmodule EngineSystem.Engine.DSL do
       def __after_compile__(env, _bytecode) do
         spec = __engine_spec__()
         do_register_spec(spec)
-        handle_post_compilation(spec, env.file, unquote(generate_compiled), unquote(generate_diagrams))
+
+        handle_post_compilation(
+          spec,
+          env.file,
+          unquote(generate_compiled),
+          unquote(generate_diagrams)
+        )
       end
 
+      unquote(generate_helper_functions())
+    end
+  end
+
+  defp generate_helper_functions do
+    quote do
+      unquote(generate_registration_functions())
+      unquote(generate_compilation_functions())
+      unquote(generate_diagram_functions())
+    end
+  end
+
+  defp generate_registration_functions do
+    quote do
       defp do_register_spec(spec) do
         Registry.register_spec(spec)
       catch
@@ -208,20 +229,30 @@ defmodule EngineSystem.Engine.DSL do
           handle_diagram_generation(spec)
         end
       end
+    end
+  end
 
+  defp generate_compilation_functions do
+    quote do
       defp should_compile?(local_flag) do
         local_flag or Application.get_env(:engine_system, :compile_engines, false)
-      end
-
-      defp should_generate_diagrams?(local_flag) do
-        local_flag or Application.get_env(:engine_system, :generate_diagrams, false)
       end
 
       defp handle_compilation(spec, source_file) do
         IO.puts("📝 Compilation enabled for #{spec.name} (implementation pending)")
       catch
         kind, reason ->
-          IO.warn("Failed to generate compiled engine for #{spec.name}: #{inspect({kind, reason})}")
+          IO.warn(
+            "Failed to generate compiled engine for #{spec.name}: #{inspect({kind, reason})}"
+          )
+      end
+    end
+  end
+
+  defp generate_diagram_functions do
+    quote do
+      defp should_generate_diagrams?(local_flag) do
+        local_flag or Application.get_env(:engine_system, :generate_diagrams, false)
       end
 
       defp handle_diagram_generation(spec) do

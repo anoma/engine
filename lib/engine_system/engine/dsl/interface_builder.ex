@@ -6,70 +6,14 @@ defmodule EngineSystem.Engine.DSL.InterfaceBuilder do
   from the main DSL module for better separation of concerns.
   """
 
+  alias EngineSystem.Engine.DSL.InterfaceBuilder
+
   @doc """
   I define the message interface for the engine.
 
   The interface specifies all the message types that the engine can receive
   and process. Each message has a tag (name) and optional field specifications
   that define the expected structure of the message data.
-
-  ## Parameters
-
-  - `block` - Block containing message definitions using the `message/2` macro
-
-  ## Examples
-
-  ```elixir
-  # Simple interface with basic messages
-  defengine EchoEngine do
-    interface do
-      message :echo
-      message :ping
-      message :shutdown
-    end
-    # ...
-  end
-  ```
-
-  ```elixir
-  # Interface with typed message fields
-  defengine KVStoreEngine do
-    interface do
-      message :get, key: :atom
-      message :put, key: :atom, value: :any
-      message :delete, key: :atom
-      message :list_keys
-      message :result, value: {:option, :any}
-      message :ack
-      message :error, reason: :string
-    end
-    # ...
-  end
-  ```
-
-  ```elixir
-  # Complex interface with detailed field specifications
-  defengine UserManagerEngine do
-    interface do
-      message :create_user, name: :string, email: :string, role: :atom
-      message :update_user, id: :integer, name: {:optional, :string}, email: {:optional, :string}
-      message :delete_user, id: :integer
-      message :find_user, id: :integer
-      message :list_users, filters: {:optional, :map}
-      message :user_response, user: :map
-      message :user_list, users: {:list, :map}
-      message :error, message: :string, code: :integer
-    end
-    # ...
-  end
-  ```
-
-  ## Notes
-
-  - The interface is validated at compile time
-  - Duplicate message tags will cause compilation errors
-  - Field specifications are used for runtime message validation
-  - Messages without field specifications accept any payload structure
   """
   defmacro interface(do: block) do
     quote do
@@ -84,7 +28,7 @@ defmodule EngineSystem.Engine.DSL.InterfaceBuilder do
 
       current_interface = Module.get_attribute(__MODULE__, :current_interface)
 
-      case EngineSystem.Engine.DSL.InterfaceBuilder.validate_duplicate_tags(all_definitions) do
+      case InterfaceBuilder.validate_duplicate_tags(all_definitions) do
         :ok ->
           :ok
 
@@ -118,86 +62,6 @@ defmodule EngineSystem.Engine.DSL.InterfaceBuilder do
 
   Each message definition specifies a message tag (name) and optional field
   specifications that describe the expected structure and types of the message data.
-
-  ## Parameters
-
-  - `tag` - The message tag (atom) that identifies this message type
-  - `fields` - Keyword list of field specifications (optional, defaults to [])
-
-  ## Field Types
-
-  Supported field types include:
-  - `:atom` - Atom values
-  - `:string` - String values
-  - `:integer` - Integer values
-  - `:float` - Float values
-  - `:boolean` - Boolean values
-  - `:map` - Map values
-  - `:list` - List values
-  - `:any` - Any value type
-  - `{:optional, type}` - Optional field of the specified type
-  - `{:list, type}` - List containing elements of the specified type
-  - `{:option, type}` - Either the specified type or nil
-
-  ## Examples
-
-  ```elixir
-  # Simple message with no fields
-  message :ping
-
-  # Message with typed fields
-  message :get, key: :atom
-
-  # Message with multiple fields
-  message :create_user, name: :string, email: :string, age: :integer
-
-  # Message with optional fields
-  message :update_user,
-    id: :integer,
-    name: {:optional, :string},
-    email: {:optional, :string}
-
-  # Message with complex types
-  message :batch_operation,
-    items: {:list, :map},
-    options: {:optional, :map},
-    callback: {:option, :atom}
-
-  # Message for responses
-  message :user_created,
-    user: :map,
-    timestamp: :integer
-
-  # Error message
-  message :error,
-    message: :string,
-    code: :integer,
-    details: {:optional, :map}
-
-  # Message with any-type payload
-  message :log_event,
-    level: :atom,
-    data: :any
-
-  # Acknowledgment message
-  message :ack
-  ```
-
-  ## Validation
-
-  Field specifications are used for:
-  - Compile-time interface validation
-  - Runtime message validation (when enabled)
-  - Documentation and tooling support
-  - IDE autocompletion and type hints
-
-  ## Notes
-
-  - Message tags must be unique within an interface
-  - Field names must be unique within a message
-  - Fields without type specifications default to `:any`
-  - Use descriptive message tags for better code readability
-
   """
   defmacro message(tag, fields \\ []) do
     location = %{
@@ -243,15 +107,6 @@ defmodule EngineSystem.Engine.DSL.InterfaceBuilder do
 
   @doc """
   I validate a message interface definition.
-
-  ## Parameters
-
-  - `interface` - The interface Def. to validate
-
-  ## Returns
-
-  - `:ok` if valid
-  - `{:error, reason}` if invalid
   """
   @spec validate_interface(list()) :: :ok | {:error, String.t()}
   def validate_interface(interface) when is_list(interface) do

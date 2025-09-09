@@ -105,6 +105,7 @@ defmodule EngineSystem.Engine do
         catch
           _ -> false
         end
+
       {:arity, 3} ->
         try do
           filter.(message, nil, nil)
@@ -113,6 +114,7 @@ defmodule EngineSystem.Engine do
         catch
           _ -> false
         end
+
       _ ->
         # Default to 1-arity for backward compatibility
         try do
