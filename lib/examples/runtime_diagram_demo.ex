@@ -81,6 +81,9 @@ defmodule Examples.RuntimeDiagramDemo do
     demo_spec = DiagramDemoEngine.__engine_spec__()
 
     case DiagramGenerator.generate_diagram(demo_spec, "docs/diagrams", %{
+           output_dir: "docs/diagrams",
+           include_metadata: true,
+           diagram_title: nil,
            file_prefix: "baseline_"
          }) do
       {:ok, file_path} ->

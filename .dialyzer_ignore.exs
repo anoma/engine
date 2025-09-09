@@ -14,7 +14,4 @@
   # Ignore guard and pattern warnings in DSLMailboxSimple example - example code with intentional patterns
   ~r"lib/examples/dsl_mailbox_simple.ex:175:guard_fail",
   ~r"lib/examples/dsl_mailbox_simple.ex:175:pattern_match",
-  
-  # Ignore contract warning in RuntimeDiagramDemo - example/demo code
-  ~r"lib/examples/runtime_diagram_demo.ex:83:call"
 ]
